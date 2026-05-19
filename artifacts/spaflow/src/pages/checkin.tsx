@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,10 +43,38 @@ export default function CheckInPage() {
   const [membershipType, setMembershipType] = useState<"none" | "one_time" | "six_month">("none");
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [lastResult, setLastResult] = useState<{ session: { resourceName: string }; transaction: { total?: number } } | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+  const [taxRate, setTaxRate] = useState<number | null>(null);
 
   // Square payment token
   const [paymentToken, setPaymentToken] = useState<string | null>(null);
   const [cardTokenizationError, setCardTokenizationError] = useState<string | null>(null);
+
+  // Fetch tax rate from config API on mount
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        // First try environment variable
+        if (import.meta.env.VITE_TAX_RATE) {
+          setTaxRate(parseFloat(import.meta.env.VITE_TAX_RATE));
+          return;
+        }
+        
+        // Fallback to API fetch
+        const response = await fetch('/api/v1/config');
+        if (response.ok) {
+          const config = await response.json();
+          setTaxRate(config.taxRate);
+        } else {
+          console.error('Failed to fetch config from API');
+        }
+      } catch (error) {
+        console.error('Error fetching config:', error);
+      }
+    }
+    
+    fetchConfig();
+  }, []);
 
   const { data: clientsData } = useListClients(
     { search: search || undefined, limit: 8 },
@@ -73,11 +101,13 @@ export default function CheckInPage() {
 
   function handleSelectClient(client: { id: number; name: string; membershipStatus: string }) {
     setSelectedClient(client);
+    setValidationErrors(prev => ({ ...prev, client: "" }));
     setStep("resource");
   }
 
   function handleSelectResource(resource: { id: number; name: string }) {
     setSelectedResource(resource);
+    setValidationErrors(prev => ({ ...prev, resource: "" }));
     setStep("products");
   }
 
@@ -244,10 +274,16 @@ export default function CheckInPage() {
                   data-testid="input-client-search"
                   placeholder="Search by name, email, or phone..."
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-9"
+                  onChange={e => {
+                    setSearch(e.target.value);
+                    setValidationErrors(prev => ({ ...prev, client: "" }));
+                  }}
+                  className={cn("pl-9", validationErrors.client && "border-destructive")}
                 />
               </div>
+              {validationErrors.client && (
+                <p className="text-sm text-destructive">{validationErrors.client}</p>
+              )}
               {search && clientsData?.clients && (
                 <ul className="border border-border rounded-md divide-y divide-border overflow-hidden">
                   {clientsData.clients.length === 0 && (
@@ -338,6 +374,9 @@ export default function CheckInPage() {
                       </button>
                     ))}
                   </div>
+                )}
+                {validationErrors.resource && (
+                  <p className="text-sm text-destructive mt-2">{validationErrors.resource}</p>
                 )}
               </div>
             </CardContent>
@@ -430,7 +469,7 @@ export default function CheckInPage() {
                   <span>${priceResult.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax (8.875%)</span>
+                  <span className="text-muted-foreground">Tax ({taxRate !== null ? (taxRate * 100).toFixed(3) : 'Loading...'}%)</span>
                   <span>${priceResult.tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-semibold text-base">
@@ -440,7 +479,7 @@ export default function CheckInPage() {
               </div>
 
               {/* Square payment form */}
-              <div className="space-y-3 border border-border rounded-lg p-4">
+              <div className={cn("space-y-3 border rounded-lg p-4", cardTokenizationError && "border-destructive")}>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Card Information</p>
                 {import.meta.env.VITE_SQUARE_APPLICATION_ID ? (
                   <PaymentForm
@@ -458,7 +497,7 @@ export default function CheckInPage() {
                   </div>
                 )}
                 {cardTokenizationError && (
-                  <p className="text-sm text-destructive">{cardTokenizationError}</p>
+                  <p className="text-sm text-destructive font-medium">{cardTokenizationError}</p>
                 )}
               </div>
 

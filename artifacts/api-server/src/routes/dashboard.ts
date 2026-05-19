@@ -3,6 +3,7 @@ import { db, lockersTable, roomsTable, transactionsTable, rentalSessionsTable, w
 import { sql, eq, gte, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { apiLimiter } from "../middleware/rateLimit";
+import { LOCKER_TOTAL, ROOM_TOTAL } from "../lib/constants";
 
 const router = Router();
 
@@ -20,10 +21,10 @@ router.get("/dashboard", requireAuth, apiLimiter, async (req, res): Promise<void
     db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.status, "active")).orderBy(desc(rentalSessionsTable.startTime)).limit(20),
   ]);
 
-  const lockerOccupancy = { total: 167, available: 0, occupied: 0, reserved: 0 };
+  const lockerOccupancy = { total: LOCKER_TOTAL, available: 0, occupied: 0, reserved: 0 };
   lockerStats.forEach(s => { if (s.status === "available") lockerOccupancy.available = s.count; else if (s.status === "occupied") lockerOccupancy.occupied = s.count; else lockerOccupancy.reserved = s.count; });
 
-  const roomOccupancy = { total: 38, available: 0, occupied: 0, reserved: 0 };
+  const roomOccupancy = { total: ROOM_TOTAL, available: 0, occupied: 0, reserved: 0 };
   roomStats.forEach(s => { if (s.status === "available") roomOccupancy.available = s.count; else if (s.status === "occupied") roomOccupancy.occupied = s.count; else roomOccupancy.reserved = s.count; });
 
   // Fetch client names for recent transactions

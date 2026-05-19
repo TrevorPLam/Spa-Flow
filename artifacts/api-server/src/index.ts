@@ -3,10 +3,14 @@ import { logger } from "./lib/logger";
 import { validateEnv } from "./lib/env";
 import { pool } from "@workspace/db";
 import { closeCache } from "./lib/cache";
+import { initSentry } from "./lib/sentry";
 import type { Server } from "http";
 
 // Validate environment variables at startup
 validateEnv();
+
+// Initialize Sentry as early as possible
+initSentry();
 
 const rawPort = process.env["PORT"];
 

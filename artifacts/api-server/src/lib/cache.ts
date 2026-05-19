@@ -83,6 +83,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
     logger.error({ error, key }, 'Cache get error');
     metrics.errors++;
     // Return null on error to allow fallback to database
+    // Distinguish from cache miss by logging as error, not miss
     return null;
   }
 }
@@ -191,6 +192,12 @@ export function logCacheStats(): void {
     evictions: metrics.evictions,
     hitRate: `${hitRate}%`,
   }, 'Cache statistics');
+  
+  // Log warning if error rate is high
+  if (metrics.errors > 0) {
+    const errorRate = ((metrics.errors / (metrics.hits + metrics.misses + metrics.errors)) * 100).toFixed(2);
+    logger.warn({ errorRate: `${errorRate}%` }, 'Cache error rate detected - check Redis connectivity');
+  }
 }
 
 /**

@@ -18,7 +18,7 @@ import {
   ExtendRoomBody,
 } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
-import { logTransactionError } from "../lib/logger";
+import { logTransactionError, logger } from "../lib/logger";
 import { ROOM_TOTAL, SESSION_DURATION_MS, EXTENSION_DURATION_MS, EXTENSION_SURCHARGE_DIVISOR, WAITLIST_CONFIRM_MS } from "../lib/constants";
 
 const router = Router();
@@ -230,7 +230,17 @@ router.post("/rooms/:id/release", requireAuth, apiLimiter, async (req, res): Pro
     try {
       await assignNextWaitlistEntry(room.id);
     } catch (err) {
-      // Don't fail release if waitlist assignment fails
+      // Log waitlist assignment failure but don't fail release operation
+      // This is an operational error - the room release should succeed even if waitlist fails
+      logger.error({ 
+        err: err instanceof Error ? {
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+        } : String(err),
+        roomId: room.id,
+        sessionId,
+      }, 'Failed to assign waitlist entry during room release');
     }
   }).catch((error) => {
     logTransactionError("room release", error, { roomId: room.id, sessionId });

@@ -1,9 +1,11 @@
 import { logger } from "./logger";
+import { getEnv } from "./env";
 
 export async function sendSms(to: string, message: string): Promise<void> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_PHONE_NUMBER;
+  const env = getEnv();
+  const accountSid = env.TWILIO_ACCOUNT_SID;
+  const authToken = env.TWILIO_AUTH_TOKEN;
+  const from = env.TWILIO_PHONE_NUMBER;
 
   if (!accountSid || !authToken || !from) {
     logger.info({ to, message }, "SMS not sent - Twilio not configured");

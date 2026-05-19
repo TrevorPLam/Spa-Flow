@@ -86,16 +86,6 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
     return;
   }
 
-  const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
-  if (!locker) {
-    res.status(404).json({ error: "Locker not found" });
-    return;
-  }
-  if (locker.status !== "available") {
-    res.status(409).json({ error: "Locker is not available" });
-    return;
-  }
-
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, parsed.data.clientId));
   if (!client) {
     res.status(404).json({ error: "Client not found" });
@@ -124,7 +114,7 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
       parsed.data.paymentToken,
       Math.round(total * 100),
       parsed.data.idempotencyKey,
-      `Locker ${locker.name} rental`
+      `Locker ${params.data.id} rental`
     );
     paymentId = result.paymentId;
   }
@@ -133,63 +123,89 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
   const startTime = new Date();
   const expiresAt = new Date(startTime.getTime() + SESSION_DURATION_MS);
 
-  const session = await db.transaction(async (tx) => {
-    const [session] = await tx.insert(rentalSessionsTable).values({
-      clientId: client.id,
-      resourceType: "locker",
-      resourceId: locker.id,
-      resourceName: locker.name,
-      status: "active",
-      startTime,
-      expiresAt,
-      amountPaid: String(subtotal),
-    }).returning();
+  let session;
+  try {
+    session = await db.transaction(async (tx) => {
+      // Use SELECT FOR UPDATE for atomic assignment
+      const lockerRows = await tx.execute(
+        sql`SELECT * FROM lockers WHERE id = ${params.data.id} FOR UPDATE`
+      );
+      const locker = lockerRows.rows[0] as typeof lockersTable.$inferSelect | undefined;
 
-    await tx.update(lockersTable).set({
-      status: "occupied",
-      clientId: client.id,
-      sessionId: session.id,
-      startTime,
-      expiresAt,
-    }).where(eq(lockersTable.id, locker.id));
+      if (!locker) {
+        throw new Error("LOCKER_NOT_FOUND");
+      }
+      if (locker.status !== "available") {
+        throw new Error("LOCKER_NOT_AVAILABLE");
+      }
 
-    // Record transaction
-    await tx.insert(transactionsTable).values({
-      clientId: client.id,
-      amount: String(subtotal),
-      tax: String(tax),
-      total: String(total),
-      type: "locker_rental",
-      squarePaymentId: paymentId,
-      description: `Locker ${locker.name} rental`,
-      sessionId: session.id,
+      const [session] = await tx.insert(rentalSessionsTable).values({
+        clientId: client.id,
+        resourceType: "locker",
+        resourceId: locker.id,
+        resourceName: locker.name,
+        status: "active",
+        startTime,
+        expiresAt,
+        amountPaid: String(subtotal),
+      }).returning();
+
+      await tx.update(lockersTable).set({
+        status: "occupied",
+        clientId: client.id,
+        sessionId: session.id,
+        startTime,
+        expiresAt,
+      }).where(eq(lockersTable.id, locker.id));
+
+      // Record transaction
+      await tx.insert(transactionsTable).values({
+        clientId: client.id,
+        amount: String(subtotal),
+        tax: String(tax),
+        total: String(total),
+        type: "locker_rental",
+        squarePaymentId: paymentId,
+        description: `Locker ${locker.name} rental`,
+        sessionId: session.id,
+      });
+
+      return { session, locker };
     });
-
-    return session;
-  }).catch((error) => {
-    logTransactionError("locker assignment", error, { lockerId: locker.id, clientId: client.id });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "LOCKER_NOT_FOUND") {
+        res.status(404).json({ error: "Locker not found" });
+        return;
+      }
+      if (error.message === "LOCKER_NOT_AVAILABLE") {
+        res.status(409).json({ error: "Locker is not available" });
+        return;
+      }
+    }
+    logTransactionError("locker assignment", error, { lockerId: params.data.id, clientId: client.id });
     throw error;
-  });
+  }
 
   const actingUser = (req as AuthRequest).user!;
   await writeAuditLog({
     userId: parseInt(actingUser.sub),
     action: "ASSIGN_LOCKER",
     resourceType: "locker",
-    resourceId: locker.id,
-    description: `Assigned locker ${locker.name} to client ${client.name}`,
+    resourceId: session.locker.id,
+    description: `Assigned locker ${session.locker.name} to client ${client.name}`,
   });
 
   res.json({
-    id: session.id,
-    clientId: session.clientId,
+    id: session.session.id,
+    clientId: session.session.clientId,
     clientName: client.name,
-    resourceType: session.resourceType,
-    resourceId: session.resourceId,
-    resourceName: session.resourceName,
-    status: session.status,
-    startTime: session.startTime,
-    expiresAt: session.expiresAt,
+    resourceType: session.session.resourceType,
+    resourceId: session.session.resourceId,
+    resourceName: session.session.resourceName,
+    status: session.session.status,
+    startTime: session.session.startTime,
+    expiresAt: session.session.expiresAt,
     endTime: null,
     amountPaid: subtotal,
   });

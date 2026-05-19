@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, timestamp, pgEnum, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, timestamp, pgEnum, index, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { clientsTable } from "./clients";
@@ -16,6 +16,8 @@ export const waitlistTable = pgTable("waitlist_entries", {
   confirmBy: timestamp("confirm_by", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
+  // Unique constraint to prevent duplicate positions within same status
+  uniqueWaitlistStatusPosition: unique("unique_waitlist_status_position").on(table.status, table.position),
   // Composite index for waitlist ordering queries
   statusPositionIdx: index("idx_waitlist_status_position").on(table.status, table.position),
   // Index on clientId for user waitlist lookup

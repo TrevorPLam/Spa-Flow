@@ -7,6 +7,9 @@ export interface AuditParams {
   resourceType: string;
   resourceId?: number;
   description?: string;
+  // Optional request context for enhanced error logging
+  requestId?: string;
+  timestamp?: Date;
 }
 
 export async function writeAuditLog(params: AuditParams): Promise<void> {
@@ -19,6 +22,15 @@ export async function writeAuditLog(params: AuditParams): Promise<void> {
       description: params.description ?? null,
     });
   } catch (err) {
-    logger.error({ err, params }, "Failed to write audit log");
+    logger.error({ 
+      err: err instanceof Error ? {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+      } : String(err),
+      auditParams: params,
+      requestId: params.requestId,
+      timestamp: params.timestamp || new Date().toISOString(),
+    }, "Failed to write audit log");
   }
 }

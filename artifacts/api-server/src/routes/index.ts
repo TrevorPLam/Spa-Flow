@@ -12,6 +12,7 @@ import productsRouter from "./products";
 import transactionsRouter from "./transactions";
 import dashboardRouter from "./dashboard";
 import auditRouter from "./audit";
+import configRouter from "./config";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(productsRouter);
 router.use(transactionsRouter);
 router.use(dashboardRouter);
 router.use(auditRouter);
+router.use(configRouter);
 
 export default router;

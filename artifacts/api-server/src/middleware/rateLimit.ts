@@ -1,6 +1,7 @@
 import rateLimit from "express-rate-limit";
 import type { Request } from "express";
 import { logger } from "../lib/logger";
+import type { AuthRequest } from "../lib/auth";
 
 /**
  * Auth rate limiter: 5 attempts per 15 minutes per IP
@@ -45,15 +46,15 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
     // Extract user ID from JWT token for user-based limiting
-    const user = (req as any).user;
-    return user?.sub || req.ip; // Fallback to IP if no user
+    const user = (req as AuthRequest).user;
+    return user?.sub || req.ip || 'unknown'; // Fallback to IP if no user, then 'unknown'
   },
   handler: (req, res) => {
     logger.warn({
       msg: "Rate limit exceeded for API endpoint",
       ip: req.ip,
       path: req.path,
-      userId: (req as any).user?.sub,
+      userId: (req as AuthRequest).user?.sub,
     });
     res.status(429).json({
       error: "API rate limit exceeded",
@@ -78,15 +79,15 @@ export const checkinLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
     // Extract user ID from JWT token for user-based limiting
-    const user = (req as any).user;
-    return user?.sub || req.ip; // Fallback to IP if no user
+    const user = (req as AuthRequest).user;
+    return user?.sub || req.ip || 'unknown'; // Fallback to IP if no user, then 'unknown'
   },
   handler: (req, res) => {
     logger.warn({
       msg: "Rate limit exceeded for check-in endpoint",
       ip: req.ip,
       path: req.path,
-      userId: (req as any).user?.sub,
+      userId: (req as AuthRequest).user?.sub,
     });
     res.status(429).json({
       error: "Check-in rate limit exceeded",

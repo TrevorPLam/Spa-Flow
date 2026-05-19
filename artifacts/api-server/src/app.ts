@@ -5,10 +5,17 @@ import pinoHttp from "pino-http";
 import helmet from "helmet";
 import csrf from "csrf";
 import { randomUUID } from "node:crypto";
+import * as Sentry from "@sentry/node";
+import swaggerUi from "swagger-ui-express";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import * as yaml from "js-yaml";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { logCacheStats } from "./lib/cache";
 import { getEnv } from "./lib/env";
+import { isSentryInitialized, captureUserContext, captureRequestContext } from "./lib/sentry";
 import "./jobs/cron";
 
 const app: Express = express();
@@ -23,7 +30,6 @@ const requestIdMiddleware = (req: Request, res: Response, next: NextFunction) =>
 
 // CSRF token generation and validation
 const csrfTokens = new csrf();
-const CSRF_SECRET = process.env.CSRF_SECRET || csrfTokens.secretSync();
 const CSRF_COOKIE_NAME = '_csrf';
 
 // CSRF protection middleware
@@ -51,7 +57,8 @@ const csrfProtectionMiddleware = (req: Request, res: Response, next: NextFunctio
 
 // CSRF token generation middleware
 const csrfTokenMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const token = csrfTokens.create(CSRF_SECRET);
+  const env = getEnv();
+  const token = csrfTokens.create(env.CSRF_SECRET);
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -137,6 +144,45 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(csrfTokenMiddleware);
 app.use(csrfProtectionMiddleware);
 
-app.use("/api", router);
+// Capture request context for Sentry
+if (isSentryInitialized()) {
+  app.use(captureRequestContext);
+}
+
+// Capture user context for Sentry (must be after CSRF, before routes)
+if (isSentryInitialized()) {
+  app.use(captureUserContext);
+}
+
+// API versioning - mount all routes under /api/v1
+app.use("/api/v1", router);
+
+// Serve OpenAPI/Swagger documentation
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const openApiPath = path.resolve(__dirname, "..", "..", "..", "lib", "api-spec", "openapi.yaml");
+
+try {
+  const openApiSpec = yaml.load(fs.readFileSync(openApiPath, "utf-8")) as object;
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, {
+    customSiteTitle: "SpaFlow API Documentation",
+    customCss: '.swagger-ui .topbar { display: none }',
+  }));
+  logger.info("OpenAPI documentation available at /api-docs");
+} catch (error) {
+  logger.warn({ error }, "Failed to load OpenAPI specification, documentation endpoint disabled");
+}
+
+// Global error handler - captures and logs errors
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  logger.error({ err }, "Unhandled error");
+  
+  // Send error to Sentry if initialized
+  if (isSentryInitialized()) {
+    Sentry.captureException(err);
+  }
+  
+  res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;

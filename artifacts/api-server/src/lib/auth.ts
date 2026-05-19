@@ -18,6 +18,14 @@ export interface AuthPayload {
   name: string;
 }
 
+/**
+ * Express Request interface augmented with authenticated user information.
+ * The user property is set by the requireAuth middleware.
+ */
+export interface AuthRequest extends Request {
+  user?: AuthPayload;
+}
+
 export async function signToken(payload: AuthPayload): Promise<string> {
   return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
@@ -81,6 +89,3 @@ export async function requireManager(req: Request, res: Response, next: NextFunc
   });
 }
 
-export interface AuthRequest extends Request {
-  user?: AuthPayload;
-}

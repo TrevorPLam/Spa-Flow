@@ -7,6 +7,7 @@ const envSchema = z.object({
   // Security - Secrets (minimum 32 characters for cryptographic security)
   ENCRYPTION_KEY: z.string().min(32, 'ENCRYPTION_KEY must be at least 32 characters'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  CSRF_SECRET: z.string().min(32, 'CSRF_SECRET must be at least 32 characters'),
 
   // Application config
   TAX_RATE: z.string().transform((val) => parseFloat(val)).pipe(z.number().min(0).max(1)),
@@ -30,11 +31,21 @@ const envSchema = z.object({
   // Twilio (optional for health checks)
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().regex(/^\+[1-9]\d{6,14}$/, 'TWILIO_PHONE_NUMBER must be in E.164 format (e.g., +14155552671)').optional(),
 
   // Square (optional for health checks)
   SQUARE_ACCESS_TOKEN: z.string().optional(),
   SQUARE_LOCATION_ID: z.string().optional(),
   SQUARE_ENVIRONMENT: z.enum(['sandbox', 'production']).default('sandbox'),
+  SQUARE_API_VERSION: z.string().default('2025-08-20'),
+
+  // Sentry (optional for error tracking)
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_ENVIRONMENT: z.string().default(process.env.NODE_ENV || 'development'),
+  SENTRY_RELEASE: z.string().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+  SENTRY_ORG: z.string().optional(),
+  SENTRY_PROJECT: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

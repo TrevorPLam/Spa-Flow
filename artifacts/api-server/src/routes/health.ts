@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { LivenessResponse, ReadinessResponse, HealthCheckStatus } from "@workspace/api-zod";
 import { db, pool } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { getTwilioCredentials, getTwilioAuthHeader } from "../lib/env";
+import { getTwilioCredentials, getTwilioAuthHeader, getEnv } from "../lib/env";
 import { getRedisClient } from "../lib/cache";
 
 const router: IRouter = Router();
@@ -32,6 +32,7 @@ async function checkSquare(): Promise<{ status: HealthCheckStatus; message?: str
   try {
     const accessToken = process.env.SQUARE_ACCESS_TOKEN;
     const environment = process.env.SQUARE_ENVIRONMENT ?? "sandbox";
+    const apiVersion = getEnv().SQUARE_API_VERSION;
     
     if (!accessToken) {
       // If not configured, mark as degraded (not required for basic operation)
@@ -51,7 +52,7 @@ async function checkSquare(): Promise<{ status: HealthCheckStatus; message?: str
       method: "GET",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
-        "Square-Version": "2024-01-18",
+        "Square-Version": apiVersion,
       },
     });
 

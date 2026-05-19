@@ -37,3 +37,66 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - run: pnpm run build
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Install Playwright Browsers
+        run: cd artifacts/spaflow && pnpm exec playwright install --with-deps
+      - name: Run E2E Tests
+        run: cd artifacts/spaflow && pnpm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: artifacts/spaflow/playwright-report/
+          retention-days: 30
+
+  load-tests:
+    name: Load Tests
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E34C5A
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt update
+          sudo apt install k6
+      - name: Start API Server
+        run: |
+          cd artifacts/api-server
+          pnpm run build
+          pnpm run start &
+          sleep 10
+      - name: Run Load Tests
+        run: |
+          pnpm run test:load:health
+          pnpm run test:load:clients
+          pnpm run test:load:dashboard
+          pnpm run test:load:checkin
+        env:
+          API_BASE_URL: http://localhost:3000/api

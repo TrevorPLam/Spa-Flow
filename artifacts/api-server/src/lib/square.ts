@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { getEnv } from "./env";
 
 export interface PaymentResult {
   paymentId: string;
@@ -22,6 +23,7 @@ export async function processSquarePayment(
 ): Promise<PaymentResult> {
   const accessToken = process.env.SQUARE_ACCESS_TOKEN;
   const environment = process.env.SQUARE_ENVIRONMENT ?? "sandbox";
+  const apiVersion = getEnv().SQUARE_API_VERSION;
 
   // If no Square token configured, return mock result for dev
   if (!accessToken || paymentToken.startsWith("SQUARE_MOCK_TOKEN_")) {
@@ -39,7 +41,7 @@ export async function processSquarePayment(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
-      "Square-Version": "2024-01-18",
+      "Square-Version": apiVersion,
     },
     body: JSON.stringify({
       source_id: paymentToken,

@@ -8,6 +8,7 @@ import {
   requireAuth,
   requireManager,
   type AuthPayload,
+  type AuthRequest,
 } from './auth';
 
 describe('auth', () => {
@@ -305,7 +306,7 @@ describe('auth', () => {
     it('should return null when cookie is missing', () => {
       const req = {
         cookies: {},
-      } as any;
+      } as unknown as AuthRequest;
       
       const token = getTokenFromRequest(req);
       expect(token).toBeNull();
@@ -342,7 +343,7 @@ describe('auth', () => {
       const token = await signToken(payload);
       const req = {
         cookies: { spaflow_session: token },
-      } as any;
+      } as unknown as AuthRequest;
       
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -365,7 +366,7 @@ describe('auth', () => {
     it('should return 401 when token is missing', async () => {
       const req = {
         cookies: {},
-      } as any;
+      } as unknown as AuthRequest;
       
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -384,7 +385,7 @@ describe('auth', () => {
     it('should return 401 when token is invalid', async () => {
       const req = {
         cookies: { spaflow_session: 'invalid.token' },
-      } as any;
+      } as unknown as AuthRequest;
       
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -413,7 +414,7 @@ describe('auth', () => {
       const token = await signToken(payload);
       const req = {
         cookies: { spaflow_session: token },
-      } as any;
+      } as unknown as AuthRequest;
       
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -438,7 +439,7 @@ describe('auth', () => {
       const token = await signToken(payload);
       const req = {
         cookies: { spaflow_session: token },
-      } as any;
+      } as unknown as AuthRequest;
       
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -457,7 +458,7 @@ describe('auth', () => {
     it('should return 401 when token is missing', async () => {
       const req = {
         cookies: {},
-      } as any;
+      } as unknown as AuthRequest;
       
       const res = {
         status: vi.fn().mockReturnThis(),
