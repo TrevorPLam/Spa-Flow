@@ -1,9 +1,11 @@
 import pino from "pino";
+import { getEnv } from "./env";
 
-const isProduction = process.env.NODE_ENV === "production";
+const env = getEnv();
+const isProduction = env.NODE_ENV === "production";
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL ?? "info",
+  level: env.LOG_LEVEL,
   redact: [
     "req.headers.authorization",
     "req.headers.cookie",
@@ -18,3 +20,20 @@ export const logger = pino({
         },
       }),
 });
+
+export function logTransactionError(
+  operation: string,
+  error: unknown,
+  context?: Record<string, unknown>
+): void {
+  logger.error({
+    type: "transaction_error",
+    operation,
+    error: error instanceof Error ? {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    } : String(error),
+    ...context,
+  }, `Transaction failed: ${operation}`);
+}

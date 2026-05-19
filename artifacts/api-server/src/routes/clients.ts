@@ -17,6 +17,9 @@ import {
   GetClientTransactionsParams,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
+import { apiLimiter } from "../middleware/rateLimit";
+import { withCache, buildCacheKey, cacheDel, cacheDelPattern } from "../lib/cache";
+import { logTransactionError } from "../lib/logger";
 
 const router = Router();
 
@@ -42,7 +45,7 @@ function formatClient(c: typeof clientsTable.$inferSelect, isManager: boolean) {
   };
 }
 
-router.get("/clients", requireAuth, async (req, res): Promise<void> => {
+router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListClientsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -70,18 +73,33 @@ router.get("/clients", requireAuth, async (req, res): Promise<void> => {
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   const isManager = (req as AuthRequest).user!.role === "MANAGER";
 
-  const [clients, countResult] = await Promise.all([
-    db.select().from(clientsTable).where(where).orderBy(desc(clientsTable.createdAt)).limit(limit ?? 20).offset(offset),
-    db.select({ count: sql<number>`count(*)::int` }).from(clientsTable).where(where),
-  ]);
+  // Create cache key for search results
+  const cacheKey = buildCacheKey(
+    'clients',
+    'search',
+    search || 'none',
+    membershipStatus || 'none',
+    (page ?? 1).toString(),
+    (limit ?? 20).toString()
+  );
 
-  const total = countResult[0]?.count ?? 0;
-  const formatted = clients.map(c => formatClient(c, isManager));
+  // Cache search results with 1-minute TTL
+  const result = await withCache(cacheKey, 60, async () => {
+    const [clients, countResult] = await Promise.all([
+      db.select().from(clientsTable).where(where).orderBy(desc(clientsTable.createdAt)).limit(limit ?? 20).offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(clientsTable).where(where),
+    ]);
 
-  res.json({ clients: formatted, total, page: page ?? 1, limit: limit ?? 20 });
+    const total = countResult[0]?.count ?? 0;
+    const formatted = clients.map(c => formatClient(c, isManager));
+
+    return { clients: formatted, total, page: page ?? 1, limit: limit ?? 20 };
+  });
+
+  res.json(result);
 });
 
-router.post("/clients", requireAuth, async (req, res): Promise<void> => {
+router.post("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CreateClientBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -138,59 +156,72 @@ router.post("/clients", requireAuth, async (req, res): Promise<void> => {
     description: `Created client profile for ${client.name}`,
   });
 
+  // Invalidate client search cache on new client creation
+  await cacheDelPattern('clients:search:*');
+
   const isManager = actingUser.role === "MANAGER";
   res.status(201).json(formatClient(client, isManager));
 });
 
-router.get("/clients/:id", requireAuth, async (req, res): Promise<void> => {
+router.get("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
-  if (!client) {
+  const actingUser = (req as AuthRequest).user!;
+  const isManager = actingUser.role === "MANAGER";
+  const cacheKey = buildCacheKey('client', params.data.id.toString(), isManager ? 'manager' : 'staff');
+
+  // Cache client lookup with 5-minute TTL
+  const cachedClient = await withCache(cacheKey, 300, async () => {
+    const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
+    if (!client) {
+      return null;
+    }
+
+    if (isManager && (client.dobEncrypted || client.addressEncrypted || client.documentNumberEncrypted)) {
+      await writeAuditLog({
+        userId: parseInt(actingUser.sub),
+        action: "VIEW_PII",
+        resourceType: "client",
+        resourceId: client.id,
+        description: `Manager viewed PII for client ${client.name}`,
+      });
+    }
+
+    // Get active sessions
+    const activeSessions = await db.select().from(rentalSessionsTable)
+      .where(and(eq(rentalSessionsTable.clientId, client.id), eq(rentalSessionsTable.status, "active")));
+
+    const formatted = formatClient(client, isManager);
+    formatted.activeSessions = activeSessions.map(s => ({
+      id: s.id,
+      clientId: s.clientId,
+      clientName: client.name,
+      resourceType: s.resourceType,
+      resourceId: s.resourceId,
+      resourceName: s.resourceName,
+      status: s.status,
+      startTime: s.startTime,
+      expiresAt: s.expiresAt,
+      endTime: s.endTime,
+      amountPaid: s.amountPaid ? parseFloat(s.amountPaid) : null,
+    })) as typeof formatted.activeSessions;
+
+    return formatted;
+  });
+
+  if (!cachedClient) {
     res.status(404).json({ error: "Client not found" });
     return;
   }
 
-  const actingUser = (req as AuthRequest).user!;
-  const isManager = actingUser.role === "MANAGER";
-
-  if (isManager && (client.dobEncrypted || client.addressEncrypted || client.documentNumberEncrypted)) {
-    await writeAuditLog({
-      userId: parseInt(actingUser.sub),
-      action: "VIEW_PII",
-      resourceType: "client",
-      resourceId: client.id,
-      description: `Manager viewed PII for client ${client.name}`,
-    });
-  }
-
-  // Get active sessions
-  const activeSessions = await db.select().from(rentalSessionsTable)
-    .where(and(eq(rentalSessionsTable.clientId, client.id), eq(rentalSessionsTable.status, "active")));
-
-  const formatted = formatClient(client, isManager);
-  formatted.activeSessions = activeSessions.map(s => ({
-    id: s.id,
-    clientId: s.clientId,
-    clientName: client.name,
-    resourceType: s.resourceType,
-    resourceId: s.resourceId,
-    resourceName: s.resourceName,
-    status: s.status,
-    startTime: s.startTime,
-    expiresAt: s.expiresAt,
-    endTime: s.endTime,
-    amountPaid: s.amountPaid ? parseFloat(s.amountPaid) : null,
-  })) as typeof formatted.activeSessions;
-
-  res.json(formatted);
+  res.json(cachedClient);
 });
 
-router.patch("/clients/:id", requireAuth, async (req, res): Promise<void> => {
+router.patch("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = UpdateClientParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -228,10 +259,22 @@ router.patch("/clients/:id", requireAuth, async (req, res): Promise<void> => {
     updates.documentNumberDek = enc.dek;
   }
 
-  const [client] = await db.update(clientsTable).set(updates).where(eq(clientsTable.id, params.data.id)).returning();
-  if (!client) {
-    res.status(404).json({ error: "Client not found" });
-    return;
+  let client: typeof clientsTable.$inferSelect | null = null;
+  try {
+    client = await db.transaction(async (tx) => {
+      const [client] = await tx.update(clientsTable).set(updates).where(eq(clientsTable.id, params.data.id)).returning();
+      if (!client) {
+        throw new Error("Client not found");
+      }
+      return client;
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Client not found") {
+      res.status(404).json({ error: "Client not found" });
+      return;
+    }
+    logTransactionError("client update", error, { clientId: params.data.id });
+    throw error;
   }
 
   const actingUser = (req as AuthRequest).user!;
@@ -243,10 +286,16 @@ router.patch("/clients/:id", requireAuth, async (req, res): Promise<void> => {
     description: `Updated client ${client.name}`,
   });
 
+  // Invalidate cache for this client (both manager and staff versions)
+  await cacheDel(buildCacheKey('client', client.id.toString(), 'manager'));
+  await cacheDel(buildCacheKey('client', client.id.toString(), 'staff'));
+  // Invalidate client search cache
+  await cacheDelPattern('clients:search:*');
+
   res.json(formatClient(client, actingUser.role === "MANAGER"));
 });
 
-router.delete("/clients/:id", requireAuth, async (req, res): Promise<void> => {
+router.delete("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteClientParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -270,10 +319,16 @@ router.delete("/clients/:id", requireAuth, async (req, res): Promise<void> => {
     description: `Deleted client ${client.name}`,
   });
 
+  // Invalidate cache for this client (both manager and staff versions)
+  await cacheDel(buildCacheKey('client', params.data.id.toString(), 'manager'));
+  await cacheDel(buildCacheKey('client', params.data.id.toString(), 'staff'));
+  // Invalidate client search cache
+  await cacheDelPattern('clients:search:*');
+
   res.sendStatus(204);
 });
 
-router.post("/clients/:id/memberships", requireAuth, async (req, res): Promise<void> => {
+router.post("/clients/:id/memberships", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = AddMembershipParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -300,18 +355,25 @@ router.post("/clients/:id/memberships", requireAuth, async (req, res): Promise<v
     expiresAt.setMonth(expiresAt.getMonth() + 6);
   }
 
-  const [membership] = await db.insert(membershipsTable).values({
-    clientId: client.id,
-    type: type as "one_time" | "six_month",
-    purchasedAt,
-    expiresAt,
-  }).returning();
+  const membership = await db.transaction(async (tx) => {
+    const [membership] = await tx.insert(membershipsTable).values({
+      clientId: client.id,
+      type: type as "one_time" | "six_month",
+      purchasedAt,
+      expiresAt,
+    }).returning();
 
-  // Update client membership status
-  await db.update(clientsTable).set({
-    membershipStatus: type as "one_time" | "six_month",
-    membershipExpiresAt: expiresAt,
-  }).where(eq(clientsTable.id, client.id));
+    // Update client membership status
+    await tx.update(clientsTable).set({
+      membershipStatus: type as "one_time" | "six_month",
+      membershipExpiresAt: expiresAt,
+    }).where(eq(clientsTable.id, client.id));
+
+    return membership;
+  }).catch((error) => {
+    logTransactionError("membership addition", error, { clientId: client.id, type });
+    throw error;
+  });
 
   const actingUser = (req as AuthRequest).user!;
   await writeAuditLog({
@@ -322,6 +384,12 @@ router.post("/clients/:id/memberships", requireAuth, async (req, res): Promise<v
     description: `Added ${type} membership for client ${client.name}`,
   });
 
+  // Invalidate cache for this client (both manager and staff versions)
+  await cacheDel(buildCacheKey('client', client.id.toString(), 'manager'));
+  await cacheDel(buildCacheKey('client', client.id.toString(), 'staff'));
+  // Invalidate client search cache
+  await cacheDelPattern('clients:search:*');
+
   res.status(201).json({
     id: membership.id,
     clientId: membership.clientId,
@@ -331,7 +399,7 @@ router.post("/clients/:id/memberships", requireAuth, async (req, res): Promise<v
   });
 });
 
-router.get("/clients/:id/rentals", requireAuth, async (req, res): Promise<void> => {
+router.get("/clients/:id/rentals", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientRentalsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -359,7 +427,7 @@ router.get("/clients/:id/rentals", requireAuth, async (req, res): Promise<void> 
   })));
 });
 
-router.get("/clients/:id/transactions", requireAuth, async (req, res): Promise<void> => {
+router.get("/clients/:id/transactions", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientTransactionsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

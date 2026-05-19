@@ -9,10 +9,37 @@ import * as zod from 'zod';
 
 
 /**
- * @summary Health check
+ * @summary Liveness probe - checks if the application is running
  */
-export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+export const LivenessProbeResponse = zod.object({
+  "status": zod.enum(['ok']),
+  "uptime": zod.number().optional().describe('Process uptime in seconds'),
+  "timestamp": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Readiness probe - checks if dependencies are available
+ */
+export const ReadinessProbeResponse = zod.object({
+  "status": zod.enum(['ready', 'not_ready']),
+  "checks": zod.object({
+  "database": zod.object({
+  "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
+  "message": zod.string().optional().describe('Optional message describing the check result'),
+  "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
+}),
+  "square": zod.object({
+  "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
+  "message": zod.string().optional().describe('Optional message describing the check result'),
+  "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
+}),
+  "twilio": zod.object({
+  "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
+  "message": zod.string().optional().describe('Optional message describing the check result'),
+  "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
+})
+})
 })
 
 

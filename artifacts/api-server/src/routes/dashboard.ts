@@ -2,10 +2,11 @@ import { Router } from "express";
 import { db, lockersTable, roomsTable, transactionsTable, rentalSessionsTable, waitlistTable, clientsTable } from "@workspace/db";
 import { sql, eq, gte, desc } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
+import { apiLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.get("/dashboard", requireAuth, async (req, res): Promise<void> => {
+router.get("/dashboard", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

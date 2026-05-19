@@ -33,7 +33,8 @@ export default function LockersPage() {
   const renew = useRenewLocker();
   const extend = useExtendLocker();
 
-  const selected = lockers.find(l => l.id === selectedLocker);
+  const lockersArray = Array.isArray(lockers) ? lockers : [];
+  const selected = lockersArray.find(l => l.id === selectedLocker);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: getListLockersQueryKey({}) });
@@ -81,7 +82,7 @@ export default function LockersPage() {
         </div>
 
         <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-2">
-          {lockers.map(locker => {
+          {lockersArray.map(locker => {
             const isOccupied = locker.status === "occupied";
             const isReserved = locker.status === "reserved";
             return (

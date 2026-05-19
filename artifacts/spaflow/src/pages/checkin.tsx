@@ -8,12 +8,14 @@ import {
   useListRooms,
   useCalculatePrice,
   useCheckIn,
+  useListProducts,
   getListLockersQueryKey,
   getGetLockersOccupancyQueryKey,
   getListRoomsQueryKey,
   getGetRoomsOccupancyQueryKey,
   getGetDashboardQueryKey,
   getListClientsQueryKey,
+  getListProductsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
@@ -23,11 +25,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Search, User, Lock, DoorOpen, CreditCard, Check } from "lucide-react";
+import { Search, User, Lock, DoorOpen, CreditCard as CreditCardIcon, Check, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { PaymentForm, CreditCard as SquareCreditCard } from "react-square-web-payments-sdk";
 
-type Step = "client" | "resource" | "payment" | "success";
+type Step = "client" | "resource" | "products" | "payment" | "success";
 
 export default function CheckInPage() {
   const queryClient = useQueryClient();
@@ -38,12 +41,12 @@ export default function CheckInPage() {
   const [resourceType, setResourceType] = useState<"locker" | "room">("locker");
   const [selectedResource, setSelectedResource] = useState<{ id: number; name: string } | null>(null);
   const [membershipType, setMembershipType] = useState<"none" | "one_time" | "six_month">("none");
+  const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [lastResult, setLastResult] = useState<{ session: { resourceName: string }; transaction: { total?: number } } | null>(null);
 
-  // Card inputs (mock)
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
+  // Square payment token
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
+  const [cardTokenizationError, setCardTokenizationError] = useState<string | null>(null);
 
   const { data: clientsData } = useListClients(
     { search: search || undefined, limit: 8 },
@@ -56,6 +59,9 @@ export default function CheckInPage() {
   const { data: rooms = [] } = useListRooms(
     { status: "available" },
     { query: { queryKey: getListRoomsQueryKey({ status: "available" }) } }
+  );
+  const { data: products = [] } = useListProducts(
+    { query: { queryKey: getListProductsQueryKey() } }
   );
 
   const calculatePrice = useCalculatePrice();
@@ -70,9 +76,21 @@ export default function CheckInPage() {
     setStep("resource");
   }
 
-  async function handleSelectResource(resource: { id: number; name: string }) {
+  function handleSelectResource(resource: { id: number; name: string }) {
     setSelectedResource(resource);
-    if (!selectedClient) return;
+    setStep("products");
+  }
+
+  function handleProductSelection(productId: number) {
+    setSelectedProductIds(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  }
+
+  async function handleProceedToPayment() {
+    if (!selectedClient || !selectedResource) return;
 
     const effectiveMembership = hasExistingMembership ? selectedClient.membershipStatus : membershipType;
     const result = await calculatePrice.mutateAsync({
@@ -82,14 +100,49 @@ export default function CheckInPage() {
         membershipType: (!hasExistingMembership && membershipType !== "none") ? membershipType : null,
       },
     });
-    setPriceResult(result);
+
+    // Calculate product total
+    const productTotal = products
+      .filter(p => selectedProductIds.includes(p.id))
+      .reduce((sum, p) => sum + p.price, 0);
+
+    // Add product total to the price result
+    const updatedResult = {
+      ...result,
+      subtotal: result.subtotal + productTotal,
+      total: result.total + productTotal,
+    };
+
+    setPriceResult(updatedResult);
     setStep("payment");
+  }
+
+  function handleCardTokenizeResponseReceived(tokenResult: { token: string } | { status: string; errors?: Array<{ message: string }> }, verifiedBuyer?: { token: string } | null) {
+    // Handle successful tokenization
+    if ('token' in tokenResult && tokenResult.token) {
+      setPaymentToken(tokenResult.token);
+      setCardTokenizationError(null);
+    } else if ('status' in tokenResult && tokenResult.status === 'ERROR') {
+      // Handle tokenization errors
+      const errorMessage = tokenResult.errors?.[0]?.message || 'Card tokenization failed';
+      setCardTokenizationError(errorMessage);
+      setPaymentToken(null);
+    }
+  }
+
+  function handleCardTokenizeError(error: Error) {
+    // Provide user-friendly error messages for common Square errors
+    const errorMessage = error.message || "Card tokenization failed";
+    setCardTokenizationError(errorMessage);
+    setPaymentToken(null);
   }
 
   async function handlePayment() {
     if (!selectedClient || !selectedResource) return;
 
-    const token = `SQUARE_MOCK_TOKEN_${Date.now()}`; // TODO: Replace with Square Web Payments SDK tokenization
+    // Use Square token if available, otherwise fall back to mock for development
+    const token = paymentToken || `SQUARE_MOCK_TOKEN_${Date.now()}`;
+    
     checkIn.mutate({
       data: {
         clientId: selectedClient.id,
@@ -98,10 +151,12 @@ export default function CheckInPage() {
         paymentToken: token,
         idempotencyKey: `checkin-${selectedClient.id}-${selectedResource.id}-${Date.now()}`,
         membershipType: (!hasExistingMembership && membershipType !== "none") ? membershipType : null,
+        productIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
       },
     }, {
       onSuccess: (result) => {
         setLastResult(result);
+        setPaymentToken(null); // Reset token after successful payment
         queryClient.invalidateQueries({ queryKey: getListLockersQueryKey({}) });
         queryClient.invalidateQueries({ queryKey: getGetLockersOccupancyQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListRoomsQueryKey({}) });
@@ -110,7 +165,26 @@ export default function CheckInPage() {
         setStep("success");
       },
       onError: (err: unknown) => {
-        const message = (err as { data?: { error?: string } })?.data?.error ?? "Check-in failed";
+        setPaymentToken(null); // Reset token on error
+        let message = "Check-in failed";
+        
+        // Handle specific error types
+        if (typeof err === 'string') {
+          message = err;
+        } else if (err && typeof err === 'object') {
+          const errorObj = err as { data?: { error?: string }; message?: string };
+          message = errorObj.data?.error || errorObj.message || message;
+          
+          // Provide more specific error messages for common payment failures
+          if (message.toLowerCase().includes('declined')) {
+            message = "Payment declined. Please try a different card.";
+          } else if (message.toLowerCase().includes('insufficient')) {
+            message = "Insufficient funds. Please try a different card.";
+          } else if (message.toLowerCase().includes('expired')) {
+            message = "Card has expired. Please use a different card.";
+          }
+        }
+        
         toast({ title: message, variant: "destructive" });
       },
     });
@@ -122,14 +196,14 @@ export default function CheckInPage() {
     setSelectedClient(null);
     setSelectedResource(null);
     setMembershipType("none");
+    setSelectedProductIds([]);
     setPriceResult(null);
-    setCardNumber("");
-    setCardExpiry("");
-    setCardCvv("");
+    setPaymentToken(null);
+    setCardTokenizationError(null);
     setLastResult(null);
   }
 
-  const stepLabels: Step[] = ["client", "resource", "payment", "success"];
+  const stepLabels: Step[] = ["client", "resource", "products", "payment", "success"];
 
   return (
     <Layout>
@@ -141,7 +215,7 @@ export default function CheckInPage() {
 
         {/* Step indicator */}
         <div className="flex items-center gap-2">
-          {(["client", "resource", "payment"] as Step[]).map((s, i) => (
+          {(["client", "resource", "products", "payment"] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={cn(
                 "w-6 h-6 rounded-full text-xs font-semibold flex items-center justify-center",
@@ -152,7 +226,7 @@ export default function CheckInPage() {
                 {stepLabels.indexOf(step) > i ? <Check size={12} /> : i + 1}
               </div>
               <span className="text-xs capitalize text-muted-foreground hidden sm:block">{s}</span>
-              {i < 2 && <div className="h-px w-8 bg-border" />}
+              {i < 3 && <div className="h-px w-8 bg-border" />}
             </div>
           ))}
         </div>
@@ -179,7 +253,7 @@ export default function CheckInPage() {
                   {clientsData.clients.length === 0 && (
                     <li className="px-4 py-3 text-sm text-muted-foreground">No clients found</li>
                   )}
-                  {clientsData.clients.map(c => (
+                  {clientsData.clients?.map(c => (
                     <li key={c.id}>
                       <button
                         data-testid={`button-select-client-${c.id}`}
@@ -270,11 +344,70 @@ export default function CheckInPage() {
           </Card>
         )}
 
+        {/* Step 3: Select products */}
+        {step === "products" && selectedClient && selectedResource && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2"><Package size={14} />Add Products (Optional)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">Select products to add to this check-in</p>
+              
+              {products.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No products available</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {products.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleProductSelection(p.id)}
+                      disabled={p.stock <= 0}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-colors text-left",
+                        selectedProductIds.includes(p.id)
+                          ? "bg-primary/10 border-primary"
+                          : "bg-background border-border hover:bg-muted/50",
+                        p.stock <= 0 && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{p.name}</p>
+                        {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
+                        {p.category && <Badge variant="outline" className="mt-1 text-xs">{p.category}</Badge>}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">${p.price.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">{p.stock} in stock</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {selectedProductIds.length > 0 && (
+                <div className="bg-muted/40 rounded-lg p-3 text-sm">
+                  <div className="flex justify-between font-medium">
+                    <span>Products subtotal</span>
+                    <span>${products.filter(p => selectedProductIds.includes(p.id)).reduce((sum, p) => sum + p.price, 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setStep("resource")}>Back</Button>
+                <Button className="flex-1" onClick={handleProceedToPayment}>
+                  Continue to Payment
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Step 3: Payment */}
         {step === "payment" && selectedClient && selectedResource && priceResult && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2"><CreditCard size={14} />Payment</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><CreditCardIcon size={14} />Payment</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-muted/40 rounded-lg p-4 space-y-2 text-sm">
@@ -306,41 +439,38 @@ export default function CheckInPage() {
                 </div>
               </div>
 
-              {/* Square payment form placeholder */}
-              {/* TODO: Replace with Square Web Payments SDK tokenization */}
+              {/* Square payment form */}
               <div className="space-y-3 border border-border rounded-lg p-4">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Card Information</p>
-                <Input
-                  data-testid="input-card-number"
-                  placeholder="Card number"
-                  value={cardNumber}
-                  onChange={e => setCardNumber(e.target.value)}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    data-testid="input-card-expiry"
-                    placeholder="MM / YY"
-                    value={cardExpiry}
-                    onChange={e => setCardExpiry(e.target.value)}
-                  />
-                  <Input
-                    data-testid="input-card-cvv"
-                    placeholder="CVV"
-                    value={cardCvv}
-                    onChange={e => setCardCvv(e.target.value)}
-                  />
-                </div>
+                {import.meta.env.VITE_SQUARE_APPLICATION_ID ? (
+                  <PaymentForm
+                    applicationId={import.meta.env.VITE_SQUARE_APPLICATION_ID}
+                    locationId={import.meta.env.VITE_SQUARE_LOCATION_ID || ""}
+                    cardTokenizeResponseReceived={handleCardTokenizeResponseReceived}
+                  >
+                    <SquareCreditCard />
+                  </PaymentForm>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Square SDK not configured. Using mock mode for development.
+                    <br />
+                    <span className="text-xs">Set VITE_SQUARE_APPLICATION_ID in .env to enable real payments.</span>
+                  </div>
+                )}
+                {cardTokenizationError && (
+                  <p className="text-sm text-destructive">{cardTokenizationError}</p>
+                )}
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep("resource")}>Back</Button>
+                <Button variant="outline" onClick={() => setStep("products")}>Back</Button>
                 <Button
                   data-testid="button-complete-checkin"
                   className="flex-1"
                   onClick={handlePayment}
-                  disabled={checkIn.isPending}
+                  disabled={checkIn.isPending || (import.meta.env.VITE_SQUARE_APPLICATION_ID && !paymentToken)}
                 >
-                  {checkIn.isPending ? "Processing..." : `Charge $${priceResult.total.toFixed(2)}`}
+                  {checkIn.isPending ? "Processing..." : paymentToken ? `Charge $${priceResult.total.toFixed(2)}` : "Enter Card Details"}
                 </Button>
               </div>
             </CardContent>

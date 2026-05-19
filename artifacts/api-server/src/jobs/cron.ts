@@ -3,6 +3,7 @@ import { db, rentalSessionsTable, lockersTable, roomsTable, waitlistTable } from
 import { eq, lt, and, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { assignNextWaitlistEntry } from "../routes/rooms";
+import { logCacheStats } from "../lib/cache";
 
 // Every 5 minutes: expire rental sessions and resources whose time has lapsed
 cron.schedule("*/5 * * * *", async () => {
@@ -83,6 +84,15 @@ cron.schedule("*/5 * * * *", async () => {
     }
   } catch (err) {
     logger.error({ err }, "Error in cron job");
+  }
+});
+
+// Every hour: log cache statistics
+cron.schedule("0 * * * *", async () => {
+  try {
+    logCacheStats();
+  } catch (err) {
+    logger.error({ err }, "Error logging cache statistics");
   }
 });
 

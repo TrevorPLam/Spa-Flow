@@ -1,5 +1,9 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { validateEnv } from "./lib/env";
+
+// Validate environment variables at startup
+validateEnv();
 
 const rawPort = process.env["PORT"];
 

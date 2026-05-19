@@ -30,11 +30,11 @@ export default function DashboardPage() {
     );
   }
 
-  const lockerPct = data.lockerOccupancy.total > 0
-    ? Math.round((data.lockerOccupancy.occupied / data.lockerOccupancy.total) * 100)
+  const lockerPct = data.lockerOccupancy?.total > 0
+    ? Math.round(((data.lockerOccupancy.occupied ?? 0) / data.lockerOccupancy.total) * 100)
     : 0;
-  const roomPct = data.roomOccupancy.total > 0
-    ? Math.round((data.roomOccupancy.occupied / data.roomOccupancy.total) * 100)
+  const roomPct = data.roomOccupancy?.total > 0
+    ? Math.round(((data.roomOccupancy.occupied ?? 0) / data.roomOccupancy.total) * 100)
     : 0;
 
   return (
@@ -54,7 +54,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Lockers</p>
                   <p className="text-3xl font-bold text-foreground mt-1">{lockerPct}%</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {data.lockerOccupancy.occupied} / {data.lockerOccupancy.total} occupied
+                    {data.lockerOccupancy?.occupied ?? 0} / {data.lockerOccupancy?.total ?? 0} occupied
                   </p>
                 </div>
                 <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -77,7 +77,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rooms</p>
                   <p className="text-3xl font-bold text-foreground mt-1">{roomPct}%</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {data.roomOccupancy.occupied} / {data.roomOccupancy.total} occupied
+                    {data.roomOccupancy?.occupied ?? 0} / {data.roomOccupancy?.total ?? 0} occupied
                   </p>
                 </div>
                 <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -99,7 +99,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Today</p>
                   <p className="text-3xl font-bold text-foreground mt-1">
-                    ${data.todayRevenue.toFixed(2)}
+                    ${(data.todayRevenue ?? 0).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">revenue</p>
                 </div>
@@ -135,15 +135,15 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Clock size={14} />
                 Active Rentals
-                <Badge variant="secondary" className="ml-auto">{data.activeRentals.length}</Badge>
+                <Badge variant="secondary" className="ml-auto">{data.activeRentals?.length ?? 0}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {data.activeRentals.length === 0 ? (
+              {(data.activeRentals?.length ?? 0) === 0 ? (
                 <p className="px-6 pb-6 text-sm text-muted-foreground">No active rentals</p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {data.activeRentals.map(r => (
+                  {data.activeRentals?.map(r => (
                     <li key={r.id} data-testid={`row-rental-${r.id}`} className="px-6 py-3 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-foreground">{r.clientName}</p>
@@ -170,11 +170,11 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {data.recentTransactions.length === 0 ? (
+              {(data.recentTransactions?.length ?? 0) === 0 ? (
                 <p className="px-6 pb-6 text-sm text-muted-foreground">No transactions yet today</p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {data.recentTransactions.map(t => (
+                  {data.recentTransactions?.map(t => (
                     <li key={t.id} data-testid={`row-transaction-${t.id}`} className="px-6 py-3 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-foreground">{t.clientName}</p>

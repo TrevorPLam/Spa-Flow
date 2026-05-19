@@ -3,10 +3,11 @@ import { db, auditLogsTable, usersTable } from "@workspace/db";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { requireManager } from "../lib/auth";
 import { ListAuditLogsQueryParams } from "@workspace/api-zod";
+import { apiLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.get("/audit-logs", requireManager, async (req, res): Promise<void> => {
+router.get("/audit-logs", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListAuditLogsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

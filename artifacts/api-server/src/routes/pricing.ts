@@ -5,10 +5,12 @@ import { requireAuth } from "../lib/auth";
 import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType, type ProductType } from "../lib/pricing";
 import { maybeDecrypt } from "../lib/encryption";
 import { CalculatePriceBody } from "@workspace/api-zod";
+import { apiLimiter } from "../middleware/rateLimit";
+import { withCache, buildCacheKey } from "../lib/cache";
 
 const router = Router();
 
-router.post("/pricing/calculate", requireAuth, async (req, res): Promise<void> => {
+router.post("/pricing/calculate", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CalculatePriceBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -31,26 +33,35 @@ router.post("/pricing/calculate", requireAuth, async (req, res): Promise<void> =
   const clientAge = dob ? calculateAge(dob) : 25;
   const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
 
-  const { subtotal: resourceSubtotal, appliedRules } = calculatePrice({
+  // Create cache key based on pricing parameters
+  const now = new Date();
+  const cacheKey = buildCacheKey(
+    'pricing',
+    resourceType.toUpperCase(),
     customerType,
-    productType: resourceType.toUpperCase() as ProductType,
-    startTime: new Date(),
-    clientAge,
-    hasBirthdayToday,
-  });
+    clientAge.toString(),
+    hasBirthdayToday.toString(),
+    Math.floor(now.getTime() / 3600000).toString() // Hour granularity for time-based pricing
+  );
 
-  const membershipCost = (!client.membershipStatus || client.membershipStatus === "none") && membershipType && membershipType !== "none"
-    ? (membershipType === "one_time" ? 13 : 42)
-    : 0;
+  // Cache pricing calculation with 1-hour TTL
+  const pricingResult = await withCache(
+    cacheKey,
+    3600, // 1 hour TTL
+    async () => {
+      const result = calculatePrice({
+        customerType,
+        productType: resourceType.toUpperCase() as ProductType,
+        startTime: now,
+        clientAge,
+        hasBirthdayToday,
+      });
+      const { tax, total } = computeTotal(result.subtotal);
+      return { ...result, tax, total };
+    }
+  );
 
-  const subtotal = resourceSubtotal + membershipCost;
-  const { tax, total } = computeTotal(subtotal);
-
-  if (membershipCost > 0) {
-    appliedRules.push(`${membershipType === "one_time" ? "One-time" : "6-month"} membership: $${membershipCost}`);
-  }
-
-  res.json({ subtotal, tax, total, appliedRules });
+  res.json(pricingResult);
 });
 
 export default router;

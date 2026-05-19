@@ -1,6 +1,6 @@
-import { pgTable, text, serial, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, pgEnum, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 export const membershipStatusEnum = pgEnum("membership_status", ["none", "one_time", "six_month"]);
 
@@ -23,7 +23,13 @@ export const clientsTable = pgTable("clients", {
   documentNumberDek: text("document_number_dek"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => ({
+  // Indexes for client search and authentication lookups
+  emailIdx: index("idx_clients_email").on(table.email),
+  phoneIdx: index("idx_clients_phone").on(table.phone),
+  memberIdIdx: index("idx_clients_member_id").on(table.memberId),
+  createdAtIdx: index("idx_clients_created_at").on(table.createdAt),
+}));
 
 export const insertClientSchema = createInsertSchema(clientsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertClient = z.infer<typeof insertClientSchema>;

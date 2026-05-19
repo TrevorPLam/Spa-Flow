@@ -32,7 +32,8 @@ export default function RoomsPage() {
   const renew = useRenewRoom();
   const extend = useExtendRoom();
 
-  const selected = rooms.find(r => r.id === selectedRoom);
+  const roomsArray = Array.isArray(rooms) ? rooms : [];
+  const selected = roomsArray.find(r => r.id === selectedRoom);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: getListRoomsQueryKey({}) });
@@ -80,7 +81,7 @@ export default function RoomsPage() {
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-          {rooms.map(room => {
+          {roomsArray.map(room => {
             const isOccupied = room.status === "occupied";
             const isReserved = room.status === "reserved";
             return (

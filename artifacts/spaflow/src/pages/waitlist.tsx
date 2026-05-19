@@ -35,6 +35,7 @@ export default function WaitlistPage() {
   const [selectedClientName, setSelectedClientName] = useState("");
 
   const { data: waitlist = [] } = useListWaitlist({ query: { queryKey: getListWaitlistQueryKey() } });
+  const waitlistArray = Array.isArray(waitlist) ? waitlist : [];
   const { data: clientsData } = useListClients(
     { search: search || undefined, limit: 5 },
     { query: { queryKey: getListClientsQueryKey({ search: search || undefined, limit: 5 }) } }
@@ -86,7 +87,7 @@ export default function WaitlistPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ClipboardList size={20} />
             Waitlist
-            <Badge variant="secondary" className="ml-1">{waitlist.length}</Badge>
+            <Badge variant="secondary" className="ml-1">{waitlistArray.length}</Badge>
           </h1>
           <p className="text-muted-foreground text-sm">Clients waiting for a private room</p>
         </div>
@@ -109,7 +110,7 @@ export default function WaitlistPage() {
             </div>
             {search && !selectedClientId && clientsData?.clients && (
               <ul className="border border-border rounded-md divide-y divide-border overflow-hidden">
-                {clientsData.clients.map(c => (
+                {clientsData.clients?.map(c => (
                   <li key={c.id}>
                     <button
                       data-testid={`button-select-client-${c.id}`}
@@ -139,11 +140,11 @@ export default function WaitlistPage() {
         {/* Waitlist */}
         <Card>
           <CardContent className="p-0">
-            {waitlist.length === 0 ? (
+            {waitlistArray.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Waitlist is empty</div>
             ) : (
               <ul className="divide-y divide-border">
-                {waitlist.map(entry => (
+                {waitlistArray.map(entry => (
                   <li key={entry.id} data-testid={`row-waitlist-${entry.id}`} className="px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">

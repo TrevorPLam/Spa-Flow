@@ -34,18 +34,35 @@ tags:
     description: Audit logging
 
 paths:
-  /healthz:
+  /healthz/live:
     get:
-      operationId: healthCheck
+      operationId: livenessProbe
       tags: [health]
-      summary: Health check
+      summary: Liveness probe - checks if the application is running
       responses:
         "200":
-          description: Healthy
+          description: Application is alive
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                $ref: "#/components/schemas/LivenessResponse"
+        "503":
+          description: Application is not alive
+
+  /healthz/ready:
+    get:
+      operationId: readinessProbe
+      tags: [health]
+      summary: Readiness probe - checks if dependencies are available
+      responses:
+        "200":
+          description: All dependencies are healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          description: One or more dependencies are unhealthy
 
   # Auth
   /auth/login:
@@ -853,12 +870,51 @@ paths:
 
 components:
   schemas:
-    HealthStatus:
+    LivenessResponse:
       type: object
       required: [status]
       properties:
         status:
           type: string
+          enum: [ok]
+        uptime:
+          type: number
+          description: Process uptime in seconds
+        timestamp:
+          type: string
+          format: date-time
+
+    ReadinessResponse:
+      type: object
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: object
+          required: [database, square, twilio]
+          properties:
+            database:
+              $ref: "#/components/schemas/HealthCheck"
+            square:
+              $ref: "#/components/schemas/HealthCheck"
+            twilio:
+              $ref: "#/components/schemas/HealthCheck"
+
+    HealthCheck:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        message:
+          type: string
+          description: Optional message describing the check result
+        latency_ms:
+          type: number
+          description: Latency of the health check in milliseconds
 
     # Auth
     LoginInput:

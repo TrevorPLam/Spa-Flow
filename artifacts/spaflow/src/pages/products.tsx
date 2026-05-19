@@ -39,6 +39,7 @@ export default function ProductsPage() {
   const [showNew, setShowNew] = useState(false);
 
   const { data: products = [], isLoading } = useListProducts({ query: { queryKey: getListProductsQueryKey() } });
+  const productsArray = Array.isArray(products) ? products : [];
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -84,7 +85,7 @@ export default function ProductsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2"><ShoppingBag size={20} />Products</h1>
-            <p className="text-sm text-muted-foreground">{products.length} items in inventory</p>
+            <p className="text-sm text-muted-foreground">{productsArray.length} items in inventory</p>
           </div>
           {isManager && (
             <Button data-testid="button-new-product" size="sm" onClick={openNew} className="gap-2">
@@ -97,7 +98,7 @@ export default function ProductsPage() {
           <CardContent className="p-0">
             {isLoading ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div>
-            ) : products.length === 0 ? (
+            ) : productsArray.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">No products yet</div>
             ) : (
               <table className="w-full text-sm">
@@ -111,7 +112,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {products.map(p => (
+                  {productsArray.map(p => (
                     <tr key={p.id} data-testid={`row-product-${p.id}`}>
                       <td className="px-6 py-4 font-medium">{p.name}</td>
                       <td className="px-6 py-4 text-muted-foreground">{p.category || "—"}</td>

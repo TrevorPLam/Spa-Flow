@@ -3,10 +3,11 @@ import { db, transactionsTable, clientsTable } from "@workspace/db";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { ListTransactionsQueryParams } from "@workspace/api-zod";
+import { apiLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.get("/transactions", requireAuth, async (req, res): Promise<void> => {
+router.get("/transactions", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListTransactionsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

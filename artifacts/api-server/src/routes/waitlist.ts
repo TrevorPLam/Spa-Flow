@@ -4,10 +4,29 @@ import { eq, sql, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { AddToWaitlistBody, RemoveFromWaitlistParams, ConfirmWaitlistAssignmentParams } from "@workspace/api-zod";
+import { apiLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
-async function formatEntry(w: typeof waitlistTable.$inferSelect) {
+function formatEntry(w: typeof waitlistTable.$inferSelect, clientMap: Map<number, { name: string; phone: string | null }>, roomMap: Map<number, string>) {
+  const client = clientMap.get(w.clientId);
+  const room = w.assignedRoomId ? roomMap.get(w.assignedRoomId) : null;
+  return {
+    id: w.id,
+    clientId: w.clientId,
+    clientName: client?.name ?? null,
+    clientPhone: client?.phone ?? null,
+    position: w.position,
+    status: w.status,
+    assignedRoomId: w.assignedRoomId,
+    assignedRoomName: room ?? null,
+    assignedAt: w.assignedAt,
+    confirmBy: w.confirmBy,
+    createdAt: w.createdAt,
+  };
+}
+
+async function formatEntrySingle(w: typeof waitlistTable.$inferSelect) {
   const [client] = await db.select({ name: clientsTable.name, phone: clientsTable.phone })
     .from(clientsTable).where(eq(clientsTable.id, w.clientId));
   const [room] = w.assignedRoomId
@@ -28,15 +47,36 @@ async function formatEntry(w: typeof waitlistTable.$inferSelect) {
   };
 }
 
-router.get("/waitlist", requireAuth, async (req, res): Promise<void> => {
+router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const entries = await db.select().from(waitlistTable)
     .where(sql`status NOT IN ('confirmed', 'expired')`)
     .orderBy(waitlistTable.position);
-  const formatted = await Promise.all(entries.map(formatEntry));
+
+  // Batch fetch client data
+  const clientIds = [...new Set(entries.map(e => e.clientId))];
+  const clientMap = new Map<number, { name: string; phone: string | null }>();
+  if (clientIds.length > 0) {
+    const clients = await db.select({ id: clientsTable.id, name: clientsTable.name, phone: clientsTable.phone })
+      .from(clientsTable)
+      .where(sql`${clientsTable.id} = ANY(${clientIds})`);
+    clients.forEach(c => clientMap.set(c.id, { name: c.name, phone: c.phone }));
+  }
+
+  // Batch fetch room data
+  const roomIds = [...new Set(entries.map(e => e.assignedRoomId).filter((id): id is number => id !== null))];
+  const roomMap = new Map<number, string>();
+  if (roomIds.length > 0) {
+    const rooms = await db.select({ id: roomsTable.id, name: roomsTable.name })
+      .from(roomsTable)
+      .where(sql`${roomsTable.id} = ANY(${roomIds})`);
+    rooms.forEach(r => roomMap.set(r.id, r.name));
+  }
+
+  const formatted = entries.map(e => formatEntry(e, clientMap, roomMap));
   res.json(formatted);
 });
 
-router.post("/waitlist", requireAuth, async (req, res): Promise<void> => {
+router.post("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = AddToWaitlistBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -76,10 +116,10 @@ router.post("/waitlist", requireAuth, async (req, res): Promise<void> => {
     description: `Added ${client.name} to waitlist at position ${position}`,
   });
 
-  res.status(201).json(await formatEntry(entry));
+  res.status(201).json(await formatEntrySingle(entry));
 });
 
-router.delete("/waitlist/:id", requireAuth, async (req, res): Promise<void> => {
+router.delete("/waitlist/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = RemoveFromWaitlistParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -100,7 +140,7 @@ router.delete("/waitlist/:id", requireAuth, async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-router.post("/waitlist/:id/confirm", requireAuth, async (req, res): Promise<void> => {
+router.post("/waitlist/:id/confirm", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ConfirmWaitlistAssignmentParams.safeParse(req.params);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -129,7 +169,7 @@ router.post("/waitlist/:id/confirm", requireAuth, async (req, res): Promise<void
   });
 
   const updated = await db.select().from(waitlistTable).where(eq(waitlistTable.id, entry.id));
-  res.json(await formatEntry(updated[0]));
+  res.json(await formatEntrySingle(updated[0]));
 });
 
 export default router;

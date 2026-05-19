@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { requireAuth, requireManager, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { CreateProductBody, UpdateProductParams, UpdateProductBody, DeleteProductParams } from "@workspace/api-zod";
+import { apiLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
@@ -18,12 +19,12 @@ function formatProduct(p: typeof productsTable.$inferSelect) {
   };
 }
 
-router.get("/products", requireAuth, async (req, res): Promise<void> => {
+router.get("/products", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const products = await db.select().from(productsTable).orderBy(productsTable.name);
   res.json(products.map(formatProduct));
 });
 
-router.post("/products", requireManager, async (req, res): Promise<void> => {
+router.post("/products", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CreateProductBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -43,7 +44,7 @@ router.post("/products", requireManager, async (req, res): Promise<void> => {
   res.status(201).json(formatProduct(product));
 });
 
-router.patch("/products/:id", requireManager, async (req, res): Promise<void> => {
+router.patch("/products/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = UpdateProductParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
@@ -65,7 +66,7 @@ router.patch("/products/:id", requireManager, async (req, res): Promise<void> =>
   res.json(formatProduct(product));
 });
 
-router.delete("/products/:id", requireManager, async (req, res): Promise<void> => {
+router.delete("/products/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteProductParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 

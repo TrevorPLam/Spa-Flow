@@ -1,5 +1,4 @@
 import { db, lockersTable, roomsTable, usersTable } from "@workspace/db";
-import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 async function seed() {
@@ -11,11 +10,9 @@ async function seed() {
     status: "available" as const,
   }));
 
-  await db.execute(sql`
-    INSERT INTO lockers (name, status)
-    SELECT unnest(${lockerValues.map(l => l.name)}::text[]), 'available'::resource_status
-    ON CONFLICT (name) DO NOTHING
-  `);
+  for (const locker of lockerValues) {
+    await db.insert(lockersTable).values(locker).onConflictDoNothing();
+  }
   console.log("Lockers seeded (L1-L167)");
 
   // Seed rooms R1-R38
@@ -24,32 +21,32 @@ async function seed() {
     status: "available" as const,
   }));
 
-  await db.execute(sql`
-    INSERT INTO rooms (name, status)
-    SELECT unnest(${roomValues.map(r => r.name)}::text[]), 'available'::resource_status
-    ON CONFLICT (name) DO NOTHING
-  `);
+  for (const room of roomValues) {
+    await db.insert(roomsTable).values(room).onConflictDoNothing();
+  }
   console.log("Rooms seeded (R1-R38)");
 
   // Seed default admin user
   const adminPassword = process.env.ADMIN_PASSWORD ?? "SpaFlow2024!";
   const adminHash = await bcrypt.hash(adminPassword, 12);
 
-  await db.execute(sql`
-    INSERT INTO users (email, name, password_hash, role)
-    VALUES ('admin@spaflow.com', 'Admin', ${adminHash}, 'MANAGER')
-    ON CONFLICT (email) DO NOTHING
-  `);
+  await db.insert(usersTable).values({
+    email: 'admin@spaflow.com',
+    name: 'Admin',
+    passwordHash: adminHash,
+    role: 'MANAGER'
+  }).onConflictDoNothing();
   console.log(`Admin user created: admin@spaflow.com / ${adminPassword}`);
 
   // Seed a staff user
   const staffPassword = "Staff2024!";
   const staffHash = await bcrypt.hash(staffPassword, 12);
-  await db.execute(sql`
-    INSERT INTO users (email, name, password_hash, role)
-    VALUES ('staff@spaflow.com', 'Staff Member', ${staffHash}, 'STAFF')
-    ON CONFLICT (email) DO NOTHING
-  `);
+  await db.insert(usersTable).values({
+    email: 'staff@spaflow.com',
+    name: 'Staff Member',
+    passwordHash: staffHash,
+    role: 'STAFF'
+  }).onConflictDoNothing();
   console.log(`Staff user created: staff@spaflow.com / ${staffPassword}`);
 
   console.log("Seeding complete!");

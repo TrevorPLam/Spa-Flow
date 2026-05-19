@@ -47,3 +47,10 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Environment variables
+.env
+.env.development
+.env.staging
+.env.production
+.env.test

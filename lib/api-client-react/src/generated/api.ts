@@ -30,12 +30,12 @@ import type {
   ClientList,
   ClientUpdate,
   Dashboard,
-  HealthStatus,
   ListAuditLogsParams,
   ListClientsParams,
   ListLockersParams,
   ListRoomsParams,
   ListTransactionsParams,
+  LivenessResponse,
   Locker,
   LoginInput,
   Membership,
@@ -46,6 +46,7 @@ import type {
   Product,
   ProductInput,
   ProductUpdate,
+  ReadinessResponse,
   RenewInput,
   RentalSession,
   Room,
@@ -70,20 +71,20 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export const getHealthCheckUrl = () => {
+export const getLivenessProbeUrl = () => {
 
 
 
 
-  return `/api/healthz`
+  return `/api/healthz/live`
 }
 
 /**
- * @summary Health check
+ * @summary Liveness probe - checks if the application is running
  */
-export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
+export const livenessProbe = async ( options?: RequestInit): Promise<LivenessResponse> => {
 
-  return customFetch<HealthStatus>(getHealthCheckUrl(),
+  return customFetch<LivenessResponse>(getLivenessProbeUrl(),
   {
     ...options,
     method: 'GET'
@@ -96,45 +97,122 @@ export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus>
 
 
 
-export const getHealthCheckQueryKey = () => {
+export const getLivenessProbeQueryKey = () => {
     return [
-    `/api/healthz`
+    `/api/healthz/live`
     ] as const;
     }
 
 
-export const getHealthCheckQueryOptions = <TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getLivenessProbeQueryOptions = <TData = Awaited<ReturnType<typeof livenessProbe>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof livenessProbe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getLivenessProbeQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({ signal }) => healthCheck({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof livenessProbe>>> = ({ signal }) => livenessProbe({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof livenessProbe>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type HealthCheckQueryResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>
-export type HealthCheckQueryError = ErrorType<unknown>
+export type LivenessProbeQueryResult = NonNullable<Awaited<ReturnType<typeof livenessProbe>>>
+export type LivenessProbeQueryError = ErrorType<void>
 
 
 /**
- * @summary Health check
+ * @summary Liveness probe - checks if the application is running
  */
 
-export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useLivenessProbe<TData = Awaited<ReturnType<typeof livenessProbe>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof livenessProbe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getHealthCheckQueryOptions(options)
+  const queryOptions = getLivenessProbeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReadinessProbeUrl = () => {
+
+
+
+
+  return `/api/healthz/ready`
+}
+
+/**
+ * @summary Readiness probe - checks if dependencies are available
+ */
+export const readinessProbe = async ( options?: RequestInit): Promise<ReadinessResponse> => {
+
+  return customFetch<ReadinessResponse>(getReadinessProbeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReadinessProbeQueryKey = () => {
+    return [
+    `/api/healthz/ready`
+    ] as const;
+    }
+
+
+export const getReadinessProbeQueryOptions = <TData = Awaited<ReturnType<typeof readinessProbe>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readinessProbe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReadinessProbeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof readinessProbe>>> = ({ signal }) => readinessProbe({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readinessProbe>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReadinessProbeQueryResult = NonNullable<Awaited<ReturnType<typeof readinessProbe>>>
+export type ReadinessProbeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Readiness probe - checks if dependencies are available
+ */
+
+export function useReadinessProbe<TData = Awaited<ReturnType<typeof readinessProbe>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof readinessProbe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReadinessProbeQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

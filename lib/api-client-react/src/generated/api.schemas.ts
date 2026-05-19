@@ -5,8 +5,54 @@
  * SpaFlow - Spa Management System API
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
+export type LivenessResponseStatus = typeof LivenessResponseStatus[keyof typeof LivenessResponseStatus];
+
+
+export const LivenessResponseStatus = {
+  ok: 'ok',
+} as const;
+
+export interface LivenessResponse {
+  status: LivenessResponseStatus;
+  /** Process uptime in seconds */
+  uptime?: number;
+  timestamp?: string;
+}
+
+export type ReadinessResponseStatus = typeof ReadinessResponseStatus[keyof typeof ReadinessResponseStatus];
+
+
+export const ReadinessResponseStatus = {
+  ready: 'ready',
+  not_ready: 'not_ready',
+} as const;
+
+export type HealthCheckStatus = typeof HealthCheckStatus[keyof typeof HealthCheckStatus];
+
+
+export const HealthCheckStatus = {
+  healthy: 'healthy',
+  unhealthy: 'unhealthy',
+  degraded: 'degraded',
+} as const;
+
+export interface HealthCheck {
+  status: HealthCheckStatus;
+  /** Optional message describing the check result */
+  message?: string;
+  /** Latency of the health check in milliseconds */
+  latency_ms?: number;
+}
+
+export type ReadinessResponseChecks = {
+  database: HealthCheck;
+  square: HealthCheck;
+  twilio: HealthCheck;
+};
+
+export interface ReadinessResponse {
+  status: ReadinessResponseStatus;
+  checks: ReadinessResponseChecks;
 }
 
 export interface LoginInput {

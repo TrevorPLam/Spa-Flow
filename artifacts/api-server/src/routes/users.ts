@@ -5,10 +5,11 @@ import { eq } from "drizzle-orm";
 import { requireManager, requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { CreateUserBody, UpdateUserBody, UpdateUserParams, DeleteUserParams } from "@workspace/api-zod";
+import { apiLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
-router.get("/users", requireManager, async (req, res): Promise<void> => {
+router.get("/users", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const users = await db.select({
     id: usersTable.id,
     email: usersTable.email,
@@ -19,7 +20,7 @@ router.get("/users", requireManager, async (req, res): Promise<void> => {
   res.json(users);
 });
 
-router.post("/users", requireManager, async (req, res): Promise<void> => {
+router.post("/users", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CreateUserBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -54,7 +55,7 @@ router.post("/users", requireManager, async (req, res): Promise<void> => {
   res.status(201).json(user);
 });
 
-router.patch("/users/:id", requireManager, async (req, res): Promise<void> => {
+router.patch("/users/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = UpdateUserParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -102,7 +103,7 @@ router.patch("/users/:id", requireManager, async (req, res): Promise<void> => {
   res.json(user);
 });
 
-router.delete("/users/:id", requireManager, async (req, res): Promise<void> => {
+router.delete("/users/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteUserParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

@@ -55,19 +55,18 @@ export function Sidebar() {
             const active = location === href || location.startsWith(href + "/");
             return (
               <li key={href}>
-                <Link href={href}>
-                  <a
-                    data-testid={`nav-${label.toLowerCase().replace(/\s/g, "-")}`}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      active
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    )}
-                  >
-                    <Icon size={16} />
-                    {label}
-                  </a>
+                <Link
+                  href={href}
+                  data-testid={`nav-${label.toLowerCase().replace(/\s/g, "-")}`}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    active
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <Icon size={16} />
+                  {label}
                 </Link>
               </li>
             );
@@ -84,19 +83,18 @@ export function Sidebar() {
                 const active = location === href;
                 return (
                   <li key={href}>
-                    <Link href={href}>
-                      <a
-                        data-testid={`nav-${label.toLowerCase().replace(/\s/g, "-")}`}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                          active
-                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <Icon size={16} />
-                        {label}
-                      </a>
+                    <Link
+                      href={href}
+                      data-testid={`nav-${label.toLowerCase().replace(/\s/g, "-")}`}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                        active
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <Icon size={16} />
+                      {label}
                     </Link>
                   </li>
                 );
