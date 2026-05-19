@@ -893,13 +893,15 @@ components:
           enum: [ready, not_ready]
         checks:
           type: object
-          required: [database, square, twilio]
+          required: [database, square, twilio, redis]
           properties:
             database:
               $ref: "#/components/schemas/HealthCheck"
             square:
               $ref: "#/components/schemas/HealthCheck"
             twilio:
+              $ref: "#/components/schemas/HealthCheck"
+            redis:
               $ref: "#/components/schemas/HealthCheck"
 
     HealthCheck:

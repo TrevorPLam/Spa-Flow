@@ -1,3 +1,5 @@
+import { DEFAULT_TAX_RATE } from "./constants";
+
 export type CustomerType = "MEMBER" | "NON_MEMBER";
 export type ProductType = "LOCKER" | "ROOM";
 
@@ -92,7 +94,7 @@ export function getTaxRate(): number {
     const parsed = parseFloat(raw);
     if (!isNaN(parsed)) return parsed;
   }
-  return 0.08875; // NYC default
+  return DEFAULT_TAX_RATE;
 }
 
 export function computeTotal(subtotal: number): { tax: number; total: number } {

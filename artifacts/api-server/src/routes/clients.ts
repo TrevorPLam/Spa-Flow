@@ -20,6 +20,7 @@ import { nanoid } from "nanoid";
 import { apiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDel, cacheDelPattern } from "../lib/cache";
 import { logTransactionError } from "../lib/logger";
+import { DEFAULT_PAGE_SIZE } from "../lib/constants";
 
 const router = Router();
 
@@ -53,7 +54,7 @@ router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> 
   }
 
   const { search, membershipStatus, page, limit } = parsed.data;
-  const offset = ((page ?? 1) - 1) * (limit ?? 20);
+  const offset = ((page ?? 1) - 1) * (limit ?? DEFAULT_PAGE_SIZE);
 
   let conditions = [];
   if (search) {
@@ -80,20 +81,20 @@ router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> 
     search || 'none',
     membershipStatus || 'none',
     (page ?? 1).toString(),
-    (limit ?? 20).toString()
+    (limit ?? DEFAULT_PAGE_SIZE).toString()
   );
 
   // Cache search results with 1-minute TTL
   const result = await withCache(cacheKey, 60, async () => {
     const [clients, countResult] = await Promise.all([
-      db.select().from(clientsTable).where(where).orderBy(desc(clientsTable.createdAt)).limit(limit ?? 20).offset(offset),
+      db.select().from(clientsTable).where(where).orderBy(desc(clientsTable.createdAt)).limit(limit ?? DEFAULT_PAGE_SIZE).offset(offset),
       db.select({ count: sql<number>`count(*)::int` }).from(clientsTable).where(where),
     ]);
 
     const total = countResult[0]?.count ?? 0;
     const formatted = clients.map(c => formatClient(c, isManager));
 
-    return { clients: formatted, total, page: page ?? 1, limit: limit ?? 20 };
+    return { clients: formatted, total, page: page ?? 1, limit: limit ?? DEFAULT_PAGE_SIZE };
   });
 
   res.json(result);

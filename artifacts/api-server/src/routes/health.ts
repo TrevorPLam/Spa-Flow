@@ -3,6 +3,7 @@ import { LivenessResponse, ReadinessResponse, HealthCheckStatus } from "@workspa
 import { db, pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { getTwilioCredentials, getTwilioAuthHeader } from "../lib/env";
+import { getRedisClient } from "../lib/cache";
 
 const router: IRouter = Router();
 
@@ -124,6 +125,34 @@ async function checkTwilio(): Promise<{ status: HealthCheckStatus; message?: str
   }
 }
 
+// Helper function to check Redis connectivity
+async function checkRedis(): Promise<{ status: HealthCheckStatus; message?: string; latency_ms: number }> {
+  const startTime = Date.now();
+  try {
+    const client = getRedisClient();
+    
+    // Simple PING command to check Redis connection
+    const result = await client.ping();
+    
+    if (result === 'PONG') {
+      return { status: "healthy", latency_ms: Date.now() - startTime };
+    } else {
+      return { 
+        status: "unhealthy", 
+        message: "Redis ping failed",
+        latency_ms: Date.now() - startTime 
+      };
+    }
+  } catch (error) {
+    logger.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Redis health check failed");
+    return { 
+      status: "degraded", 
+      message: error instanceof Error ? error.message : "Unknown Redis error",
+      latency_ms: Date.now() - startTime 
+    };
+  }
+}
+
 // Liveness probe - simple check if application is running
 // Should be fast (<100ms) and avoid I/O operations that could fail
 router.get("/healthz/live", (_req, res) => {
@@ -139,10 +168,11 @@ router.get("/healthz/live", (_req, res) => {
 // Readiness probe - checks if dependencies are available
 // Should check database, external services
 router.get("/healthz/ready", async (_req, res) => {
-  const [database, square, twilio] = await Promise.all([
+  const [database, square, twilio, redis] = await Promise.all([
     checkDatabase(),
     checkSquare(),
     checkTwilio(),
+    checkRedis(),
   ]);
 
   // Determine overall readiness
@@ -156,6 +186,7 @@ router.get("/healthz/ready", async (_req, res) => {
       database,
       square,
       twilio,
+      redis,
     },
   };
 

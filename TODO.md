@@ -253,7 +253,7 @@ Test startup with missing variables, invalid values, valid config.
 ---
 
 ## Task 7: Database Pool
-- [ ] PERF-003.1 | Status: PENDING | Priority: HIGH
+- [x] PERF-003.1 | Status: COMPLETED | Priority: HIGH
 
 ### Related Files
 `lib/db/src/index.ts`
@@ -289,7 +289,7 @@ Test pool behavior under concurrent load.
 ---
 
 ## Task 8: Error Sanitization
-- [ ] SEC-005 | Status: PENDING | Priority: HIGH
+- [x] SEC-005 | Status: COMPLETED | Priority: HIGH
 
 ### Related Files
 `artifacts/api-server/src/lib/square.ts`
@@ -321,7 +321,7 @@ Test payment failures, verify error messages sanitized.
 ---
 
 ## Task 9: Graceful Shutdown
-- [ ] OPS-004 | Status: PENDING | Priority: HIGH
+- [x] OPS-004 | Status: COMPLETED | Priority: HIGH
 
 ### Related Files
 `artifacts/api-server/src/index.ts`
@@ -365,7 +365,7 @@ Test shutdown during active requests, verify connections closed.
 ---
 
 ## Task 10: DevOps Foundation
-- [ ] DEVOPS-002 | Status: PENDING | Priority: HIGH
+- [x] DEVOPS-002 | Status: COMPLETED | Priority: HIGH
 
 ### Related Files
 `lib/db/drizzle.config.ts`, `package.json`, `.github/workflows/`
@@ -422,7 +422,7 @@ Document migration process, commands, troubleshooting, rollback.
 ---
 
 ## Task 11: Health Monitoring
-- [ ] OPS-005 | Status: PENDING | Priority: HIGH
+- [x] OPS-005 | Status: COMPLETED | Priority: HIGH
 
 ### Related Files
 `artifacts/api-server/src/routes/health.ts`, `artifacts/api-server/src/app.ts`
@@ -462,7 +462,7 @@ Test health checks with dependency failures, verify request IDs in logs.
 ---
 
 ## Task 12: Code Quality
-- [ ] QUAL-001 | Status: PENDING | Priority: MEDIUM
+- [x] QUAL-001 | Status: COMPLETED | Priority: MEDIUM
 
 ### Related Files
 Multiple route files, `artifacts/api-server/src/lib/constants.ts` (new)

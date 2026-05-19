@@ -5,6 +5,15 @@ export interface PaymentResult {
   status: string;
 }
 
+interface SquareError {
+  errors?: Array<{
+    category?: string;
+    code?: string;
+    detail?: string;
+    field?: string;
+  }>;
+}
+
 export async function processSquarePayment(
   paymentToken: string,
   amountCents: number,
@@ -44,8 +53,17 @@ export async function processSquarePayment(
   });
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(`Square payment failed: ${JSON.stringify(err)}`);
+    const err = (await response.json()) as SquareError;
+    
+    // Log full error details server-side for debugging
+    logger.error({ 
+      squareError: err,
+      amountCents,
+      idempotencyKey 
+    }, "Square payment failed");
+    
+    // Provide sanitized, user-friendly error message
+    throw new Error(`Payment processing failed. Please try again or contact support.`);
   }
 
   const data = (await response.json()) as { payment: { id: string; status: string } };

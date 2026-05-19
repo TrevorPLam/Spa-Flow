@@ -38,6 +38,11 @@ export const ReadinessProbeResponse = zod.object({
   "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
   "message": zod.string().optional().describe('Optional message describing the check result'),
   "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
+}),
+  "redis": zod.object({
+  "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
+  "message": zod.string().optional().describe('Optional message describing the check result'),
+  "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
 })
 })
 })

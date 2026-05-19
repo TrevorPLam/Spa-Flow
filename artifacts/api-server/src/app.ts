@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import helmet from "helmet";
 import csrf from "csrf";
+import { randomUUID } from "node:crypto";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { logCacheStats } from "./lib/cache";
@@ -11,6 +12,14 @@ import { getEnv } from "./lib/env";
 import "./jobs/cron";
 
 const app: Express = express();
+
+// Request ID generation middleware - should be first in the middleware chain
+const requestIdMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const requestId = req.headers['x-request-id'] as string || randomUUID();
+  req.id = requestId;
+  res.setHeader('X-Request-ID', requestId);
+  next();
+};
 
 // CSRF token generation and validation
 const csrfTokens = new csrf();
@@ -52,6 +61,9 @@ const csrfTokenMiddleware = (req: Request, res: Response, next: NextFunction) =>
   res.locals.csrfToken = token;
   next();
 };
+
+// Request ID middleware - must be first in the chain
+app.use(requestIdMiddleware);
 
 // Security middleware
 app.use(helmet({

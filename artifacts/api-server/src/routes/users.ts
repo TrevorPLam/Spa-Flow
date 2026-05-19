@@ -6,6 +6,7 @@ import { requireManager, requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { CreateUserBody, UpdateUserBody, UpdateUserParams, DeleteUserParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
+import { BCRYPT_ROUNDS } from "../lib/constants";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.post("/users", requireManager, apiLimiter, async (req, res): Promise<void
   }
 
   const { email, name, password, role } = parsed.data;
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
   const [user] = await db.insert(usersTable).values({
     email,
@@ -72,7 +73,7 @@ router.patch("/users/:id", requireManager, apiLimiter, async (req, res): Promise
   if (parsed.data.name) updates.name = parsed.data.name;
   if (parsed.data.role) updates.role = parsed.data.role;
   if (parsed.data.password) {
-    updates.passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    updates.passwordHash = await bcrypt.hash(parsed.data.password, BCRYPT_ROUNDS);
   }
 
   const [user] = await db.update(usersTable)

@@ -9,6 +9,7 @@ import { maybeDecrypt } from "../lib/encryption";
 import { CheckInBody } from "@workspace/api-zod";
 import { checkinLimiter } from "../middleware/rateLimit";
 import { logTransactionError } from "../lib/logger";
+import { SESSION_DURATION_MS, MEMBERSHIP_ONE_TIME_COST, MEMBERSHIP_SIX_MONTH_COST } from "../lib/constants";
 
 const router = Router();
 
@@ -75,7 +76,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   let effectiveMembershipStatus = client.membershipStatus;
 
   if (membershipType && client.membershipStatus === "none") {
-    membershipCost = membershipType === "one_time" ? 13 : 42;
+    membershipCost = membershipType === "one_time" ? MEMBERSHIP_ONE_TIME_COST : MEMBERSHIP_SIX_MONTH_COST;
     effectiveMembershipStatus = membershipType;
   }
 
@@ -106,7 +107,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   );
 
   const startTime = new Date();
-  const expiresAt = new Date(startTime.getTime() + 6 * 60 * 60 * 1000);
+  const expiresAt = new Date(startTime.getTime() + SESSION_DURATION_MS);
 
   // Wrap all database operations in a transaction for atomicity
   const [session, txn, membership] = await db.transaction(async (tx) => {
@@ -212,13 +213,8 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     description: `Checked in client ${client.name} to ${resourceType} ${resourceName}`,
   });
 
-  if (!session || !txn) {
-    res.status(500).json({ error: "Failed to complete check-in" });
-    return;
-  }
-
-  // Type guards to ensure we have the correct types
-  if (!('resourceType' in session) || !('amount' in txn)) {
+  // Type guards to narrow union types from transaction
+  if (!session || !('resourceType' in session) || !txn || !('amount' in txn)) {
     res.status(500).json({ error: "Failed to complete check-in" });
     return;
   }

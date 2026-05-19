@@ -18,6 +18,7 @@ import {
 } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError } from "../lib/logger";
+import { LOCKER_TOTAL, SESSION_DURATION_MS, EXTENSION_DURATION_MS, EXTENSION_SURCHARGE_DIVISOR } from "../lib/constants";
 
 const router = Router();
 
@@ -63,7 +64,7 @@ router.get("/lockers/occupancy", requireAuth, apiLimiter, async (req, res): Prom
     count: sql<number>`count(*)::int`,
   }).from(lockersTable).groupBy(lockersTable.status);
 
-  const result = { total: 167, available: 0, occupied: 0, reserved: 0 };
+  const result = { total: LOCKER_TOTAL, available: 0, occupied: 0, reserved: 0 };
   stats.forEach(s => {
     if (s.status === "available") result.available = s.count;
     else if (s.status === "occupied") result.occupied = s.count;
@@ -130,7 +131,7 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
 
   // Create session and update locker atomically within transaction
   const startTime = new Date();
-  const expiresAt = new Date(startTime.getTime() + 6 * 60 * 60 * 1000);
+  const expiresAt = new Date(startTime.getTime() + SESSION_DURATION_MS);
 
   const session = await db.transaction(async (tx) => {
     const [session] = await tx.insert(rentalSessionsTable).values({
@@ -289,7 +290,7 @@ router.post("/lockers/:id/renew", requireAuth, apiLimiter, async (req, res): Pro
     await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Locker ${locker.name} renewal`);
   }
 
-  const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + 6 * 60 * 60 * 1000);
+  const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + SESSION_DURATION_MS);
   await db.transaction(async (tx) => {
     await tx.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
 
@@ -334,14 +335,14 @@ router.post("/lockers/:id/extend", requireAuth, apiLimiter, async (req, res): Pr
   const clientAge = dob ? calculateAge(dob) : 25;
   const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
   const { subtotal: baseSubtotal } = calculatePrice({ customerType, productType: "LOCKER", startTime: new Date(), clientAge, hasBirthdayToday });
-  const subtotal = Math.round((baseSubtotal / 3) * 100) / 100;
+  const subtotal = Math.round((baseSubtotal / EXTENSION_SURCHARGE_DIVISOR) * 100) / 100;
   const { tax, total } = computeTotal(subtotal);
 
   if (total > 0) {
     await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Locker ${locker.name} 2h extension`);
   }
 
-  const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + 2 * 60 * 60 * 1000);
+  const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + EXTENSION_DURATION_MS);
   await db.transaction(async (tx) => {
     await tx.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
 

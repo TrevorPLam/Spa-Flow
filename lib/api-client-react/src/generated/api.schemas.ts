@@ -48,6 +48,7 @@ export type ReadinessResponseChecks = {
   database: HealthCheck;
   square: HealthCheck;
   twilio: HealthCheck;
+  redis: HealthCheck;
 };
 
 export interface ReadinessResponse {
