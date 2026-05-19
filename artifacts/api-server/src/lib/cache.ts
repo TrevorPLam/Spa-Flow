@@ -3,6 +3,12 @@ import { logger } from './logger';
 import { getEnv } from './env';
 
 // Cache metrics
+// NOTE: These metrics are stored in-memory and are lost on server restart.
+// For production environments requiring persistent metrics, consider:
+// - Integrating with Prometheus/Grafana for long-term metrics storage
+// - Using Redis INFO command for built-in Redis metrics
+// - Sending metrics to existing monitoring systems (e.g., Sentry)
+// - Implementing periodic persistence to database or external storage
 interface CacheMetrics {
   hits: number;
   misses: number;

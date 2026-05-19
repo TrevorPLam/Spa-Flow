@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   encryptField,
   decryptField,
@@ -7,19 +7,10 @@ import {
 } from './encryption';
 
 describe('encryption', () => {
-  const originalEncryptionKey = process.env.ENCRYPTION_KEY;
   const validKey = Buffer.alloc(32, 'a').toString('base64');
 
   beforeEach(() => {
-    process.env.ENCRYPTION_KEY = validKey;
-  });
-
-  afterEach(() => {
-    if (originalEncryptionKey) {
-      process.env.ENCRYPTION_KEY = originalEncryptionKey;
-    } else {
-      delete process.env.ENCRYPTION_KEY;
-    }
+    vi.stubEnv('ENCRYPTION_KEY', validKey);
   });
 
   describe('encryptField', () => {
@@ -66,13 +57,13 @@ describe('encryption', () => {
     });
 
     it('should throw error when ENCRYPTION_KEY is not set', () => {
-      delete process.env.ENCRYPTION_KEY;
+      vi.stubEnv('ENCRYPTION_KEY', '');
       
       expect(() => encryptField('test')).toThrow('ENCRYPTION_KEY environment variable is not set');
     });
 
     it('should throw error when ENCRYPTION_KEY is invalid length', () => {
-      process.env.ENCRYPTION_KEY = Buffer.alloc(16, 'a').toString('base64');
+      vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(16, 'a').toString('base64'));
       
       expect(() => encryptField('test')).toThrow('ENCRYPTION_KEY must be 32 bytes');
     });
@@ -123,7 +114,7 @@ describe('encryption', () => {
     });
 
     it('should throw error when ENCRYPTION_KEY is not set', () => {
-      delete process.env.ENCRYPTION_KEY;
+      vi.stubEnv('ENCRYPTION_KEY', '');
       
       expect(() => encryptField('test')).toThrow('ENCRYPTION_KEY environment variable is not set');
     });

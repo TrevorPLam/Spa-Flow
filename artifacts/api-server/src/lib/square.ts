@@ -21,9 +21,10 @@ export async function processSquarePayment(
   idempotencyKey: string,
   note?: string
 ): Promise<PaymentResult> {
-  const accessToken = process.env.SQUARE_ACCESS_TOKEN;
-  const environment = process.env.SQUARE_ENVIRONMENT ?? "sandbox";
-  const apiVersion = getEnv().SQUARE_API_VERSION;
+  const env = getEnv();
+  const accessToken = env.SQUARE_ACCESS_TOKEN;
+  const environment = env.SQUARE_ENVIRONMENT;
+  const apiVersion = env.SQUARE_API_VERSION;
 
   // If no Square token configured, return mock result for dev
   if (!accessToken || paymentToken.startsWith("SQUARE_MOCK_TOKEN_")) {

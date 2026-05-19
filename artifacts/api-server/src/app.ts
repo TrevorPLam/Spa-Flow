@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import helmet from "helmet";
 import csrf from "csrf";
+import timeout from "connect-timeout";
 import { randomUUID } from "node:crypto";
 import * as Sentry from "@sentry/node";
 import swaggerUi from "swagger-ui-express";
@@ -19,6 +20,15 @@ import { isSentryInitialized, captureUserContext, captureRequestContext } from "
 import "./jobs/cron";
 
 const app: Express = express();
+
+// Request timeout configuration
+const REQUEST_TIMEOUT = '30s';
+
+// haltOnTimedOut middleware - stops request flow if timeout has occurred
+// This must be called after middleware that could take time to process
+const haltOnTimedOut = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.timedout) next();
+};
 
 // Request ID generation middleware - should be first in the middleware chain
 const requestIdMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -61,7 +71,7 @@ const csrfTokenMiddleware = (req: Request, res: Response, next: NextFunction) =>
   const token = csrfTokens.create(env.CSRF_SECRET);
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 3600000 // 1 hour
   });
@@ -71,6 +81,37 @@ const csrfTokenMiddleware = (req: Request, res: Response, next: NextFunction) =>
 
 // Request ID middleware - must be first in the chain
 app.use(requestIdMiddleware);
+
+// Request timeout middleware - must be early in the chain
+app.use(timeout(REQUEST_TIMEOUT));
+
+// Content-Type validation middleware - validates requests with bodies have proper Content-Type
+const contentTypeValidationMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Skip validation for GET, HEAD, OPTIONS requests (no body expected)
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  // Skip validation if Content-Type header is not present (body parsers will handle this)
+  if (!req.headers['content-type']) {
+    return next();
+  }
+
+  // Validate Content-Type for requests that expect a body
+  const validTypes = ['application/json', 'application/x-www-form-urlencoded'];
+  const contentType = req.headers['content-type'];
+
+  // Use Express's req.is() to check if Content-Type matches allowed types
+  // req.is() handles charset and other parameters correctly
+  if (!req.is(validTypes)) {
+    logger.warn({ contentType, method: req.method, url: req.url }, 'Invalid Content-Type');
+    return res.status(415).json({ error: 'Unsupported Media Type. Use application/json or application/x-www-form-urlencoded' });
+  }
+
+  next();
+};
+
+app.use(contentTypeValidationMiddleware);
 
 // Security middleware
 app.use(helmet({
@@ -124,12 +165,22 @@ const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((origin) => origin.tri
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
+      // Block requests with no origin in production (security: prevents null origin bypass attacks)
+      // Allow in development for testing tools (curl, Postman, etc.)
+      if (!origin) {
+        if (env.NODE_ENV === 'production') {
+          logger.warn('CORS: Blocked request with no origin in production');
+          return callback(new Error('Origin header required in production'));
+        }
+        // Development: allow no-origin for testing convenience
+        logger.debug('CORS: Allowed no-origin request in development');
+        return callback(null, true);
+      }
       
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        logger.warn({ origin }, 'CORS: Origin not allowed');
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
@@ -140,9 +191,38 @@ app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// CSRF protection middleware
-app.use(csrfTokenMiddleware);
-app.use(csrfProtectionMiddleware);
+// Halt on timeout after body parsers to prevent further processing if timeout occurred
+app.use(haltOnTimedOut);
+
+// Timeout error handler - returns 504 Gateway Timeout when request exceeds time limit
+app.use((req: Request, res: Response, next: NextFunction): void => {
+  if (req.timedout) {
+    logger.warn({ requestId: req.id, url: req.url }, 'Request timed out');
+    res.status(504).json({ error: 'Request timeout' });
+    return;
+  }
+  next();
+});
+
+// CSRF protection middleware (exempt health endpoints for monitoring systems)
+const csrfMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Skip CSRF for health check endpoints to allow monitoring systems
+  if (req.path.startsWith('/healthz/') || req.path.startsWith('/api/v1/healthz/')) {
+    return next();
+  }
+  csrfTokenMiddleware(req, res, next);
+};
+
+const csrfProtectionMiddlewareExempt = (req: Request, res: Response, next: NextFunction) => {
+  // Skip CSRF for health check endpoints to allow monitoring systems
+  if (req.path.startsWith('/healthz/') || req.path.startsWith('/api/v1/healthz/')) {
+    return next();
+  }
+  csrfProtectionMiddleware(req, res, next);
+};
+
+app.use(csrfMiddleware);
+app.use(csrfProtectionMiddlewareExempt);
 
 // Capture request context for Sentry
 if (isSentryInitialized()) {

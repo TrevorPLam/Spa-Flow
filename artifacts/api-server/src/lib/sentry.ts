@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/node";
 import type { Request, Response, NextFunction } from "express";
 import { getEnv } from "./env";
 import type { AuthPayload } from "./auth";
+import { logger } from "./logger";
 
 let isInitialized = false;
 
@@ -18,7 +19,7 @@ export function initSentry(): void {
 
   // Only initialize if SENTRY_DSN is provided
   if (!env.SENTRY_DSN) {
-    console.log("⚠️  Sentry DSN not provided, skipping Sentry initialization");
+    logger.info("Sentry DSN not provided, skipping Sentry initialization");
     return;
   }
 
@@ -58,7 +59,7 @@ export function initSentry(): void {
   });
 
   isInitialized = true;
-  console.log("✅ Sentry initialized successfully");
+  logger.info("Sentry initialized successfully");
 }
 
 /**

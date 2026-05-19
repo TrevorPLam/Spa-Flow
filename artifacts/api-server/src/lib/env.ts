@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+// Simple bootstrap logger to avoid circular dependency with logger.ts
+// logger.ts imports from env.ts, so env.ts cannot use the main logger
+const bootstrapLogger = {
+  error: (...args: unknown[]) => console.error(...args),
+  info: (...args: unknown[]) => console.log(...args),
+};
+
 const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
@@ -37,7 +44,7 @@ const envSchema = z.object({
   SQUARE_ACCESS_TOKEN: z.string().optional(),
   SQUARE_LOCATION_ID: z.string().optional(),
   SQUARE_ENVIRONMENT: z.enum(['sandbox', 'production']).default('sandbox'),
-  SQUARE_API_VERSION: z.string().default('2025-08-20'),
+  SQUARE_API_VERSION: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'SQUARE_API_VERSION must be in YYYY-MM-DD format').default('2025-08-20'),
 
   // Sentry (optional for error tracking)
   SENTRY_DSN: z.string().optional(),
@@ -60,15 +67,15 @@ export function validateEnv(): Env {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    console.error('❌ Environment validation failed:');
+    bootstrapLogger.error('❌ Environment validation failed:');
     result.error.issues.forEach((issue) => {
-      console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
+      bootstrapLogger.error(`  - ${issue.path.join('.')}: ${issue.message}`);
     });
-    console.error('\nApplication will not start without valid environment variables.');
+    bootstrapLogger.error('\nApplication will not start without valid environment variables.');
     process.exit(1);
   }
 
-  console.log('✅ Environment validation passed');
+  bootstrapLogger.info('✅ Environment validation passed');
   validatedEnv = result.data;
   return validatedEnv;
 }

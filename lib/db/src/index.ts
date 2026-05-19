@@ -12,14 +12,19 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+  idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || '30000', 10),
+  connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT_MS || '5000', 10),
 });
 
-// Set statement timeout to 30 seconds for all queries
+// Set transaction timeout configurations for all connections
+// statement_timeout: Limits individual query execution time (30s default)
+// lock_timeout: Limits lock acquisition wait time (5s default to prevent lock queue issues)
+// idle_in_transaction_session_timeout: Limits idle time within a transaction (60s default to prevent abandoned transactions)
 pool.on('connect', (client) => {
-  client.query('SET statement_timeout = 30000');
+  client.query('SET statement_timeout = ' + (parseInt(process.env.DB_STATEMENT_TIMEOUT_MS || '30000', 10)));
+  client.query('SET lock_timeout = ' + (parseInt(process.env.DB_LOCK_TIMEOUT_MS || '5000', 10)));
+  client.query('SET idle_in_transaction_session_timeout = ' + (parseInt(process.env.DB_IDLE_IN_TRANSACTION_TIMEOUT_MS || '60000', 10)));
 });
 export const db = drizzle(pool, { schema });
 

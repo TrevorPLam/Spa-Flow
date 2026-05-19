@@ -286,28 +286,22 @@ describe('pricing', () => {
   });
 
   describe('getTaxRate', () => {
-    const originalTaxRate = process.env.TAX_RATE;
-
-    afterEach(() => {
-      if (originalTaxRate) {
-        process.env.TAX_RATE = originalTaxRate;
-      } else {
-        delete process.env.TAX_RATE;
-      }
+    beforeEach(() => {
+      vi.stubEnv('TAX_RATE', '0.10');
     });
 
     it('should return tax rate from environment variable', () => {
-      process.env.TAX_RATE = '0.10';
+      vi.stubEnv('TAX_RATE', '0.10');
       expect(getTaxRate()).toBe(0.10);
     });
 
     it('should return default NYC tax rate when not set', () => {
-      delete process.env.TAX_RATE;
+      vi.stubEnv('TAX_RATE', '');
       expect(getTaxRate()).toBe(0.08875);
     });
 
     it('should return default NYC tax rate when invalid', () => {
-      process.env.TAX_RATE = 'invalid';
+      vi.stubEnv('TAX_RATE', 'invalid');
       expect(getTaxRate()).toBe(0.08875);
     });
   });

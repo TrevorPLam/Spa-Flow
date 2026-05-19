@@ -49,6 +49,8 @@ router.get("/rooms", requireAuth, apiLimiter, async (req, res): Promise<void> =>
 
   const clientIds = [...new Set(rooms.filter(r => r.clientId).map(r => r.clientId!))];
   const clientMap = new Map<number, string>();
+  // Rationale: Using PostgreSQL ANY() operator for efficient array comparison in WHERE clause
+  // This is more performant than multiple OR conditions and is safely parameterized by Drizzle's sql template
   if (clientIds.length > 0) {
     const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable)
       .where(sql`${clientsTable.id} = ANY(${clientIds})`);
@@ -59,6 +61,8 @@ router.get("/rooms", requireAuth, apiLimiter, async (req, res): Promise<void> =>
 });
 
 router.get("/rooms/occupancy", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  // Rationale: Using sql template for PostgreSQL-specific count(*)::int casting
+  // This ensures proper type casting for the aggregation result
   const stats = await db.select({
     status: roomsTable.status,
     count: sql<number>`count(*)::int`,
@@ -87,6 +91,8 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
   }
 
   // Use SELECT FOR UPDATE for atomic assignment
+  // Rationale: FOR UPDATE is a PostgreSQL-specific feature for row-level locking that prevents race conditions
+  // This raw SQL is necessary because Drizzle ORM does not support SELECT FOR UPDATE syntax
   const roomRows = await db.execute(
     sql`SELECT * FROM rooms WHERE id = ${params.data.id} FOR UPDATE`
   );
@@ -344,6 +350,8 @@ router.post("/rooms/:id/extend", requireAuth, apiLimiter, async (req, res): Prom
 
 // Atomically assign room to next waitlist entry
 export async function assignNextWaitlistEntry(roomId: number): Promise<void> {
+  // Rationale: FOR UPDATE is a PostgreSQL-specific feature for row-level locking that prevents race conditions
+  // This raw SQL is necessary because Drizzle ORM does not support SELECT FOR UPDATE syntax
   const rows = await db.execute(
     sql`SELECT we.*, c.phone as client_phone, c.name as client_name
         FROM waitlist_entries we
@@ -358,6 +366,8 @@ export async function assignNextWaitlistEntry(roomId: number): Promise<void> {
   const entry = rows.rows[0] as { id: number; client_id: number; client_phone: string; client_name: string };
 
   const confirmBy = new Date(Date.now() + WAITLIST_CONFIRM_MS);
+  // Rationale: Using raw SQL with NOW() for timestamp assignment in conjunction with FOR UPDATE locking
+  // This ensures atomic assignment of room to waitlist entry with proper timestamps
   await db.execute(
     sql`UPDATE waitlist_entries SET status = 'assigned', assigned_room_id = ${roomId}, assigned_at = NOW(), confirm_by = ${confirmBy} WHERE id = ${entry.id}`
   );

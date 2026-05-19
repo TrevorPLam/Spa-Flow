@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { getEnv } from "./env";
+import { logger } from "./logger";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -6,8 +8,7 @@ const TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
 
 function getKek(): Buffer {
-  const key = process.env.ENCRYPTION_KEY;
-  if (!key) throw new Error("ENCRYPTION_KEY environment variable is not set");
+  const key = getEnv().ENCRYPTION_KEY;
   const buf = Buffer.from(key, "base64");
   if (buf.length !== KEY_LENGTH) {
     throw new Error(`ENCRYPTION_KEY must be 32 bytes (256 bits) base64-encoded, got ${buf.length} bytes`);
@@ -63,7 +64,8 @@ export function maybeDecrypt(ciphertext: string | null | undefined, dek: string 
   if (!ciphertext || !dek) return null;
   try {
     return decryptField(ciphertext, dek);
-  } catch {
+  } catch (err) {
+    logger.error({ err, ciphertextLength: ciphertext.length, dekLength: dek.length }, 'Decryption failed in maybeDecrypt');
     return null;
   }
 }

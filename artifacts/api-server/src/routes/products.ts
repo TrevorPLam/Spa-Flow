@@ -6,8 +6,14 @@ import { writeAuditLog } from "../lib/audit";
 import { CreateProductBody, UpdateProductParams, UpdateProductBody, DeleteProductParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDelPattern } from "../lib/cache";
+import { z } from "zod";
 
 const router = Router();
+
+const ListProductsQueryParams = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
 
 function formatProduct(p: typeof productsTable.$inferSelect) {
   return {
@@ -21,15 +27,14 @@ function formatProduct(p: typeof productsTable.$inferSelect) {
 }
 
 router.get("/products", requireAuth, apiLimiter, async (req, res): Promise<void> => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const offset = (page - 1) * limit;
-
-  // Validate pagination parameters
-  if (page < 1 || limit < 1 || limit > 100) {
-    res.status(400).json({ error: "Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100." });
+  const parsedQuery = ListProductsQueryParams.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ error: parsedQuery.error.message });
     return;
   }
+
+  const { page, limit } = parsedQuery.data;
+  const offset = (page - 1) * limit;
 
   const cacheKey = buildCacheKey("products", "list", `page:${page}`, `limit:${limit}`);
 

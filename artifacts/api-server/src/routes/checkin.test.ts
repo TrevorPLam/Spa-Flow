@@ -180,5 +180,149 @@ describe('Check-in API', () => {
       expect(response.body).toHaveProperty('sessionId');
       expect(response.body).toHaveProperty('transactionId');
     });
+
+    it('should return 409 when product is out of stock', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      // Create out of stock product
+      const [product] = await db.insert(schema.productsTable).values([
+        { name: 'Water Bottle', price: '5.00', stock: 0 },
+      ]).returning();
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        membershipType: 'one_time' as const,
+        paymentToken: 'test-token-123',
+        productIds: [product.id],
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should return 404 when product ID does not exist', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        membershipType: 'one_time' as const,
+        paymentToken: 'test-token-123',
+        productIds: [99999],
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error');
+    });
+  });
+
+  describe('POST /api/checkin with membership', () => {
+    it('should process check-in with six_month membership purchase', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        membershipStatus: 'none',
+      });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        membershipType: 'six_month' as const,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('sessionId');
+      expect(response.body).toHaveProperty('transactionId');
+      expect(response.body).toHaveProperty('membership');
+      expect(response.body.membership).toHaveProperty('type', 'six_month');
+    });
+
+    it('should not create membership if client already has membership', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        membershipStatus: 'one_time',
+      });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        membershipType: 'one_time' as const,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('sessionId');
+      // Should not create new membership since client already has one
+      expect(response.body.membership).toBeNull();
+    });
+  });
+
+  describe('POST /api/checkin edge cases', () => {
+    it('should handle check-in without membershipType', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        membershipStatus: 'none',
+      });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('sessionId');
+    });
+
+    it('should handle check-in for member client', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        membershipStatus: 'one_time',
+      });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('sessionId');
+    });
   });
 });

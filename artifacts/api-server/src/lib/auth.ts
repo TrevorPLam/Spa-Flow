@@ -2,12 +2,9 @@ import { SignJWT, jwtVerify } from "jose";
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { getEnv } from "./env";
 
-const JWT_SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || (() => {
-    throw new Error("JWT_SECRET environment variable is required");
-  })()
-);
+const JWT_SECRET_KEY = new TextEncoder().encode(getEnv().JWT_SECRET);
 const JWT_EXPIRY = "12h";
 const COOKIE_NAME = "spaflow_session";
 
@@ -46,7 +43,7 @@ export async function verifyToken(token: string): Promise<AuthPayload | null> {
 export function setAuthCookie(res: Response, token: string): void {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: getEnv().NODE_ENV === "production",
     sameSite: "strict",
     maxAge: 12 * 60 * 60 * 1000, // 12h
     path: "/",

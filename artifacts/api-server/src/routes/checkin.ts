@@ -34,6 +34,8 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   
   if (productIds && productIds.length > 0) {
     // Fetch selected products with stock validation
+    // Rationale: Using PostgreSQL ANY() operator for efficient array comparison in WHERE clause
+    // This is more performant than multiple OR conditions and is safely parameterized by Drizzle's sql template
     selectedProducts = await db.select().from(productsTable).where(sql`id = ANY(${productIds})`);
     
     // Validate all products exist
@@ -55,6 +57,8 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   }
 
   // Check resource availability with SELECT FOR UPDATE to prevent race conditions
+  // Rationale: FOR UPDATE is a PostgreSQL-specific feature for row-level locking that prevents race conditions
+  // This raw SQL is necessary because Drizzle ORM does not support SELECT FOR UPDATE syntax
   let resourceName = "";
   if (resourceType === "locker") {
     const rows = await db.execute(sql`SELECT * FROM lockers WHERE id = ${resourceId} FOR UPDATE`);
@@ -180,6 +184,8 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
       });
 
       // Decrement product stock atomically
+      // Rationale: Using raw SQL for atomic decrement prevents race conditions on stock updates
+      // This pattern ensures the decrement happens in a single database operation
       await tx.update(productsTable)
         .set({ stock: sql`${productsTable.stock} - 1` })
         .where(and(

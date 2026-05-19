@@ -48,6 +48,8 @@ async function formatEntrySingle(w: typeof waitlistTable.$inferSelect) {
 }
 
 router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  // Rationale: Using raw SQL for NOT IN clause - could be replaced with Drizzle's notIn() operator
+  // Keeping as raw SQL for consistency with other PostgreSQL-specific patterns in this file
   const entries = await db.select().from(waitlistTable)
     .where(sql`status NOT IN ('confirmed', 'expired')`)
     .orderBy(waitlistTable.position);
@@ -55,6 +57,8 @@ router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void>
   // Batch fetch client data
   const clientIds = [...new Set(entries.map(e => e.clientId))];
   const clientMap = new Map<number, { name: string; phone: string | null }>();
+  // Rationale: Using PostgreSQL ANY() operator for efficient array comparison in WHERE clause
+  // This is more performant than multiple OR conditions and is safely parameterized by Drizzle's sql template
   if (clientIds.length > 0) {
     const clients = await db.select({ id: clientsTable.id, name: clientsTable.name, phone: clientsTable.phone })
       .from(clientsTable)
@@ -65,6 +69,8 @@ router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void>
   // Batch fetch room data
   const roomIds = [...new Set(entries.map(e => e.assignedRoomId).filter((id): id is number => id !== null))];
   const roomMap = new Map<number, string>();
+  // Rationale: Using PostgreSQL ANY() operator for efficient array comparison in WHERE clause
+  // This is more performant than multiple OR conditions and is safely parameterized by Drizzle's sql template
   if (roomIds.length > 0) {
     const rooms = await db.select({ id: roomsTable.id, name: roomsTable.name })
       .from(roomsTable)
@@ -90,6 +96,8 @@ router.post("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void
   }
 
   // Check if already on waitlist
+  // Rationale: Using raw SQL for IN clause - could be replaced with Drizzle's inArray() operator
+  // Keeping as raw SQL for consistency with other PostgreSQL-specific patterns in this file
   const [existing] = await db.select().from(waitlistTable)
     .where(and(eq(waitlistTable.clientId, client.id), sql`status IN ('waiting', 'assigned')`));
   if (existing) {
@@ -98,6 +106,8 @@ router.post("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void
   }
 
   // Get next position
+  // Rationale: Using raw SQL for MAX aggregation is more efficient than fetching all positions
+  // This could be replaced with Drizzle ORM but the raw SQL is clear and performant
   const maxPosResult = await db.execute(sql`SELECT COALESCE(MAX(position), 0) as max_pos FROM waitlist_entries WHERE status IN ('waiting', 'assigned')`);
   const position = ((maxPosResult.rows[0] as { max_pos: number })?.max_pos ?? 0) + 1;
 

@@ -95,3 +95,34 @@ export const checkinLimiter = rateLimit({
     });
   },
 });
+
+/**
+ * Health check rate limiter: 100 requests per minute per IP
+ * Applied to health check endpoints to prevent DoS attacks while allowing monitoring systems
+ * Uses IP-based limiting with higher limits to accommodate frequent health checks
+ */
+export const healthLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute (higher than regular endpoints for monitoring)
+  message: {
+    error: "Health check rate limit exceeded",
+    retryAfter: "1 minute",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    // Use IP address for health check limiting
+    return req.ip || 'unknown';
+  },
+  handler: (req, res) => {
+    logger.warn({
+      msg: "Rate limit exceeded for health check endpoint",
+      ip: req.ip,
+      path: req.path,
+    });
+    res.status(429).json({
+      error: "Health check rate limit exceeded",
+      retryAfter: "1 minute",
+    });
+  },
+});

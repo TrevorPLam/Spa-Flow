@@ -12,19 +12,10 @@ import {
 } from './auth';
 
 describe('auth', () => {
-  const originalJwtSecret = process.env.JWT_SECRET;
   const validSecret = 'a'.repeat(32);
 
   beforeEach(() => {
-    process.env.JWT_SECRET = validSecret;
-  });
-
-  afterEach(() => {
-    if (originalJwtSecret) {
-      process.env.JWT_SECRET = originalJwtSecret;
-    } else {
-      delete process.env.JWT_SECRET;
-    }
+    vi.stubEnv('JWT_SECRET', validSecret);
   });
 
   describe('signToken', () => {
@@ -59,7 +50,7 @@ describe('auth', () => {
     });
 
     it('should use default JWT_SECRET when not set', async () => {
-      delete process.env.JWT_SECRET;
+      vi.stubEnv('JWT_SECRET', '');
       
       const payload: AuthPayload = {
         sub: 'user123',
@@ -193,7 +184,7 @@ describe('auth', () => {
     });
 
     it('should set secure flag in production', () => {
-      process.env.NODE_ENV = 'production';
+      vi.stubEnv('NODE_ENV', 'production');
       const res = {
         cookie: vi.fn(),
       } as any;
@@ -207,12 +198,10 @@ describe('auth', () => {
           secure: true,
         })
       );
-      
-      delete process.env.NODE_ENV;
     });
 
     it('should not set secure flag in development', () => {
-      process.env.NODE_ENV = 'development';
+      vi.stubEnv('NODE_ENV', 'development');
       const res = {
         cookie: vi.fn(),
       } as any;
@@ -226,8 +215,6 @@ describe('auth', () => {
           secure: false,
         })
       );
-      
-      delete process.env.NODE_ENV;
     });
 
     it('should set sameSite to strict', () => {

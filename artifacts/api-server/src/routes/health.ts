@@ -4,6 +4,7 @@ import { db, pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { getTwilioCredentials, getTwilioAuthHeader, getEnv } from "../lib/env";
 import { getRedisClient } from "../lib/cache";
+import { healthLimiter } from "../middleware/rateLimit";
 
 const router: IRouter = Router();
 
@@ -30,9 +31,10 @@ async function checkDatabase(): Promise<{ status: HealthCheckStatus; message?: s
 async function checkSquare(): Promise<{ status: HealthCheckStatus; message?: string; latency_ms: number }> {
   const startTime = Date.now();
   try {
-    const accessToken = process.env.SQUARE_ACCESS_TOKEN;
-    const environment = process.env.SQUARE_ENVIRONMENT ?? "sandbox";
-    const apiVersion = getEnv().SQUARE_API_VERSION;
+    const env = getEnv();
+    const accessToken = env.SQUARE_ACCESS_TOKEN;
+    const environment = env.SQUARE_ENVIRONMENT;
+    const apiVersion = env.SQUARE_API_VERSION;
     
     if (!accessToken) {
       // If not configured, mark as degraded (not required for basic operation)
@@ -156,7 +158,7 @@ async function checkRedis(): Promise<{ status: HealthCheckStatus; message?: stri
 
 // Liveness probe - simple check if application is running
 // Should be fast (<100ms) and avoid I/O operations that could fail
-router.get("/healthz/live", (_req, res) => {
+router.get("/healthz/live", healthLimiter, (_req, res) => {
   const uptime = process.uptime();
   const data: LivenessResponse = {
     status: "ok",
@@ -168,7 +170,7 @@ router.get("/healthz/live", (_req, res) => {
 
 // Readiness probe - checks if dependencies are available
 // Should check database, external services
-router.get("/healthz/ready", async (_req, res) => {
+router.get("/healthz/ready", healthLimiter, async (_req, res) => {
   const [database, square, twilio, redis] = await Promise.all([
     checkDatabase(),
     checkSquare(),

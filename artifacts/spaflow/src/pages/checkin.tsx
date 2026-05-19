@@ -50,6 +50,9 @@ export default function CheckInPage() {
   const [paymentToken, setPaymentToken] = useState<string | null>(null);
   const [cardTokenizationError, setCardTokenizationError] = useState<string | null>(null);
 
+  // Validate Square configuration
+  const isSquareConfigured = !!import.meta.env.VITE_SQUARE_APPLICATION_ID && !!import.meta.env.VITE_SQUARE_LOCATION_ID;
+
   // Fetch tax rate from config API on mount
   useEffect(() => {
     async function fetchConfig() {
@@ -481,10 +484,10 @@ export default function CheckInPage() {
               {/* Square payment form */}
               <div className={cn("space-y-3 border rounded-lg p-4", cardTokenizationError && "border-destructive")}>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Card Information</p>
-                {import.meta.env.VITE_SQUARE_APPLICATION_ID ? (
+                {isSquareConfigured ? (
                   <PaymentForm
                     applicationId={import.meta.env.VITE_SQUARE_APPLICATION_ID}
-                    locationId={import.meta.env.VITE_SQUARE_LOCATION_ID || ""}
+                    locationId={import.meta.env.VITE_SQUARE_LOCATION_ID}
                     cardTokenizeResponseReceived={handleCardTokenizeResponseReceived}
                   >
                     <SquareCreditCard />
@@ -493,7 +496,7 @@ export default function CheckInPage() {
                   <div className="text-sm text-muted-foreground">
                     Square SDK not configured. Using mock mode for development.
                     <br />
-                    <span className="text-xs">Set VITE_SQUARE_APPLICATION_ID in .env to enable real payments.</span>
+                    <span className="text-xs">Set VITE_SQUARE_APPLICATION_ID and VITE_SQUARE_LOCATION_ID in .env to enable real payments.</span>
                   </div>
                 )}
                 {cardTokenizationError && (
@@ -507,7 +510,7 @@ export default function CheckInPage() {
                   data-testid="button-complete-checkin"
                   className="flex-1"
                   onClick={handlePayment}
-                  disabled={checkIn.isPending || (import.meta.env.VITE_SQUARE_APPLICATION_ID && !paymentToken)}
+                  disabled={checkIn.isPending || (isSquareConfigured && !paymentToken)}
                 >
                   {checkIn.isPending ? "Processing..." : paymentToken ? `Charge $${priceResult.total.toFixed(2)}` : "Enter Card Details"}
                 </Button>

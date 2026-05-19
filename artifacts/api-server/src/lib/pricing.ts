@@ -1,4 +1,5 @@
 import { DEFAULT_TAX_RATE } from "./constants";
+import { getEnv } from "./env";
 
 export type CustomerType = "MEMBER" | "NON_MEMBER";
 export type ProductType = "LOCKER" | "ROOM";
@@ -89,12 +90,7 @@ export function calculatePrice(input: PricingInput): PricingResult {
 }
 
 export function getTaxRate(): number {
-  const raw = process.env.TAX_RATE;
-  if (raw) {
-    const parsed = parseFloat(raw);
-    if (!isNaN(parsed)) return parsed;
-  }
-  return DEFAULT_TAX_RATE;
+  return getEnv().TAX_RATE;
 }
 
 export function computeTotal(subtotal: number): { tax: number; total: number } {
