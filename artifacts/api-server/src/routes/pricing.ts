@@ -31,14 +31,24 @@ router.post("/pricing/calculate", requireAuth, async (req, res): Promise<void> =
   const clientAge = dob ? calculateAge(dob) : 25;
   const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
 
-  const { subtotal, appliedRules } = calculatePrice({
+  const { subtotal: resourceSubtotal, appliedRules } = calculatePrice({
     customerType,
     productType: resourceType.toUpperCase() as ProductType,
     startTime: new Date(),
     clientAge,
     hasBirthdayToday,
   });
+
+  const membershipCost = (!client.membershipStatus || client.membershipStatus === "none") && membershipType && membershipType !== "none"
+    ? (membershipType === "one_time" ? 13 : 42)
+    : 0;
+
+  const subtotal = resourceSubtotal + membershipCost;
   const { tax, total } = computeTotal(subtotal);
+
+  if (membershipCost > 0) {
+    appliedRules.push(`${membershipType === "one_time" ? "One-time" : "6-month"} membership: $${membershipCost}`);
+  }
 
   res.json({ subtotal, tax, total, appliedRules });
 });

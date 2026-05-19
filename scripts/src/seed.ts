@@ -1,6 +1,6 @@
 import { db, lockersTable, roomsTable, usersTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 async function seed() {
   console.log("Seeding database...");

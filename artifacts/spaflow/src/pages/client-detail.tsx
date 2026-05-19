@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
   useGetClient,
@@ -6,6 +7,7 @@ import {
   useGetClientRentals,
   useGetClientTransactions,
   getGetClientQueryKey,
+  getListClientsQueryKey,
   getGetClientRentalsQueryKey,
   getGetClientTransactionsQueryKey,
 } from "@workspace/api-client-react";
@@ -14,9 +16,15 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -26,12 +34,22 @@ const MEMBERSHIP_VARIANTS: Record<string, "default" | "secondary" | "outline"> =
   none: "outline", one_time: "secondary", six_month: "default",
 };
 
+const editSchema = z.object({
+  name: z.string().min(1, "Name required"),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type EditForm = z.infer<typeof editSchema>;
+
 export default function ClientDetailPage() {
   const [, params] = useRoute("/clients/:id");
   const id = parseInt(params?.id ?? "0");
   const { isManager } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [showEdit, setShowEdit] = useState(false);
 
   const { data: client, isLoading } = useGetClient(id, {
     query: { enabled: !!id, queryKey: getGetClientQueryKey(id) },
@@ -42,6 +60,44 @@ export default function ClientDetailPage() {
   const { data: transactions = [] } = useGetClientTransactions(id, {
     query: { enabled: !!id, queryKey: getGetClientTransactionsQueryKey(id) },
   });
+
+  const updateClient = useUpdateClient();
+
+  const form = useForm<EditForm>({
+    resolver: zodResolver(editSchema),
+    defaultValues: { name: "", email: "", phone: "", notes: "" },
+  });
+
+  function openEdit() {
+    if (!client) return;
+    form.reset({
+      name: client.name,
+      email: client.email ?? "",
+      phone: client.phone ?? "",
+      notes: client.notes ?? "",
+    });
+    setShowEdit(true);
+  }
+
+  async function onEditSubmit(values: EditForm) {
+    updateClient.mutate({
+      id,
+      data: {
+        name: values.name,
+        email: values.email || undefined,
+        phone: values.phone || undefined,
+        notes: values.notes || undefined,
+      },
+    }, {
+      onSuccess: () => {
+        toast({ title: "Client updated" });
+        queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getListClientsQueryKey({}) });
+        setShowEdit(false);
+      },
+      onError: () => toast({ title: "Failed to update client", variant: "destructive" }),
+    });
+  }
 
   if (isLoading) return <Layout><div className="p-8 text-muted-foreground text-sm">Loading...</div></Layout>;
   if (!client) return <Layout><div className="p-8 text-muted-foreground text-sm">Client not found</div></Layout>;
@@ -71,6 +127,10 @@ export default function ClientDetailPage() {
               )}
             </div>
           </div>
+          <Button data-testid="button-edit-client" variant="outline" size="sm" onClick={openEdit} className="gap-2">
+            <Pencil size={14} />
+            Edit
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,7 +185,6 @@ export default function ClientDetailPage() {
           </Card>
         )}
 
-        {/* Active sessions */}
         {activeRentals.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
@@ -147,7 +206,6 @@ export default function ClientDetailPage() {
           </Card>
         )}
 
-        {/* Transaction history */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Transaction History</CardTitle>
@@ -173,6 +231,54 @@ export default function ClientDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl><Input data-testid="input-edit-name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input data-testid="input-edit-email" type="email" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="phone" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl><Input data-testid="input-edit-phone" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <FormField control={form.control} name="notes" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl><Textarea data-testid="input-edit-notes" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
+                <Button data-testid="button-save-client" type="submit" disabled={updateClient.isPending}>
+                  {updateClient.isPending ? "Saving..." : "Save"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
