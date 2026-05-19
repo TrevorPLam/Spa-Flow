@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SpaFlow"
+version = "1.0.0"
+id = "artifacts/spaflow"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20811
+
+[services.development]
+run = "pnpm --filter @workspace/spaflow run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/spaflow", "run", "build" ]
+publicDir = "artifacts/spaflow/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20811"
+BASE_PATH = "/"

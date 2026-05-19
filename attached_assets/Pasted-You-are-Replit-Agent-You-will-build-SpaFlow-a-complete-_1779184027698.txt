@@ -1,0 +1,186 @@
+You are Replit Agent. You will build "SpaFlow", a complete production-ready spa management system for a single location. You must adhere to every instruction in this prompt, which serves as your complete PRD and build specification. Because I am on the free tier, I can only give you this one prompt — you must get it right on the first attempt. Be thorough, follow the build phases exactly, and create checkpoints after each phase. Prioritize working, secure software over visual polish.
+
+### 1. WHO IT IS FOR
+- **Front desk staff**: Check in members and non-members, assign lockers/rooms, process payments, manage waitlists.
+- **Spa managers**: View occupancy dashboards, manage pricing rules, access full client profiles, run reports.
+- **Spa clients (members and non-members)**: Have a user profile with encrypted personally identifiable information (PII): full name, date of birth, physical address, government-issued document number (e.g., driver's license), and an open-ended free-text notes field. PII must be encrypted at rest using AES-256-GCM envelope encryption.
+
+### 2. WHAT IT DOES (CORE FUNCTIONALITY)
+Build all of the following features into a single Next.js application with a PostgreSQL database.
+
+#### a. Client Profile Management
+- Create and manage profiles for **members** and **non-members**.
+- Profile fields: name, DOB, address, government document number, membership status (none, one-time, six-month), notes (long text or JSON field).
+- All sensitive PII (DOB, address, document number) must be encrypted at the application level before writing to the database. Use the envelope encryption pattern with a Data Encryption Key (DEK) generated per record, encrypted by a Key Encryption Key (KEK) stored in an environment variable (`ENCRYPTION_KEY`). The KEK is a 256-bit key, base64-encoded, stored in Replit Secrets.
+- The system must use JWT authentication stored in `HttpOnly`, `Secure`, `SameSite=Strict` cookies. No PII in localStorage.
+
+#### b. Membership Management
+- One-time membership: $13 (valid for a single visit).
+- Six-month membership: $42 (auto-calculated expiration date from purchase date).
+- Memberships must be linked to the client profile. On check-in, if a non-member purchases a membership, the system assigns it and updates their status.
+
+#### c. Locker & Room Management
+- There are exactly **167 lockers** and **38 private dressing rooms**.
+- Both lockers and rooms have a **6-hour rental time limit**, which can be **renewed for another 6 hours** or **surcharged for a 2-hour extension**.
+- Track real-time occupancy status for every individual locker and room (Available, Occupied, Reserved).
+- When a locker or room is assigned, the system records the start time. The front-desk UI must visually indicate occupancy and remaining time.
+
+#### d. Dynamic Pricing Engine
+Implement a pricing service as a pure function (no side effects) that takes the following inputs and returns the price before tax:
+- `customerType`: MEMBER or NON_MEMBER
+- `productType`: LOCKER or ROOM
+- `startTime`: JavaScript Date
+- `clientAge`: number (derived from DOB)
+- `hasBirthdayToday`: boolean (derived from DOB and current date)
+
+**Pricing Rules:**
+- **Weekday** (Monday 8:00 AM to Friday 4:00 PM, excluding holidays/special events – for v1, ignore holiday list).
+- **Weekend** (Friday 4:00 PM to Monday 8:00 AM).
+- **Locker:**
+  - $15 on weekdays between 8 AM and 4 PM (Mon-Fri).
+  - $20 on weekdays outside that time window.
+  - $24 on weekends.
+- **Room:**
+  - $25–$34 on weekdays. (Use the midpoint $30 for simplicity, or allow a configurable range; at minimum, default to $30.)
+  - $28–$37 on weekends. (Default to $32.)
+- **Specials (server-side validated only):**
+  - **18–24 Special:** Valid for clients aged 18-24 (inclusive). On weekdays, locker is free ($0). On weekends, locker costs $7. (Only applies if they purchase a one-time membership; if they don't have one, prompt to buy it first, but calculate the price accordingly.)
+  - **Birthday Special:** If the client's birthday is today (DOB month and day match current server date), the locker fee is $0, regardless of other rates. Valid ID required – the document number in the profile acts as verification.
+- **Membership Discount:** One-time membership holders pay member pricing for that day. Six-month members always pay member pricing.
+- **Tax:** Not included in these prices. Tax must be calculated and displayed separately at checkout. For v1, use a flat 8.875% (NYC rate) or a configurable environment variable `TAX_RATE`. Do not forget to add tax to the total amount sent to Square.
+
+#### e. Check-In & Check-Out Workflow
+- A staff member looks up a client by name, phone, or member ID.
+- If the client has no membership, staff can sell a one-time membership ($13) as part of the check-in process.
+- The system shows available lockers and rooms. Staff selects the desired type and specific number (if available).
+- Before assignment, the pricing engine calculates the amount due based on the client's profile and current time.
+- **Square Payment:** The frontend uses the Square Web Payments SDK to tokenize the card. The token is sent to the backend, which calls Square's Payments API with an idempotency key. The transaction is stored locally linked to the client and the rental.
+- Upon successful payment, the locker/room is marked Occupied, a session record is created with start time, and the rental begins.
+- **Check-Out:** Manually done by staff (or automatically after time expires – implement a background job using `node-cron` or similar to check every minute for expired sessions and mark them as Available). On check-out, record end time and free the resource.
+
+#### f. Waitlist Management
+- When all 38 rooms are occupied, a client can be placed on a **FIFO waitlist** for a room.
+- A client on the waitlist can simultaneously have a locker (they are waiting for a room upgrade).
+- When a room becomes available (check-out or expiration), the system must **atomically** assign it to the next person on the waitlist.
+- Use a PostgreSQL function with `SELECT ... FOR UPDATE` to prevent double booking.
+- Once assigned, the system must send an SMS notification to the client (use Twilio or Plivo — see environment variables). The message: "SpaFlow: A private dressing room is now available for you. Please proceed to the front desk within 15 minutes."
+- If the client does not respond within 15 minutes, the room is released back to Available and the next person on the waitlist is notified. Implement this with a scheduled job that checks for unconfirmed assignments.
+
+#### g. Additional Purchases (POS)
+- Sell individual products: snacks, toiletries, novelty items. Maintain a simple product inventory (name, price, stock count).
+- At checkout, staff can add products to a client's bill. The same Square tokenization flow handles the total payment.
+- All purchases (rentals and products) are stored in a unified transactions table and linked to the client profile.
+
+#### h. Role-Based Access Control (RBAC)
+Two roles: `STAFF` and `MANAGER`.
+- **STAFF**: Can create clients, check in/out, process payments, view basic profile info (masked PII except name), access waitlist, sell products. Cannot edit pricing rules or view full PII fields.
+- **MANAGER**: Full access to everything, including encrypted PII viewing (decrypted in the app), pricing configuration, and audit logs.
+
+#### i. Audit Logging
+- Log every critical action: profile creation, PII access, check-in, check-out, payment, waitlist addition/assignment, role changes.
+- Include timestamp, user ID (staff), action, resource ID, and a brief description.
+- Store in an `audit_logs` table. This is essential for compliance.
+
+### 3. OUT OF SCOPE (DO NOT BUILD THESE)
+- No customer-facing mobile app or self-booking web portal.
+- No email marketing, newsletters, or promotional campaigns.
+- No integration with accounting software (QuickBooks, etc.).
+- No physical smart lock integration (Seam API).
+- No biometric authentication (fingerprint/face).
+- No gift card or loyalty points system.
+- No staff scheduling module.
+- No detailed holiday/special event calendar; treat every day as a regular weekday/weekend for v1.
+- No offline/PWA support in this version.
+- No QR code check-in.
+- No ID document scanning/verification – the staff manually enters data.
+
+### 4. CONSTRAINTS (TECH STACK & ARCHITECTURE)
+**Pinned (you must use these):**
+- Frontend: Next.js 15 (App Router) with TypeScript.
+- Backend: Next.js API routes (or Server Actions where appropriate) – use the same project.
+- Database: PostgreSQL (use Replit’s built-in Postgres).
+- ORM: Prisma.
+- Authentication: JWT stored in `HttpOnly`, `Secure`, `SameSite=Strict` cookies. Use `jose` library for JWT signing/verification. Hash passwords with `bcrypt`.
+- PII Encryption: Application-level AES-256-GCM. Implement a small encryption utility module that uses Node's `crypto` module and `ENCRYPTION_KEY` from env.
+- Payments: Square. Frontend uses `@square/web-payments-sdk` React wrapper for tokenization. Backend uses `square` npm package (v37 or later) to process payments. Idempotency keys on every `CreatePayment` call.
+- SMS: Twilio (`twilio` npm package) or Plivo. Use env variables for credentials.
+- UI: Tailwind CSS + shadcn/ui components. Use Radix UI primitives for accessibility.
+
+**Architectural Rules (must be followed):**
+- No raw card numbers ever reach the server.
+- PII fields encrypted before writing to DB, decrypted only when authorized (MANAGER access).
+- All waitlist assignments and room releases use database transactions with row-level locking.
+- Birthday and age-based specials must be calculated on the server only.
+- Server-side validation for all form inputs (use Zod).
+- Never store sensitive session data in localStorage or sessionStorage.
+- Use a `.env` file for all secrets; no hardcoded values. List required env vars clearly in a README.
+
+**Build Phases (with checkpoints):**
+You will build the system incrementally. After completing each phase, create a Replit Checkpoint (if available) and output a clear status message: "PHASE X COMPLETE. Ready for next phase."
+
+**Phase 1: Foundation**
+- Set up Next.js project with TypeScript, Tailwind, Prisma, and PostgreSQL.
+- Define Prisma schema for: User (staff), Client (with encrypted fields), Membership, Locker, Room, RentalSession, WaitlistEntry, Product, Purchase, Transaction, AuditLog.
+- Implement encryption utility and ensure Prisma hooks/ middleware automatically encrypt/decrypt PII fields on read/write.
+- Implement user authentication (staff login) with JWT cookies. Create a seed script that creates a default MANAGER user (email: admin@spaflow.com, password: Admin123!) and a STAFF user.
+- Build a basic admin dashboard shell with sidebar navigation (check-in, clients, inventory, admin).
+- Output: "PHASE 1 COMPLETE. Ready for Phase 2."
+
+**Phase 2: Client & Membership Management**
+- CRUD for clients. Ensure PII encryption works end-to-end.
+- Membership purchase flow: a non-member can be sold a one-time or six-month membership during profile creation or check-in.
+- RBAC: implement middleware that protects routes/APIs based on role. STAFF cannot view full PII or pricing config.
+- Output: "PHASE 2 COMPLETE. Ready for Phase 3."
+
+**Phase 3: Locker/Room Management & Pricing Engine**
+- Seed the database with 167 lockers and 38 rooms (just name them L1..L167 and R1..R38).
+- Build a dashboard showing real-time occupancy.
+- Implement the dynamic pricing engine as described.
+- Create an API endpoint that calculates price given customer and product.
+- Output: "PHASE 3 COMPLETE. Ready for Phase 4."
+
+**Phase 4: Check-In/Check-Out & Waitlist**
+- Full check-in flow: search client, select resource, calculate price, process Square payment (in sandbox mode), create RentalSession.
+- Implement the waitlist: add to waitlist when no rooms available, atomic assignment on availability.
+- Implement the 15-minute timeout notification flow for waitlist assignments.
+- Scheduled job for expired session release (check every 1 minute).
+- Output: "PHASE 4 COMPLETE. Ready for Phase 5."
+
+**Phase 5: Point of Sale & Inventory**
+- Product management (CRUD) for managers.
+- Add products to check-in flow before payment.
+- Unified transaction history per client.
+- Output: "PHASE 5 COMPLETE. Ready for Phase 6."
+
+**Phase 6: Audit Logging, Dashboard & Final Polish**
+- Implement audit logging for all critical actions.
+- Manager dashboard with summary (occupancy, revenue, recent transactions).
+- Ensure all success criteria (below) are met.
+- Run Prisma migrations, fix any TypeScript errors, and ensure the app runs without crashes.
+- Output: "PHASE 6 COMPLETE. System fully built."
+
+### 5. SUCCESS CRITERIA
+At the end of Phase 6, I will verify that:
+1. I can create a member profile with a government ID number, and it is stored encrypted in the database (I will check the DB directly).
+2. A non-member can be checked in, purchase a one-time membership, be assigned a locker, and pay via Square sandbox (I'll use a test card). The transaction appears in the client's history.
+3. The pricing engine correctly gives a free locker to a client whose birthday is today.
+4. An 18-year-old on a weekday gets a free locker under the 18-24 special (after buying membership).
+5. Two staff trying to assign the same room simultaneously cannot double-book it.
+6. When I free up a room, the next waitlisted person gets assigned and an SMS notification is attempted (I'll check the logs for the Twilio call).
+7. A staff user cannot view the full decrypted document number of a client; a manager can.
+8. All audit logs are written correctly for the above actions.
+
+### 6. DEPLOYMENT CONTEXT
+- This runs entirely on Replit. Use the built-in PostgreSQL and the Replit deployment URL.
+- All environment variables (DATABASE_URL, JWT_SECRET, ENCRYPTION_KEY, SQUARE_ACCESS_TOKEN, SQUARE_ENVIRONMENT, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, TAX_RATE, etc.) must be stored in Replit Secrets and referenced in `.env`.
+- I will add the actual Square sandbox credentials and Twilio credentials after the build.
+
+### 7. AGENT BEHAVIOR RULES (COST & QUALITY)
+- Work at **Low Autonomy** to avoid unnecessary tool calls and wasted credits.
+- Batch all database reads in parallel whenever possible.
+- Use `multi_edit` for any file needing multiple changes.
+- Do not delegate to sub-agents.
+- Stop a phase as soon as the acceptance criteria are met; do not generate excessive screenshots or documentation.
+- At the start of each new session, if I ask you to continue, read `replit.md` and `AGENT_NOTES.md` first to pick up context.
+
+Now, read this entire prompt, show a brief plan summary, and ask me if I want you to proceed. If I say yes, start Phase 1.

@@ -1,0 +1,339 @@
+import { Router } from "express";
+import { db, lockersTable, clientsTable, rentalSessionsTable, transactionsTable } from "@workspace/db";
+import { eq, sql, and } from "drizzle-orm";
+import { requireAuth, type AuthRequest } from "../lib/auth";
+import { writeAuditLog } from "../lib/audit";
+import { processSquarePayment } from "../lib/square";
+import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType } from "../lib/pricing";
+import { maybeDecrypt } from "../lib/encryption";
+import {
+  ListLockersQueryParams,
+  AssignLockerParams,
+  AssignLockerBody,
+  ReleaseLockerParams,
+  RenewLockerParams,
+  RenewLockerBody,
+  ExtendLockerParams,
+  ExtendLockerBody,
+} from "@workspace/api-zod";
+
+const router = Router();
+
+function formatLocker(l: typeof lockersTable.$inferSelect, clientName?: string | null) {
+  return {
+    id: l.id,
+    name: l.name,
+    status: l.status,
+    clientId: l.clientId,
+    clientName: clientName ?? null,
+    sessionId: l.sessionId,
+    startTime: l.startTime,
+    expiresAt: l.expiresAt,
+  };
+}
+
+router.get("/lockers", requireAuth, async (req, res): Promise<void> => {
+  const parsed = ListLockersQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { status } = parsed.data;
+  const where = status ? eq(lockersTable.status, status as "available" | "occupied" | "reserved") : undefined;
+  const lockers = await db.select().from(lockersTable).where(where).orderBy(lockersTable.id);
+
+  // Get client names for occupied lockers
+  const clientIds = [...new Set(lockers.filter(l => l.clientId).map(l => l.clientId!))];
+  const clientMap = new Map<number, string>();
+  if (clientIds.length > 0) {
+    const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable)
+      .where(sql`${clientsTable.id} = ANY(${clientIds})`);
+    clients.forEach(c => clientMap.set(c.id, c.name));
+  }
+
+  res.json(lockers.map(l => formatLocker(l, l.clientId ? clientMap.get(l.clientId) : null)));
+});
+
+router.get("/lockers/occupancy", requireAuth, async (req, res): Promise<void> => {
+  const stats = await db.select({
+    status: lockersTable.status,
+    count: sql<number>`count(*)::int`,
+  }).from(lockersTable).groupBy(lockersTable.status);
+
+  const result = { total: 167, available: 0, occupied: 0, reserved: 0 };
+  stats.forEach(s => {
+    if (s.status === "available") result.available = s.count;
+    else if (s.status === "occupied") result.occupied = s.count;
+    else if (s.status === "reserved") result.reserved = s.count;
+  });
+  res.json(result);
+});
+
+router.post("/lockers/:id/assign", requireAuth, async (req, res): Promise<void> => {
+  const params = AssignLockerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const parsed = AssignLockerBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
+  if (!locker) {
+    res.status(404).json({ error: "Locker not found" });
+    return;
+  }
+  if (locker.status !== "available") {
+    res.status(409).json({ error: "Locker is not available" });
+    return;
+  }
+
+  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, parsed.data.clientId));
+  if (!client) {
+    res.status(404).json({ error: "Client not found" });
+    return;
+  }
+
+  // Calculate pricing
+  const dob = maybeDecrypt(client.dobEncrypted, client.dobDek);
+  const customerType: CustomerType = client.membershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
+  const clientAge = dob ? calculateAge(dob) : 25;
+  const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
+
+  const { subtotal } = calculatePrice({
+    customerType,
+    productType: "LOCKER",
+    startTime: new Date(),
+    clientAge,
+    hasBirthdayToday,
+  });
+  const { tax, total } = computeTotal(subtotal);
+
+  // Process payment
+  let paymentId = "mock";
+  if (total > 0) {
+    const result = await processSquarePayment(
+      parsed.data.paymentToken,
+      Math.round(total * 100),
+      parsed.data.idempotencyKey,
+      `Locker ${locker.name} rental`
+    );
+    paymentId = result.paymentId;
+  }
+
+  // Create session and update locker atomically
+  const startTime = new Date();
+  const expiresAt = new Date(startTime.getTime() + 6 * 60 * 60 * 1000);
+
+  const [session] = await db.insert(rentalSessionsTable).values({
+    clientId: client.id,
+    resourceType: "locker",
+    resourceId: locker.id,
+    resourceName: locker.name,
+    status: "active",
+    startTime,
+    expiresAt,
+    amountPaid: String(subtotal),
+  }).returning();
+
+  await db.update(lockersTable).set({
+    status: "occupied",
+    clientId: client.id,
+    sessionId: session.id,
+    startTime,
+    expiresAt,
+  }).where(eq(lockersTable.id, locker.id));
+
+  // Record transaction
+  await db.insert(transactionsTable).values({
+    clientId: client.id,
+    amount: String(subtotal),
+    tax: String(tax),
+    total: String(total),
+    type: "locker_rental",
+    squarePaymentId: paymentId,
+    description: `Locker ${locker.name} rental`,
+    sessionId: session.id,
+  });
+
+  const actingUser = (req as AuthRequest).user!;
+  await writeAuditLog({
+    userId: parseInt(actingUser.sub),
+    action: "ASSIGN_LOCKER",
+    resourceType: "locker",
+    resourceId: locker.id,
+    description: `Assigned locker ${locker.name} to client ${client.name}`,
+  });
+
+  res.json({
+    id: session.id,
+    clientId: session.clientId,
+    clientName: client.name,
+    resourceType: session.resourceType,
+    resourceId: session.resourceId,
+    resourceName: session.resourceName,
+    status: session.status,
+    startTime: session.startTime,
+    expiresAt: session.expiresAt,
+    endTime: null,
+    amountPaid: subtotal,
+  });
+});
+
+router.post("/lockers/:id/release", requireAuth, async (req, res): Promise<void> => {
+  const params = ReleaseLockerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
+  if (!locker) {
+    res.status(404).json({ error: "Locker not found" });
+    return;
+  }
+
+  const sessionId = locker.sessionId;
+  const endTime = new Date();
+
+  if (sessionId) {
+    await db.update(rentalSessionsTable).set({ status: "completed", endTime })
+      .where(eq(rentalSessionsTable.id, sessionId));
+  }
+
+  await db.update(lockersTable).set({
+    status: "available",
+    clientId: null,
+    sessionId: null,
+    startTime: null,
+    expiresAt: null,
+  }).where(eq(lockersTable.id, locker.id));
+
+  const actingUser = (req as AuthRequest).user!;
+  await writeAuditLog({
+    userId: parseInt(actingUser.sub),
+    action: "RELEASE_LOCKER",
+    resourceType: "locker",
+    resourceId: locker.id,
+    description: `Released locker ${locker.name}`,
+  });
+
+  const [session] = sessionId
+    ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, sessionId))
+    : [null];
+
+  res.json({
+    id: session?.id ?? 0,
+    clientId: session?.clientId ?? 0,
+    clientName: null,
+    resourceType: "locker",
+    resourceId: locker.id,
+    resourceName: locker.name,
+    status: "completed",
+    startTime: session?.startTime ?? new Date(),
+    expiresAt: session?.expiresAt ?? null,
+    endTime,
+    amountPaid: session?.amountPaid ? parseFloat(session.amountPaid) : null,
+  });
+});
+
+router.post("/lockers/:id/renew", requireAuth, async (req, res): Promise<void> => {
+  const params = RenewLockerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = RenewLockerBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
+  if (!locker || locker.status !== "occupied") {
+    res.status(400).json({ error: "Locker is not occupied" });
+    return;
+  }
+
+  const [client] = locker.clientId
+    ? await db.select().from(clientsTable).where(eq(clientsTable.id, locker.clientId))
+    : [null];
+
+  const dob = client ? maybeDecrypt(client.dobEncrypted, client.dobDek) : null;
+  const customerType: CustomerType = client?.membershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
+  const clientAge = dob ? calculateAge(dob) : 25;
+  const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
+  const { subtotal } = calculatePrice({ customerType, productType: "LOCKER", startTime: new Date(), clientAge, hasBirthdayToday });
+  const { tax, total } = computeTotal(subtotal);
+
+  if (total > 0) {
+    await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Locker ${locker.name} renewal`);
+  }
+
+  const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + 6 * 60 * 60 * 1000);
+  await db.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
+
+  if (locker.sessionId) {
+    await db.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, locker.sessionId));
+    if (client) {
+      await db.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "renewal", squarePaymentId: parsed.data.idempotencyKey, description: `Locker ${locker.name} 6h renewal`, sessionId: locker.sessionId });
+    }
+  }
+
+  const [session] = locker.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, locker.sessionId)) : [null];
+  res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "locker", resourceId: locker.id, resourceName: locker.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
+});
+
+router.post("/lockers/:id/extend", requireAuth, async (req, res): Promise<void> => {
+  const params = ExtendLockerParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = ExtendLockerBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
+  if (!locker || locker.status !== "occupied") {
+    res.status(400).json({ error: "Locker is not occupied" });
+    return;
+  }
+
+  const [client] = locker.clientId ? await db.select().from(clientsTable).where(eq(clientsTable.id, locker.clientId)) : [null];
+
+  // Extension surcharge: charge 1/3 of base rate for 2h
+  const dob = client ? maybeDecrypt(client.dobEncrypted, client.dobDek) : null;
+  const customerType: CustomerType = client?.membershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
+  const clientAge = dob ? calculateAge(dob) : 25;
+  const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
+  const { subtotal: baseSubtotal } = calculatePrice({ customerType, productType: "LOCKER", startTime: new Date(), clientAge, hasBirthdayToday });
+  const subtotal = Math.round((baseSubtotal / 3) * 100) / 100;
+  const { tax, total } = computeTotal(subtotal);
+
+  if (total > 0) {
+    await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Locker ${locker.name} 2h extension`);
+  }
+
+  const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + 2 * 60 * 60 * 1000);
+  await db.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
+
+  if (locker.sessionId) {
+    await db.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, locker.sessionId));
+    if (client) {
+      await db.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "extension", squarePaymentId: parsed.data.idempotencyKey, description: `Locker ${locker.name} 2h extension`, sessionId: locker.sessionId });
+    }
+  }
+
+  const [session] = locker.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, locker.sessionId)) : [null];
+  res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "locker", resourceId: locker.id, resourceName: locker.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
+});
+
+export default router;

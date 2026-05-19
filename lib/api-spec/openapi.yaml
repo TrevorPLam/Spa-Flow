@@ -3,20 +3,42 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SpaFlow - Spa Management System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: clients
+    description: Client profile management
+  - name: lockers
+    description: Locker management
+  - name: rooms
+    description: Room management
+  - name: pricing
+    description: Dynamic pricing engine
+  - name: waitlist
+    description: Waitlist management
+  - name: products
+    description: Product inventory
+  - name: transactions
+    description: Transaction history
+  - name: dashboard
+    description: Dashboard and reporting
+  - name: users
+    description: Staff user management
+  - name: audit
+    description: Audit logging
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +46,1384 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Staff login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Staff logout
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Unauthorized
+
+  # Clients
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List clients
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: membershipStatus
+          in: query
+          schema:
+            type: string
+            enum: [none, one_time, six_month]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientList"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a client profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a client profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update a client profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientUpdate"
+      responses:
+        "200":
+          description: Updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /clients/{id}/memberships:
+    post:
+      operationId: addMembership
+      tags: [clients]
+      summary: Add membership to a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipInput"
+      responses:
+        "201":
+          description: Membership added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+
+  /clients/{id}/rentals:
+    get:
+      operationId: getClientRentals
+      tags: [clients]
+      summary: Get a client's rental history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client rental sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RentalSession"
+
+  /clients/{id}/transactions:
+    get:
+      operationId: getClientTransactions
+      tags: [clients]
+      summary: Get a client's transaction history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  # Lockers
+  /lockers:
+    get:
+      operationId: listLockers
+      tags: [lockers]
+      summary: List all lockers
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, occupied, reserved]
+      responses:
+        "200":
+          description: List of lockers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Locker"
+
+  /lockers/occupancy:
+    get:
+      operationId: getLockersOccupancy
+      tags: [lockers]
+      summary: Get locker occupancy summary
+      responses:
+        "200":
+          description: Occupancy summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancySummary"
+
+  /lockers/{id}/assign:
+    post:
+      operationId: assignLocker
+      tags: [lockers]
+      summary: Assign a locker to a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignResourceInput"
+      responses:
+        "200":
+          description: Locker assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  /lockers/{id}/release:
+    post:
+      operationId: releaseLocker
+      tags: [lockers]
+      summary: Release a locker
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Locker released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  /lockers/{id}/renew:
+    post:
+      operationId: renewLocker
+      tags: [lockers]
+      summary: Renew locker for another 6 hours
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewInput"
+      responses:
+        "200":
+          description: Locker renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  /lockers/{id}/extend:
+    post:
+      operationId: extendLocker
+      tags: [lockers]
+      summary: Extend locker by 2 hours
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewInput"
+      responses:
+        "200":
+          description: Locker extended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  # Rooms
+  /rooms:
+    get:
+      operationId: listRooms
+      tags: [rooms]
+      summary: List all private rooms
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, occupied, reserved]
+      responses:
+        "200":
+          description: List of rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+
+  /rooms/occupancy:
+    get:
+      operationId: getRoomsOccupancy
+      tags: [rooms]
+      summary: Get room occupancy summary
+      responses:
+        "200":
+          description: Occupancy summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccupancySummary"
+
+  /rooms/{id}/assign:
+    post:
+      operationId: assignRoom
+      tags: [rooms]
+      summary: Assign a room to a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignResourceInput"
+      responses:
+        "200":
+          description: Room assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  /rooms/{id}/release:
+    post:
+      operationId: releaseRoom
+      tags: [rooms]
+      summary: Release a room
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Room released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  /rooms/{id}/renew:
+    post:
+      operationId: renewRoom
+      tags: [rooms]
+      summary: Renew room for another 6 hours
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewInput"
+      responses:
+        "200":
+          description: Room renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  /rooms/{id}/extend:
+    post:
+      operationId: extendRoom
+      tags: [rooms]
+      summary: Extend room by 2 hours
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewInput"
+      responses:
+        "200":
+          description: Room extended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentalSession"
+
+  # Pricing
+  /pricing/calculate:
+    post:
+      operationId: calculatePrice
+      tags: [pricing]
+      summary: Calculate price for a rental
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceCalculationInput"
+      responses:
+        "200":
+          description: Price calculation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceCalculation"
+
+  # Check-in
+  /checkin:
+    post:
+      operationId: checkIn
+      tags: [clients]
+      summary: Full check-in flow - process payment and assign resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInInput"
+      responses:
+        "200":
+          description: Check-in successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckInResult"
+
+  # Waitlist
+  /waitlist:
+    get:
+      operationId: listWaitlist
+      tags: [waitlist]
+      summary: List waitlist entries
+      responses:
+        "200":
+          description: Waitlist entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WaitlistEntry"
+    post:
+      operationId: addToWaitlist
+      tags: [waitlist]
+      summary: Add client to waitlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaitlistInput"
+      responses:
+        "201":
+          description: Added to waitlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntry"
+
+  /waitlist/{id}:
+    delete:
+      operationId: removeFromWaitlist
+      tags: [waitlist]
+      summary: Remove from waitlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  /waitlist/{id}/confirm:
+    post:
+      operationId: confirmWaitlistAssignment
+      tags: [waitlist]
+      summary: Client confirms room assignment from waitlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntry"
+
+  # Products
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Transactions
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      summary: List transactions
+      parameters:
+        - name: clientId
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionList"
+
+  # Dashboard
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+
+  # Users
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List staff users (manager only)
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a staff user (manager only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a staff user (manager only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a staff user (manager only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Audit Logs
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [audit]
+      summary: List audit logs (manager only)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: userId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogList"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # Auth
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [id, email, name, role]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [STAFF, MANAGER]
+
+    # Users
+    User:
+      type: object
+      required: [id, email, name, role, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [STAFF, MANAGER]
+        createdAt:
+          type: string
+          format: date-time
+
+    UserInput:
+      type: object
+      required: [email, name, password, role]
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [STAFF, MANAGER]
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [STAFF, MANAGER]
+        password:
+          type: string
+
+    # Clients
+    Client:
+      type: object
+      required: [id, name, membershipStatus, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        memberId:
+          type: ["string", "null"]
+        membershipStatus:
+          type: string
+          enum: [none, one_time, six_month]
+        membershipExpiresAt:
+          type: ["string", "null"]
+          format: date-time
+        notes:
+          type: ["string", "null"]
+        # PII fields - only decrypted for MANAGER role
+        dob:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        documentNumber:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        activeSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RentalSession"
+
+    ClientInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        dob:
+          type: string
+        address:
+          type: string
+        documentNumber:
+          type: string
+        membershipStatus:
+          type: string
+          enum: [none, one_time, six_month]
+        notes:
+          type: string
+
+    ClientUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        dob:
+          type: string
+        address:
+          type: string
+        documentNumber:
+          type: string
+        membershipStatus:
+          type: string
+          enum: [none, one_time, six_month]
+        notes:
+          type: string
+
+    ClientList:
+      type: object
+      required: [clients, total, page, limit]
+      properties:
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/Client"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # Memberships
+    Membership:
+      type: object
+      required: [id, clientId, type, purchasedAt]
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        type:
+          type: string
+          enum: [one_time, six_month]
+        purchasedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+
+    MembershipInput:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [one_time, six_month]
+        paymentToken:
+          type: string
+        idempotencyKey:
+          type: string
+
+    # Lockers & Rooms
+    Locker:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [available, occupied, reserved]
+        clientId:
+          type: ["integer", "null"]
+        clientName:
+          type: ["string", "null"]
+        sessionId:
+          type: ["integer", "null"]
+        startTime:
+          type: ["string", "null"]
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+
+    Room:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [available, occupied, reserved]
+        clientId:
+          type: ["integer", "null"]
+        clientName:
+          type: ["string", "null"]
+        sessionId:
+          type: ["integer", "null"]
+        startTime:
+          type: ["string", "null"]
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+
+    OccupancySummary:
+      type: object
+      required: [total, available, occupied, reserved]
+      properties:
+        total:
+          type: integer
+        available:
+          type: integer
+        occupied:
+          type: integer
+        reserved:
+          type: integer
+
+    AssignResourceInput:
+      type: object
+      required: [clientId, paymentToken, idempotencyKey]
+      properties:
+        clientId:
+          type: integer
+        paymentToken:
+          type: string
+        idempotencyKey:
+          type: string
+        membershipType:
+          type: string
+          enum: [one_time, six_month]
+
+    RenewInput:
+      type: object
+      required: [paymentToken, idempotencyKey]
+      properties:
+        paymentToken:
+          type: string
+        idempotencyKey:
+          type: string
+
+    # Rental Sessions
+    RentalSession:
+      type: object
+      required: [id, clientId, resourceType, resourceId, resourceName, status, startTime]
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: ["string", "null"]
+        resourceType:
+          type: string
+          enum: [locker, room]
+        resourceId:
+          type: integer
+        resourceName:
+          type: string
+        status:
+          type: string
+          enum: [active, completed, expired]
+        startTime:
+          type: string
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        endTime:
+          type: ["string", "null"]
+          format: date-time
+        amountPaid:
+          type: ["number", "null"]
+
+    # Pricing
+    PriceCalculationInput:
+      type: object
+      required: [clientId, resourceType]
+      properties:
+        clientId:
+          type: integer
+        resourceType:
+          type: string
+          enum: [locker, room]
+        membershipType:
+          type: ["string", "null"]
+          enum: [one_time, six_month, null]
+
+    PriceCalculation:
+      type: object
+      required: [subtotal, tax, total, appliedRules]
+      properties:
+        subtotal:
+          type: number
+        tax:
+          type: number
+        total:
+          type: number
+        appliedRules:
+          type: array
+          items:
+            type: string
+
+    # Check-in
+    CheckInInput:
+      type: object
+      required: [clientId, resourceType, resourceId, paymentToken, idempotencyKey]
+      properties:
+        clientId:
+          type: integer
+        resourceType:
+          type: string
+          enum: [locker, room]
+        resourceId:
+          type: integer
+        paymentToken:
+          type: string
+        idempotencyKey:
+          type: string
+        membershipType:
+          type: ["string", "null"]
+          enum: [one_time, six_month, null]
+        productIds:
+          type: array
+          items:
+            type: integer
+
+    CheckInResult:
+      type: object
+      required: [session, transaction]
+      properties:
+        session:
+          $ref: "#/components/schemas/RentalSession"
+        transaction:
+          $ref: "#/components/schemas/Transaction"
+        membership:
+          $ref: "#/components/schemas/Membership"
+
+    # Waitlist
+    WaitlistEntry:
+      type: object
+      required: [id, clientId, position, status, createdAt]
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: ["string", "null"]
+        clientPhone:
+          type: ["string", "null"]
+        position:
+          type: integer
+        status:
+          type: string
+          enum: [waiting, assigned, confirmed, expired]
+        assignedRoomId:
+          type: ["integer", "null"]
+        assignedRoomName:
+          type: ["string", "null"]
+        assignedAt:
+          type: ["string", "null"]
+          format: date-time
+        confirmBy:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    WaitlistInput:
+      type: object
+      required: [clientId]
+      properties:
+        clientId:
+          type: integer
+
+    # Products
+    Product:
+      type: object
+      required: [id, name, price, stock]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        price:
+          type: number
+        stock:
+          type: integer
+        category:
+          type: ["string", "null"]
+
+    ProductInput:
+      type: object
+      required: [name, price, stock]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        category:
+          type: string
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        category:
+          type: string
+
+    # Transactions
+    Transaction:
+      type: object
+      required: [id, clientId, amount, type, createdAt]
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: ["string", "null"]
+        amount:
+          type: number
+        tax:
+          type: number
+        total:
+          type: number
+        type:
+          type: string
+          enum: [locker_rental, room_rental, membership, product, renewal, extension]
+        squarePaymentId:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    TransactionList:
+      type: object
+      required: [transactions, total, page, limit]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # Dashboard
+    Dashboard:
+      type: object
+      required: [lockerOccupancy, roomOccupancy, todayRevenue, activeClients, waitlistCount, recentTransactions, activeRentals]
+      properties:
+        lockerOccupancy:
+          $ref: "#/components/schemas/OccupancySummary"
+        roomOccupancy:
+          $ref: "#/components/schemas/OccupancySummary"
+        todayRevenue:
+          type: number
+        activeClients:
+          type: integer
+        waitlistCount:
+          type: integer
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        activeRentals:
+          type: array
+          items:
+            $ref: "#/components/schemas/RentalSession"
+
+    # Audit Logs
+    AuditLog:
+      type: object
+      required: [id, userId, action, resourceType, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: ["string", "null"]
+        action:
+          type: string
+        resourceType:
+          type: string
+        resourceId:
+          type: ["integer", "null"]
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditLogList:
+      type: object
+      required: [logs, total, page, limit]
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
