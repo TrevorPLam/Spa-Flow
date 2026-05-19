@@ -1,7 +1,7 @@
 modules = ["nodejs-24"]
 
 [deployment]
-router = "application"
+router = "none"
 deploymentTarget = "autoscale"
 
 [deployment.postBuild]
