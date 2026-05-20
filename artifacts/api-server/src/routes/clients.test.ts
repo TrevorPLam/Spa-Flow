@@ -4,6 +4,7 @@ import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from 
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
 import { eq } from 'drizzle-orm';
+import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
 describe('Clients API', () => {
   beforeEach(async () => {
@@ -229,6 +230,79 @@ describe('Clients API', () => {
       const response = await api.get(`/api/clients/${client.id}/memberships`);
 
       expect(response.status).toBe(401);
+    });
+  });
+
+  describe('Contract Validation', () => {
+    it('should validate GET /api/clients response against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      const response = await api.get('/api/clients').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      
+      const validation = await validateResponse('/api/clients', 'get', 200, response.body);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
+    });
+
+    it('should validate POST /api/clients request against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const newClient = {
+        email: 'newclient@example.com',
+        phone: '555-0123',
+        memberId: 'MEM123',
+        name: 'New Client',
+      };
+
+      const validation = await validateRequestBody('/api/clients', 'post', newClient);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
+    });
+
+    it('should validate POST /api/clients response against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const newClient = {
+        email: 'newclient@example.com',
+        phone: '555-0123',
+        memberId: 'MEM123',
+        name: 'New Client',
+      };
+
+      const response = await api.post('/api/clients').set(authHeaders).send(newClient);
+
+      expect(response.status).toBe(201);
+      
+      const validation = await validateResponse('/api/clients', 'post', 201, response.body);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
+    });
+
+    it('should validate GET /api/clients/:id response against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        dobEncrypted: 'encrypted-dob-data',
+        addressEncrypted: 'encrypted-address-data'
+      });
+
+      const response = await api.get(`/api/clients/${client.id}`).set(authHeaders);
+
+      expect(response.status).toBe(200);
+      
+      const validation = await validateResponse('/api/clients/:id', 'get', 200, response.body);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
     });
   });
 });

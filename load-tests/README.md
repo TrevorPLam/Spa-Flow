@@ -44,6 +44,7 @@ k6 run load-tests/checkin-flow.ts
 ### Run with npm scripts
 ```bash
 # From root directory
+pnpm run test:load:smoke
 pnpm run test:load:health
 pnpm run test:load:clients
 pnpm run test:load:dashboard
@@ -56,6 +57,16 @@ pnpm run test:load:all
 API_BASE_URL=http://localhost:3000/api k6 run load-tests/health-check.js
 ```
 
+### Run smoke test locally
+```bash
+# Ensure API server is running first
+cd artifacts/api-server
+pnpm run dev
+
+# In another terminal, run smoke test
+API_BASE_URL=http://localhost:3000/api pnpm run test:load:smoke
+```
+
 ## Performance Baselines
 
 **Note**: Baselines will be established after the first successful load test run. The API server must be running to execute load tests.
@@ -64,12 +75,31 @@ Expected performance targets based on thresholds configured in test scripts:
 
 | Endpoint | p95 Response Time | Error Rate | Notes |
 |----------|-------------------|------------|-------|
+| /health (smoke) | < 200ms | < 1% | Smoke test - critical health check |
+| /api/health (smoke) | < 200ms | < 1% | Smoke test - API health check |
+| /api/clients (smoke) | < 200ms | < 1% | Smoke test - critical endpoint |
 | /health | < 100ms | < 1% | Health check should be very fast |
 | /clients (search) | < 300ms | < 1% | Client search with pagination |
 | /dashboard | < 500ms | < 1% | Dashboard aggregates data |
 | Check-in flow | < 1000ms | < 5% | Complex multi-step flow |
 
+### Smoke Test Baselines
+
+Smoke tests run on every PR to catch performance regressions early:
+- **Load**: 5 VUs for 30 seconds
+- **Duration**: ~30 seconds total
+- **Endpoints tested**: /health, /api/health, /api/clients (limit=10)
+- **Thresholds**: p95 < 200ms, error rate < 1%
+- **Purpose**: Quick validation that critical endpoints respond under minimal load
+
 ## Test Scenarios
+
+### Smoke Test
+- **Purpose**: Quick validation of critical endpoints under minimal load
+- **Load**: 5 VUs for 30 seconds
+- **Thresholds**: p95 < 200ms, error rate < 1%
+- **Endpoints**: /health, /api/health, /api/clients (limit=10)
+- **Runs on**: Every PR (fast feedback)
 
 ### Health Check Test
 - **Purpose**: Verify API health endpoint responds quickly
@@ -93,12 +123,18 @@ Expected performance targets based on thresholds configured in test scripts:
 
 ## CI/CD Integration
 
-Load tests run on a schedule (daily) in GitHub Actions to:
-- Detect performance regressions
+### Smoke Tests
+Smoke tests run on every PR in GitHub Actions to:
+- Detect performance regressions early
+- Provide fast feedback on critical endpoints
+- Fail quickly if there are issues
+- Run before full load tests to save CI resources
+
+### Full Load Tests
+Full load tests run on every PR in GitHub Actions to:
+- Detect performance regressions under higher load
 - Establish performance trends over time
 - Validate performance before deployments
-
-Load tests do not run on every PR to conserve CI resources.
 
 ## Troubleshooting
 

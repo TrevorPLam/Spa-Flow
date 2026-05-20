@@ -14,15 +14,21 @@ export async function setupTestDatabase() {
 
 export async function cleanDatabase() {
   // Delete in order of dependencies to avoid foreign key violations
-  await db.delete(schema.waitlistTable);
-  await db.delete(schema.transactionsTable);
-  await db.delete(schema.rentalSessionsTable);
-  await db.delete(schema.membershipsTable);
-  await db.delete(schema.productsTable);
-  await db.delete(schema.roomsTable);
-  await db.delete(schema.lockersTable);
-  await db.delete(schema.clientsTable);
-  await db.delete(schema.usersTable);
+  // Uses transactions for isolation when running in parallel
+  await db.transaction(async (tx) => {
+    await tx.delete(schema.auditLogsTable);
+    await tx.delete(schema.refreshTokensTable);
+    await tx.delete(schema.passwordResetTokensTable);
+    await tx.delete(schema.waitlistTable);
+    await tx.delete(schema.transactionsTable);
+    await tx.delete(schema.rentalSessionsTable);
+    await tx.delete(schema.membershipsTable);
+    await tx.delete(schema.productsTable);
+    await tx.delete(schema.roomsTable);
+    await tx.delete(schema.lockersTable);
+    await tx.delete(schema.clientsTable);
+    await tx.delete(schema.usersTable);
+  });
 }
 
 // Test fixture data generators

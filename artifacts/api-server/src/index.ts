@@ -39,8 +39,8 @@ if (Number.isNaN(port) || port <= 0) {
 // Shutdown state to prevent duplicate shutdowns
 let isShuttingDown = false;
 
-// Graceful shutdown handler
-async function gracefulShutdown(signal: string): Promise<void> {
+// Graceful shutdown handler (exported for testing)
+export async function gracefulShutdown(signal: string): Promise<void> {
   if (isShuttingDown) {
     logger.warn({ signal }, "Shutdown already in progress, ignoring signal");
     return;

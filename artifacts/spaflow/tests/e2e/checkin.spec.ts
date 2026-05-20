@@ -16,6 +16,9 @@ test.describe('Check-in Flow', () => {
     await checkInPage.goto();
     await expect(checkInPage.isCheckInPageLoaded()).resolves.toBe(true);
 
+    // Visual regression check for check-in page initial state
+    await expect(page).toHaveScreenshot('checkin-page-initial.png');
+
     await checkInPage.searchClient('John');
     await page.waitForTimeout(500); // Wait for search results
 

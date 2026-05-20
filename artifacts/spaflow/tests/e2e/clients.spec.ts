@@ -15,6 +15,9 @@ test.describe('Client Management', () => {
 
     await clientsPage.goto();
     await expect(clientsPage.isClientsPageLoaded()).resolves.toBe(true);
+
+    // Visual regression check for clients page
+    await expect(page).toHaveScreenshot('clients-page.png');
   });
 
   test('should search clients', async ({ page }) => {

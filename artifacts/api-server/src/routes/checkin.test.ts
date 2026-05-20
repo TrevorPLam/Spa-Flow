@@ -3,6 +3,7 @@ import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
+import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
 // Mock Square and Twilio
 vi.mock('../lib/square', () => ({
@@ -323,6 +324,52 @@ describe('Check-in API', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('sessionId');
+    });
+  });
+
+  describe('Contract Validation', () => {
+    it('should validate POST /api/checkin request against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        membershipType: 'one_time' as const,
+        paymentToken: 'test-token-123',
+      };
+
+      const validation = await validateRequestBody('/api/checkin', 'post', checkinData);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
+    });
+
+    it('should validate POST /api/checkin response against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        membershipType: 'one_time' as const,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      
+      const validation = await validateResponse('/api/checkin', 'post', 200, response.body);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
     });
   });
 });

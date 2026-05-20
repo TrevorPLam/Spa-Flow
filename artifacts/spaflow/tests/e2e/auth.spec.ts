@@ -29,6 +29,9 @@ test.describe('Authentication Flow', () => {
 
     await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
     await expect(dashboardPage.isDashboardLoaded()).resolves.toBe(true);
+
+    // Visual regression check for dashboard after login
+    await expect(page).toHaveScreenshot('dashboard-logged-in.png');
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
@@ -44,6 +47,9 @@ test.describe('Authentication Flow', () => {
   test('should redirect to login when accessing protected route unauthenticated', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
     await expect(page).toHaveURL(`${BASE_URL}/login`);
+
+    // Visual regression check for login page
+    await expect(page).toHaveScreenshot('login-page.png');
   });
 
   test('should maintain session across page navigation', async ({ page }) => {
