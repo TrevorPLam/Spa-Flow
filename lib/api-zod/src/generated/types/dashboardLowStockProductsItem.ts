@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ProductUpdate {
+export type DashboardLowStockProductsItem = {
+  id?: number;
   name?: string;
-  description?: string;
-  price?: number;
   stock?: number;
   lowStockThreshold?: number;
-  category?: string;
-}
+  /** @nullable */
+  category?: string | null;
+};

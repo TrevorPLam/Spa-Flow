@@ -21,6 +21,7 @@ import { apiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDel, cacheDelPattern } from "../lib/cache";
 import { logTransactionError } from "../lib/logger";
 import { DEFAULT_PAGE_SIZE } from "../lib/constants";
+import { sendValidationError, sendNotFoundError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -49,7 +50,7 @@ function formatClient(c: typeof clientsTable.$inferSelect, isManager: boolean) {
 router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListClientsQueryParams.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -103,7 +104,7 @@ router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> 
 router.post("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CreateClientBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -167,7 +168,7 @@ router.post("/clients", requireAuth, apiLimiter, async (req, res): Promise<void>
 router.get("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
@@ -215,7 +216,7 @@ router.get("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<vo
   });
 
   if (!cachedClient) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 
@@ -225,13 +226,13 @@ router.get("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<vo
 router.patch("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = UpdateClientParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const parsed = UpdateClientBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -271,7 +272,7 @@ router.patch("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<
     });
   } catch (error) {
     if (error instanceof Error && error.message === "Client not found") {
-      res.status(404).json({ error: "Client not found" });
+      sendNotFoundError(res, "Client not found");
       return;
     }
     logTransactionError("client update", error, { clientId: params.data.id });
@@ -299,13 +300,13 @@ router.patch("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<
 router.delete("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteClientParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
   if (!client) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 
@@ -332,19 +333,19 @@ router.delete("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise
 router.post("/clients/:id/memberships", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = AddMembershipParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const parsed = AddMembershipBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
   if (!client) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 
@@ -403,7 +404,7 @@ router.post("/clients/:id/memberships", requireAuth, apiLimiter, async (req, res
 router.get("/clients/:id/rentals", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientRentalsParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
@@ -431,7 +432,7 @@ router.get("/clients/:id/rentals", requireAuth, apiLimiter, async (req, res): Pr
 router.get("/clients/:id/transactions", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientTransactionsParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 

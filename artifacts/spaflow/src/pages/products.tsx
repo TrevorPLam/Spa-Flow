@@ -5,6 +5,7 @@ import {
   useUpdateProduct,
   useDeleteProduct,
   getListProductsQueryKey,
+  type Product,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
@@ -17,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, ShoppingBag } from "lucide-react";
+import { Plus, Pencil, Trash2, ShoppingBag, PackagePlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +26,7 @@ const productSchema = z.object({
   name: z.string().min(1, "Name required"),
   price: z.coerce.number().min(0, "Price must be positive"),
   stock: z.coerce.number().int().min(0),
+  lowStockThreshold: z.coerce.number().int().min(0).default(5),
   description: z.string().optional(),
   category: z.string().optional(),
 });
@@ -37,9 +39,11 @@ export default function ProductsPage() {
   const { toast } = useToast();
   const [editingProduct, setEditingProduct] = useState<{ id: number } & ProductForm | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [showBulkReorder, setShowBulkReorder] = useState(false);
 
   const { data: products = [], isLoading } = useListProducts({ query: { queryKey: getListProductsQueryKey() } });
   const productsArray = Array.isArray(products) ? products : [];
+  const lowStockProducts = productsArray.filter(p => p.stock <= (p.lowStockThreshold ?? 5));
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -50,29 +54,29 @@ export default function ProductsPage() {
 
   const form = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", price: 0, stock: 0, description: "", category: "" },
+    defaultValues: { name: "", price: 0, stock: 0, lowStockThreshold: 5, description: "", category: "" },
   });
 
   function openNew() {
-    form.reset({ name: "", price: 0, stock: 0, description: "", category: "" });
+    form.reset({ name: "", price: 0, stock: 0, lowStockThreshold: 5, description: "", category: "" });
     setEditingProduct(null);
     setShowNew(true);
   }
 
-  function openEdit(p: typeof products[0]) {
-    form.reset({ name: p.name, price: p.price, stock: p.stock, description: p.description ?? "", category: p.category ?? "" });
-    setEditingProduct({ id: p.id, name: p.name, price: p.price, stock: p.stock });
+  function openEdit(p: Product) {
+    form.reset({ name: p.name, price: p.price, stock: p.stock, lowStockThreshold: p.lowStockThreshold ?? 5, description: p.description ?? "", category: p.category ?? "" });
+    setEditingProduct({ id: p.id, name: p.name, price: p.price, stock: p.stock, lowStockThreshold: p.lowStockThreshold ?? 5 });
     setShowNew(true);
   }
 
   async function onSubmit(values: ProductForm) {
     if (editingProduct) {
-      updateProduct.mutate({ id: editingProduct.id, data: { name: values.name, price: values.price, stock: values.stock, description: values.description, category: values.category } }, {
+      updateProduct.mutate({ id: editingProduct.id, data: { name: values.name, price: values.price, stock: values.stock, lowStockThreshold: values.lowStockThreshold, description: values.description, category: values.category } }, {
         onSuccess: () => { toast({ title: "Product updated" }); invalidate(); setShowNew(false); },
         onError: () => toast({ title: "Failed to update", variant: "destructive" }),
       });
     } else {
-      createProduct.mutate({ data: { name: values.name, price: values.price, stock: values.stock, description: values.description, category: values.category } }, {
+      createProduct.mutate({ data: { name: values.name, price: values.price, stock: values.stock, lowStockThreshold: values.lowStockThreshold, description: values.description, category: values.category } }, {
         onSuccess: () => { toast({ title: "Product created" }); invalidate(); setShowNew(false); },
         onError: () => toast({ title: "Failed to create", variant: "destructive" }),
       });
@@ -88,9 +92,16 @@ export default function ProductsPage() {
             <p className="text-sm text-muted-foreground">{productsArray.length} items in inventory</p>
           </div>
           {isManager && (
-            <Button data-testid="button-new-product" size="sm" onClick={openNew} className="gap-2">
-              <Plus size={16} />New Product
-            </Button>
+            <div className="flex gap-2">
+              {lowStockProducts.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setShowBulkReorder(true)} className="gap-2">
+                  <PackagePlus size={16} />Bulk Reorder ({lowStockProducts.length})
+                </Button>
+              )}
+              <Button data-testid="button-new-product" size="sm" onClick={openNew} className="gap-2">
+                <Plus size={16} />New Product
+              </Button>
+            </div>
           )}
         </div>
 
@@ -118,7 +129,7 @@ export default function ProductsPage() {
                       <td className="px-6 py-4 text-muted-foreground">{p.category || "—"}</td>
                       <td className="px-6 py-4 text-right">${p.price.toFixed(2)}</td>
                       <td className="px-6 py-4 text-right">
-                        <Badge variant={p.stock === 0 ? "destructive" : p.stock < 5 ? "secondary" : "outline"}>
+                        <Badge variant={p.stock === 0 ? "destructive" : p.stock <= (p.lowStockThreshold ?? 5) ? "secondary" : "outline"}>
                           {p.stock}
                         </Badge>
                       </td>
@@ -168,6 +179,9 @@ export default function ProductsPage() {
                   <FormItem><FormLabel>Stock</FormLabel><FormControl><Input data-testid="input-product-stock" type="number" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
+              <FormField control={form.control} name="lowStockThreshold" render={({ field }) => (
+                <FormItem><FormLabel>Low Stock Threshold</FormLabel><FormControl><Input data-testid="input-product-threshold" type="number" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
               <FormField control={form.control} name="category" render={({ field }) => (
                 <FormItem><FormLabel>Category</FormLabel><FormControl><Input data-testid="input-product-category" placeholder="e.g. Beverages" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -178,6 +192,53 @@ export default function ProductsPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBulkReorder} onOpenChange={setShowBulkReorder}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Reorder Low Stock Items</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This will add 20 units to each low stock product. Are you sure?
+            </p>
+            <ul className="text-sm space-y-2 max-h-60 overflow-y-auto">
+              {lowStockProducts.map(p => (
+                <li key={p.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                  <span>{p.name}</span>
+                  <span className="text-muted-foreground">{p.stock} → {p.stock + 20}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkReorder(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                for (const product of lowStockProducts) {
+                  await updateProduct.mutateAsync({
+                    id: product.id,
+                    data: {
+                      name: product.name,
+                      price: product.price,
+                      stock: product.stock + 20,
+                      lowStockThreshold: product.lowStockThreshold,
+                      description: product.description ?? undefined,
+                      category: product.category ?? undefined,
+                    }
+                  });
+                }
+                invalidate();
+                setShowBulkReorder(false);
+                toast({ title: `Reordered ${lowStockProducts.length} products` });
+              }}
+              disabled={updateProduct.isPending}
+            >
+              Confirm Reorder
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Layout>

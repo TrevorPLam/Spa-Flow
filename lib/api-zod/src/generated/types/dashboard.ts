@@ -5,6 +5,7 @@
  * SpaFlow - Spa Management System API
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardLowStockProductsItem } from './dashboardLowStockProductsItem';
 import type { OccupancySummary } from './occupancySummary';
 import type { RentalSession } from './rentalSession';
 import type { Transaction } from './transaction';
@@ -15,6 +16,8 @@ export interface Dashboard {
   todayRevenue: number;
   activeClients: number;
   waitlistCount: number;
+  lowStockCount: number;
+  lowStockProducts?: DashboardLowStockProductsItem[];
   recentTransactions: Transaction[];
   activeRentals: RentalSession[];
 }

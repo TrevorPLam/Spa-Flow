@@ -12,13 +12,14 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "../lib/logger";
 import bcrypt from "bcryptjs";
+import { sendValidationError, sendInternalError, sendNotFoundError } from "../lib/response-formatters";
 
 const router = Router();
 
 router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -203,7 +204,7 @@ const PasswordResetRequestBody = z.object({
 router.post("/auth/password-reset/request", async (req, res): Promise<void> => {
   const parsed = PasswordResetRequestBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -260,7 +261,7 @@ router.get("/auth/sessions", requireAuth, async (req, res): Promise<void> => {
       isNull = drizzleModule.isNull;
     } catch (error) {
       logger.error({ error }, "Failed to import database modules");
-      res.status(500).json({ error: "Internal server error" });
+      sendInternalError(res, "Internal server error");
       return;
     }
     const tokens = await db
@@ -302,14 +303,14 @@ router.delete("/auth/sessions/:id", requireAuth, async (req, res): Promise<void>
 
   // Prevent revoking current session
   if (currentSessionId && sessionId === currentSessionId) {
-    res.status(400).json({ error: "Cannot revoke current session via API. Use logout instead." });
+    sendValidationError(res, "Cannot revoke current session via API. Use logout instead.");
     return;
   }
 
   const revoked = await sessionService.revokeSession(sessionId, userId);
 
   if (!revoked) {
-    res.status(404).json({ error: "Session not found" });
+    sendNotFoundError(res, "Session not found");
     return;
   }
 

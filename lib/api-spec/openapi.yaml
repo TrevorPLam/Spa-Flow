@@ -28,6 +28,8 @@ tags:
     description: Transaction history
   - name: dashboard
     description: Dashboard and reporting
+  - name: reports
+    description: Revenue and utilization reports (manager only)
   - name: users
     description: Staff user management
   - name: audit
@@ -950,6 +952,26 @@ paths:
         "204":
           description: Deleted
 
+  /products/low-stock:
+    get:
+      operationId: listLowStockProducts
+      tags: [products]
+      summary: List products with low stock
+      responses:
+        "200":
+          description: Low stock products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+                  count:
+                    type: integer
+
   # Transactions
   /transactions:
     get:
@@ -1004,6 +1026,188 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+
+  # Reports
+  /reports/revenue:
+    get:
+      operationId: getRevenueReport
+      tags: [reports]
+      summary: Get revenue report by date range (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+          description: Time granularity for aggregation
+      responses:
+        "200":
+          description: Revenue report data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/revenue-by-type:
+    get:
+      operationId: getRevenueByType
+      tags: [reports]
+      summary: Get revenue breakdown by service type (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Revenue by type data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueByTypeReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/utilization/lockers:
+    get:
+      operationId: getLockerUtilization
+      tags: [reports]
+      summary: Get locker utilization rates over time (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+          description: Time granularity for aggregation
+      responses:
+        "200":
+          description: Locker utilization data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UtilizationReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/utilization/rooms:
+    get:
+      operationId: getRoomUtilization
+      tags: [reports]
+      summary: Get room utilization rates over time (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: daily
+          description: Time granularity for aggregation
+      responses:
+        "200":
+          description: Room utilization data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UtilizationReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/utilization/peak-hours:
+    get:
+      operationId: getPeakHours
+      tags: [reports]
+      summary: Get peak hours analysis for rentals (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Peak hours data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeakHoursReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
 
   # Users
   /users:
@@ -1129,6 +1333,27 @@ components:
       bearerFormat: JWT
       description: JWT access token for authentication
   schemas:
+    # Standard error response format used across all endpoints
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code for programmatic handling
+          enum:
+            - VALIDATION_ERROR
+            - NOT_FOUND
+            - CONFLICT
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - INTERNAL_ERROR
+            - LOCKED
+            - PAYMENT_ERROR
+
     LivenessResponse:
       type: object
       required: [status]
@@ -1729,7 +1954,7 @@ components:
     # Products
     Product:
       type: object
-      required: [id, name, price, stock]
+      required: [id, name, price, stock, lowStockThreshold]
       properties:
         id:
           type: integer
@@ -1741,6 +1966,9 @@ components:
           type: number
         stock:
           type: integer
+        lowStockThreshold:
+          type: integer
+          default: 5
         category:
           type: ["string", "null"]
 
@@ -1756,6 +1984,9 @@ components:
           type: number
         stock:
           type: integer
+        lowStockThreshold:
+          type: integer
+          default: 5
         category:
           type: string
 
@@ -1769,6 +2000,8 @@ components:
         price:
           type: number
         stock:
+          type: integer
+        lowStockThreshold:
           type: integer
         category:
           type: string
@@ -1819,7 +2052,7 @@ components:
     # Dashboard
     Dashboard:
       type: object
-      required: [lockerOccupancy, roomOccupancy, todayRevenue, activeClients, waitlistCount, recentTransactions, activeRentals]
+      required: [lockerOccupancy, roomOccupancy, todayRevenue, activeClients, waitlistCount, recentTransactions, activeRentals, lowStockCount]
       properties:
         lockerOccupancy:
           $ref: "#/components/schemas/OccupancySummary"
@@ -1831,6 +2064,23 @@ components:
           type: integer
         waitlistCount:
           type: integer
+        lowStockCount:
+          type: integer
+        lowStockProducts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              stock:
+                type: integer
+              lowStockThreshold:
+                type: integer
+              category:
+                type: ["string", "null"]
         recentTransactions:
           type: array
           items:
@@ -1839,6 +2089,153 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RentalSession"
+
+    # Reports
+    RevenueReport:
+      type: object
+      required: [data, totalRevenue, startDate, endDate, granularity]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [date, revenue, tax, total]
+            properties:
+              date:
+                type: string
+                format: date-time
+              revenue:
+                type: number
+              tax:
+                type: number
+              total:
+                type: number
+              transactionCount:
+                type: integer
+        totalRevenue:
+          type: number
+        totalTax:
+          type: number
+        total:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        granularity:
+          type: string
+          enum: [daily, weekly, monthly]
+
+    RevenueByTypeReport:
+      type: object
+      required: [data, totalRevenue, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [type, revenue, tax, total, count]
+            properties:
+              type:
+                type: string
+                enum: [locker_rental, room_rental, membership, product, renewal, extension]
+              revenue:
+                type: number
+              tax:
+                type: number
+              total:
+                type: number
+              count:
+                type: integer
+        totalRevenue:
+          type: number
+        totalTax:
+          type: number
+        total:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    UtilizationReport:
+      type: object
+      required: [data, averageUtilization, totalCapacity, startDate, endDate, granularity]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [date, occupiedCount, totalCapacity, utilizationRate]
+            properties:
+              date:
+                type: string
+                format: date-time
+              occupiedCount:
+                type: integer
+              totalCapacity:
+                type: integer
+              utilizationRate:
+                type: string
+        averageUtilization:
+          type: number
+        totalCapacity:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        granularity:
+          type: string
+          enum: [daily, weekly, monthly]
+
+    PeakHoursReport:
+      type: object
+      required: [data, peakHour, averageRentalsPerHour, totalRentals, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [hour, lockerRentals, roomRentals, totalRentals]
+            properties:
+              hour:
+                type: integer
+                minimum: 0
+                maximum: 23
+              lockerRentals:
+                type: integer
+              roomRentals:
+                type: integer
+              totalRentals:
+                type: integer
+        peakHour:
+          type: object
+          nullable: true
+          required: [hour, totalRentals]
+          properties:
+            hour:
+              type: integer
+              minimum: 0
+              maximum: 23
+            totalRentals:
+              type: integer
+        averageRentalsPerHour:
+          type: number
+        totalRentals:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
 
     # Audit Logs
     AuditLog:

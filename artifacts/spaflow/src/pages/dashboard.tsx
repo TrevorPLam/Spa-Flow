@@ -4,7 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, DoorOpen, DollarSign, Users, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Lock, DoorOpen, DollarSign, Users, Clock, AlertTriangle, ShoppingBag } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 
@@ -36,6 +37,8 @@ export default function DashboardPage() {
   const roomPct = data.roomOccupancy?.total > 0
     ? Math.round(((data.roomOccupancy.occupied ?? 0) / data.roomOccupancy.total) * 100)
     : 0;
+
+  const hasLowStock = (data.lowStockCount ?? 0) > 0;
 
   return (
     <Layout>
@@ -110,7 +113,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card data-testid="card-active-clients">
+          <Card data-testid="card-active-clients" className={hasLowStock ? "border-destructive" : ""}>
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
                 <div>
@@ -127,6 +130,45 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Low stock alert */}
+        {hasLowStock && (
+          <Card className="border-destructive bg-destructive/5" data-testid="card-low-stock-alert">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-destructive">
+                <AlertTriangle size={14} />
+                Low Stock Alert
+                <Badge variant="destructive" className="ml-auto">{data.lowStockCount} items</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ul className="divide-y divide-border">
+                {data.lowStockProducts?.map(p => (
+                  <li key={p.id} className="px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ShoppingBag size={14} className="text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{p.name}</p>
+                        <p className="text-xs text-muted-foreground">{p.category || "Uncategorized"}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant={p.stock === 0 ? "destructive" : "secondary"} className="text-xs">
+                        {p.stock} left
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-1">Threshold: {p.lowStockThreshold}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="p-3 bg-background/50 border-t border-border">
+                <Button size="sm" variant="outline" className="w-full gap-2" onClick={() => window.location.href = "/products"}>
+                  <ShoppingBag size={14} /> Manage Inventory
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Active rentals */}

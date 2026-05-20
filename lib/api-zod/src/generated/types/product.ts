@@ -13,6 +13,7 @@ export interface Product {
   description?: string | null;
   price: number;
   stock: number;
+  lowStockThreshold: number;
   /** @nullable */
   category?: string | null;
 }

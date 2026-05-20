@@ -796,12 +796,15 @@ export const ConfirmWaitlistAssignmentResponse = zod.object({
 /**
  * @summary List all products
  */
+export const listProductsResponseLowStockThresholdDefault = 5;
+
 export const ListProductsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "description": zod.string().nullish(),
   "price": zod.number(),
   "stock": zod.number(),
+  "lowStockThreshold": zod.number().default(listProductsResponseLowStockThresholdDefault),
   "category": zod.string().nullish()
 })
 export const ListProductsResponse = zod.array(ListProductsResponseItem)
@@ -810,11 +813,14 @@ export const ListProductsResponse = zod.array(ListProductsResponseItem)
 /**
  * @summary Create a product
  */
+export const createProductBodyLowStockThresholdDefault = 5;
+
 export const CreateProductBody = zod.object({
   "name": zod.string(),
   "description": zod.string().optional(),
   "price": zod.number(),
   "stock": zod.number(),
+  "lowStockThreshold": zod.number().default(createProductBodyLowStockThresholdDefault),
   "category": zod.string().optional()
 })
 
@@ -831,8 +837,11 @@ export const UpdateProductBody = zod.object({
   "description": zod.string().optional(),
   "price": zod.number().optional(),
   "stock": zod.number().optional(),
+  "lowStockThreshold": zod.number().optional(),
   "category": zod.string().optional()
 })
+
+export const updateProductResponseLowStockThresholdDefault = 5;
 
 export const UpdateProductResponse = zod.object({
   "id": zod.number(),
@@ -840,6 +849,7 @@ export const UpdateProductResponse = zod.object({
   "description": zod.string().nullish(),
   "price": zod.number(),
   "stock": zod.number(),
+  "lowStockThreshold": zod.number().default(updateProductResponseLowStockThresholdDefault),
   "category": zod.string().nullish()
 })
 
@@ -849,6 +859,25 @@ export const UpdateProductResponse = zod.object({
  */
 export const DeleteProductParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List products with low stock
+ */
+export const listLowStockProductsResponseDataItemLowStockThresholdDefault = 5;
+
+export const ListLowStockProductsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "stock": zod.number(),
+  "lowStockThreshold": zod.number().default(listLowStockProductsResponseDataItemLowStockThresholdDefault),
+  "category": zod.string().nullish()
+})).optional(),
+  "count": zod.number().optional()
 })
 
 
@@ -904,6 +933,14 @@ export const GetDashboardResponse = zod.object({
   "todayRevenue": zod.number(),
   "activeClients": zod.number(),
   "waitlistCount": zod.number(),
+  "lowStockCount": zod.number(),
+  "lowStockProducts": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().optional(),
+  "stock": zod.number().optional(),
+  "lowStockThreshold": zod.number().optional(),
+  "category": zod.string().nullish()
+})).optional(),
   "recentTransactions": zod.array(zod.object({
   "id": zod.number(),
   "clientId": zod.number(),
@@ -929,6 +966,144 @@ export const GetDashboardResponse = zod.object({
   "endTime": zod.coerce.date().nullish(),
   "amountPaid": zod.number().nullish()
 }))
+})
+
+
+/**
+ * @summary Get revenue report by date range (manager only)
+ */
+export const getRevenueReportQueryGranularityDefault = `daily`;
+
+export const GetRevenueReportQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)'),
+  "granularity": zod.enum(['daily', 'weekly', 'monthly']).default(getRevenueReportQueryGranularityDefault).describe('Time granularity for aggregation')
+})
+
+export const GetRevenueReportResponse = zod.object({
+  "data": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "revenue": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number(),
+  "transactionCount": zod.number().optional()
+})),
+  "totalRevenue": zod.number(),
+  "totalTax": zod.number().optional(),
+  "total": zod.number().optional(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "granularity": zod.enum(['daily', 'weekly', 'monthly'])
+})
+
+
+/**
+ * @summary Get revenue breakdown by service type (manager only)
+ */
+export const GetRevenueByTypeQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const GetRevenueByTypeResponse = zod.object({
+  "data": zod.array(zod.object({
+  "type": zod.enum(['locker_rental', 'room_rental', 'membership', 'product', 'renewal', 'extension']),
+  "revenue": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number(),
+  "count": zod.number()
+})),
+  "totalRevenue": zod.number(),
+  "totalTax": zod.number().optional(),
+  "total": zod.number().optional(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get locker utilization rates over time (manager only)
+ */
+export const getLockerUtilizationQueryGranularityDefault = `daily`;
+
+export const GetLockerUtilizationQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)'),
+  "granularity": zod.enum(['daily', 'weekly', 'monthly']).default(getLockerUtilizationQueryGranularityDefault).describe('Time granularity for aggregation')
+})
+
+export const GetLockerUtilizationResponse = zod.object({
+  "data": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "occupiedCount": zod.number(),
+  "totalCapacity": zod.number(),
+  "utilizationRate": zod.string()
+})),
+  "averageUtilization": zod.number(),
+  "totalCapacity": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "granularity": zod.enum(['daily', 'weekly', 'monthly'])
+})
+
+
+/**
+ * @summary Get room utilization rates over time (manager only)
+ */
+export const getRoomUtilizationQueryGranularityDefault = `daily`;
+
+export const GetRoomUtilizationQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)'),
+  "granularity": zod.enum(['daily', 'weekly', 'monthly']).default(getRoomUtilizationQueryGranularityDefault).describe('Time granularity for aggregation')
+})
+
+export const GetRoomUtilizationResponse = zod.object({
+  "data": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "occupiedCount": zod.number(),
+  "totalCapacity": zod.number(),
+  "utilizationRate": zod.string()
+})),
+  "averageUtilization": zod.number(),
+  "totalCapacity": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date(),
+  "granularity": zod.enum(['daily', 'weekly', 'monthly'])
+})
+
+
+/**
+ * @summary Get peak hours analysis for rentals (manager only)
+ */
+export const GetPeakHoursQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const getPeakHoursResponseDataItemHourMin = 0;
+export const getPeakHoursResponseDataItemHourMax = 23;
+
+export const getPeakHoursResponsePeakHourHourMin = 0;
+export const getPeakHoursResponsePeakHourHourMax = 23;
+
+
+
+export const GetPeakHoursResponse = zod.object({
+  "data": zod.array(zod.object({
+  "hour": zod.number().min(getPeakHoursResponseDataItemHourMin).max(getPeakHoursResponseDataItemHourMax),
+  "lockerRentals": zod.number(),
+  "roomRentals": zod.number(),
+  "totalRentals": zod.number()
+})),
+  "peakHour": zod.object({
+  "hour": zod.number().min(getPeakHoursResponsePeakHourHourMin).max(getPeakHoursResponsePeakHourHourMax),
+  "totalRentals": zod.number()
+}).nullable(),
+  "averageRentalsPerHour": zod.number(),
+  "totalRentals": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
 })
 
 

@@ -5,6 +5,7 @@ import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { AddToWaitlistBody, RemoveFromWaitlistParams, ConfirmWaitlistAssignmentParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
+import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -132,7 +133,7 @@ router.post("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void
 router.delete("/waitlist/:id", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = RemoveFromWaitlistParams.safeParse(req.params);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -153,17 +154,17 @@ router.delete("/waitlist/:id", requireAuth, apiLimiter, async (req, res): Promis
 router.post("/waitlist/:id/confirm", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ConfirmWaitlistAssignmentParams.safeParse(req.params);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
   const [entry] = await db.select().from(waitlistTable).where(eq(waitlistTable.id, parsed.data.id));
   if (!entry) {
-    res.status(404).json({ error: "Waitlist entry not found" });
+    sendNotFoundError(res, "Waitlist entry not found");
     return;
   }
   if (entry.status !== "assigned") {
-    res.status(400).json({ error: "Entry is not in assigned state" });
+    sendValidationError(res, "Entry is not in assigned state");
     return;
   }
 

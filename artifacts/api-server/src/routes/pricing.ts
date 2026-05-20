@@ -7,13 +7,14 @@ import { maybeDecrypt } from "../lib/encryption";
 import { CalculatePriceBody } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey } from "../lib/cache";
+import { sendValidationError, sendNotFoundError } from "../lib/response-formatters";
 
 const router = Router();
 
 router.post("/pricing/calculate", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CalculatePriceBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -21,7 +22,7 @@ router.post("/pricing/calculate", requireAuth, apiLimiter, async (req, res): Pro
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
   if (!client) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 

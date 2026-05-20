@@ -32,9 +32,15 @@ import type {
   ClientList,
   ClientUpdate,
   Dashboard,
+  GetLockerUtilizationParams,
+  GetPeakHoursParams,
+  GetRevenueByTypeParams,
+  GetRevenueReportParams,
+  GetRoomUtilizationParams,
   ListAuditLogsParams,
   ListClientsParams,
   ListLockersParams,
+  ListLowStockProducts200,
   ListRoomsParams,
   ListTransactionsParams,
   LivenessResponse,
@@ -48,6 +54,7 @@ import type {
   OccupancySummary,
   PasswordResetConfirmInput,
   PasswordResetRequestInput,
+  PeakHoursReport,
   PriceCalculation,
   PriceCalculationInput,
   Product,
@@ -58,6 +65,8 @@ import type {
   RefreshTokenResponse,
   RenewInput,
   RentalSession,
+  RevenueByTypeReport,
+  RevenueReport,
   RevokeAllSessions200,
   RevokeAllSessionsBody,
   RevokeSession200,
@@ -69,6 +78,7 @@ import type {
   User,
   UserInput,
   UserUpdate,
+  UtilizationReport,
   WaitlistEntry,
   WaitlistInput
 } from './api.schemas';
@@ -3104,6 +3114,83 @@ export const useDeleteProduct = <TError = ErrorType<unknown>,
       return useMutation(getDeleteProductMutationOptions(options));
     }
 
+export const getListLowStockProductsUrl = () => {
+
+
+
+
+  return `/api/v1/products/low-stock`
+}
+
+/**
+ * @summary List products with low stock
+ */
+export const listLowStockProducts = async ( options?: RequestInit): Promise<ListLowStockProducts200> => {
+
+  return customFetch<ListLowStockProducts200>(getListLowStockProductsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLowStockProductsQueryKey = () => {
+    return [
+    `/api/v1/products/low-stock`
+    ] as const;
+    }
+
+
+export const getListLowStockProductsQueryOptions = <TData = Awaited<ReturnType<typeof listLowStockProducts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLowStockProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLowStockProductsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLowStockProducts>>> = ({ signal }) => listLowStockProducts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLowStockProducts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLowStockProductsQueryResult = NonNullable<Awaited<ReturnType<typeof listLowStockProducts>>>
+export type ListLowStockProductsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List products with low stock
+ */
+
+export function useListLowStockProducts<TData = Awaited<ReturnType<typeof listLowStockProducts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLowStockProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLowStockProductsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListTransactionsUrl = (params?: ListTransactionsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -3253,6 +3340,426 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRevenueReportUrl = (params?: GetRevenueReportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/revenue?${stringifiedParams}` : `/api/v1/reports/revenue`
+}
+
+/**
+ * @summary Get revenue report by date range (manager only)
+ */
+export const getRevenueReport = async (params?: GetRevenueReportParams, options?: RequestInit): Promise<RevenueReport> => {
+
+  return customFetch<RevenueReport>(getGetRevenueReportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRevenueReportQueryKey = (params?: GetRevenueReportParams,) => {
+    return [
+    `/api/v1/reports/revenue`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRevenueReportQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueReport>>, TError = ErrorType<void>>(params?: GetRevenueReportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueReportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueReport>>> = ({ signal }) => getRevenueReport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRevenueReportQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueReport>>>
+export type GetRevenueReportQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get revenue report by date range (manager only)
+ */
+
+export function useGetRevenueReport<TData = Awaited<ReturnType<typeof getRevenueReport>>, TError = ErrorType<void>>(
+ params?: GetRevenueReportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRevenueReportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRevenueByTypeUrl = (params?: GetRevenueByTypeParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/revenue-by-type?${stringifiedParams}` : `/api/v1/reports/revenue-by-type`
+}
+
+/**
+ * @summary Get revenue breakdown by service type (manager only)
+ */
+export const getRevenueByType = async (params?: GetRevenueByTypeParams, options?: RequestInit): Promise<RevenueByTypeReport> => {
+
+  return customFetch<RevenueByTypeReport>(getGetRevenueByTypeUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRevenueByTypeQueryKey = (params?: GetRevenueByTypeParams,) => {
+    return [
+    `/api/v1/reports/revenue-by-type`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRevenueByTypeQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueByType>>, TError = ErrorType<void>>(params?: GetRevenueByTypeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByType>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueByTypeQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueByType>>> = ({ signal }) => getRevenueByType(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueByType>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRevenueByTypeQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueByType>>>
+export type GetRevenueByTypeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get revenue breakdown by service type (manager only)
+ */
+
+export function useGetRevenueByType<TData = Awaited<ReturnType<typeof getRevenueByType>>, TError = ErrorType<void>>(
+ params?: GetRevenueByTypeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByType>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRevenueByTypeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetLockerUtilizationUrl = (params?: GetLockerUtilizationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/utilization/lockers?${stringifiedParams}` : `/api/v1/reports/utilization/lockers`
+}
+
+/**
+ * @summary Get locker utilization rates over time (manager only)
+ */
+export const getLockerUtilization = async (params?: GetLockerUtilizationParams, options?: RequestInit): Promise<UtilizationReport> => {
+
+  return customFetch<UtilizationReport>(getGetLockerUtilizationUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLockerUtilizationQueryKey = (params?: GetLockerUtilizationParams,) => {
+    return [
+    `/api/v1/reports/utilization/lockers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetLockerUtilizationQueryOptions = <TData = Awaited<ReturnType<typeof getLockerUtilization>>, TError = ErrorType<void>>(params?: GetLockerUtilizationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLockerUtilization>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLockerUtilizationQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLockerUtilization>>> = ({ signal }) => getLockerUtilization(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLockerUtilization>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLockerUtilizationQueryResult = NonNullable<Awaited<ReturnType<typeof getLockerUtilization>>>
+export type GetLockerUtilizationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get locker utilization rates over time (manager only)
+ */
+
+export function useGetLockerUtilization<TData = Awaited<ReturnType<typeof getLockerUtilization>>, TError = ErrorType<void>>(
+ params?: GetLockerUtilizationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLockerUtilization>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLockerUtilizationQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRoomUtilizationUrl = (params?: GetRoomUtilizationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/utilization/rooms?${stringifiedParams}` : `/api/v1/reports/utilization/rooms`
+}
+
+/**
+ * @summary Get room utilization rates over time (manager only)
+ */
+export const getRoomUtilization = async (params?: GetRoomUtilizationParams, options?: RequestInit): Promise<UtilizationReport> => {
+
+  return customFetch<UtilizationReport>(getGetRoomUtilizationUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRoomUtilizationQueryKey = (params?: GetRoomUtilizationParams,) => {
+    return [
+    `/api/v1/reports/utilization/rooms`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRoomUtilizationQueryOptions = <TData = Awaited<ReturnType<typeof getRoomUtilization>>, TError = ErrorType<void>>(params?: GetRoomUtilizationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoomUtilization>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRoomUtilizationQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRoomUtilization>>> = ({ signal }) => getRoomUtilization(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRoomUtilization>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRoomUtilizationQueryResult = NonNullable<Awaited<ReturnType<typeof getRoomUtilization>>>
+export type GetRoomUtilizationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get room utilization rates over time (manager only)
+ */
+
+export function useGetRoomUtilization<TData = Awaited<ReturnType<typeof getRoomUtilization>>, TError = ErrorType<void>>(
+ params?: GetRoomUtilizationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoomUtilization>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRoomUtilizationQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPeakHoursUrl = (params?: GetPeakHoursParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/utilization/peak-hours?${stringifiedParams}` : `/api/v1/reports/utilization/peak-hours`
+}
+
+/**
+ * @summary Get peak hours analysis for rentals (manager only)
+ */
+export const getPeakHours = async (params?: GetPeakHoursParams, options?: RequestInit): Promise<PeakHoursReport> => {
+
+  return customFetch<PeakHoursReport>(getGetPeakHoursUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPeakHoursQueryKey = (params?: GetPeakHoursParams,) => {
+    return [
+    `/api/v1/reports/utilization/peak-hours`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPeakHoursQueryOptions = <TData = Awaited<ReturnType<typeof getPeakHours>>, TError = ErrorType<void>>(params?: GetPeakHoursParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPeakHours>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPeakHoursQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPeakHours>>> = ({ signal }) => getPeakHours(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPeakHours>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPeakHoursQueryResult = NonNullable<Awaited<ReturnType<typeof getPeakHours>>>
+export type GetPeakHoursQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get peak hours analysis for rentals (manager only)
+ */
+
+export function useGetPeakHours<TData = Awaited<ReturnType<typeof getPeakHours>>, TError = ErrorType<void>>(
+ params?: GetPeakHoursParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPeakHours>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPeakHoursQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -20,6 +20,7 @@ import {
 import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError, logger } from "../lib/logger";
 import { ROOM_TOTAL, SESSION_DURATION_MS, EXTENSION_DURATION_MS, EXTENSION_SURCHARGE_DIVISOR, WAITLIST_CONFIRM_MS } from "../lib/constants";
+import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -39,7 +40,7 @@ function formatRoom(r: typeof roomsTable.$inferSelect, clientName?: string | nul
 router.get("/rooms", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListRoomsQueryParams.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -82,13 +83,13 @@ router.get("/rooms/occupancy", requireAuth, apiLimiter, async (req, res): Promis
 router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = AssignRoomParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const parsed = AssignRoomBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -102,17 +103,17 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
   const room = roomRows.rows[0] ? roomRows.rows[0] as typeof roomsTable.$inferSelect : undefined;
 
   if (!room) {
-    res.status(404).json({ error: "Room not found" });
+    sendNotFoundError(res, "Room not found");
     return;
   }
   if (room.status !== "available") {
-    res.status(409).json({ error: "Room is not available" });
+    sendConflictError(res, "Room is not available");
     return;
   }
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, parsed.data.clientId));
   if (!client) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 
@@ -208,13 +209,13 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
 router.post("/rooms/:id/release", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = ReleaseRoomParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const [room] = await db.select().from(roomsTable).where(eq(roomsTable.id, params.data.id));
   if (!room) {
-    res.status(404).json({ error: "Room not found" });
+    sendNotFoundError(res, "Room not found");
     return;
   }
 
@@ -286,12 +287,12 @@ router.post("/rooms/:id/release", requireAuth, apiLimiter, async (req, res): Pro
 
 router.post("/rooms/:id/renew", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = RenewRoomParams.safeParse(req.params);
-  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  if (!params.success) { sendValidationError(res, params.error.message); return; }
   const parsed = RenewRoomBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) { sendValidationError(res, parsed.error.message); return; }
 
   const [room] = await db.select().from(roomsTable).where(eq(roomsTable.id, params.data.id));
-  if (!room || room.status !== "occupied") { res.status(400).json({ error: "Room is not occupied" }); return; }
+  if (!room || room.status !== "occupied") { sendValidationError(res, "Room is not occupied"); return; }
 
   const [client] = room.clientId ? await db.select().from(clientsTable).where(eq(clientsTable.id, room.clientId)) : [null];
   const dob = client ? maybeDecrypt(client.dobEncrypted, client.dobDek) : null;
@@ -319,12 +320,12 @@ router.post("/rooms/:id/renew", requireAuth, apiLimiter, async (req, res): Promi
 
 router.post("/rooms/:id/extend", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = ExtendRoomParams.safeParse(req.params);
-  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  if (!params.success) { sendValidationError(res, params.error.message); return; }
   const parsed = ExtendRoomBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) { sendValidationError(res, parsed.error.message); return; }
 
   const [room] = await db.select().from(roomsTable).where(eq(roomsTable.id, params.data.id));
-  if (!room || room.status !== "occupied") { res.status(400).json({ error: "Room is not occupied" }); return; }
+  if (!room || room.status !== "occupied") { sendValidationError(res, "Room is not occupied"); return; }
 
   const [client] = room.clientId ? await db.select().from(clientsTable).where(eq(clientsTable.id, room.clientId)) : [null];
   const dob = client ? maybeDecrypt(client.dobEncrypted, client.dobDek) : null;

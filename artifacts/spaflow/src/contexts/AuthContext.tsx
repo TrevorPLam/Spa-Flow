@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useCallback } from "react";
+import { createContext, useContext, useEffect, useCallback, useRef } from "react";
 import { useGetMe, useLogin, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { Mutex } from "async-mutex";
 
 const REFRESH_TOKEN_KEY = "spaflow_refresh_token";
 
@@ -37,57 +38,140 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginMutation = useLogin();
   const logoutMutation = useLogout();
 
+  // Mutex for refresh request deduplication
+  const refreshMutex = useRef(new Mutex());
+  // Track in-flight refresh promise to prevent duplicate requests
+  const refreshPromise = useRef<Promise<void> | null>(null);
+  // Rate limiting: track last refresh attempt timestamp
+  const lastRefreshAttempt = useRef<number>(0);
+  // Track consecutive refresh failures for exponential backoff
+  const consecutiveFailures = useRef<number>(0);
+
+  // Log refresh errors with context
+  const logRefreshError = (error: unknown, context: string) => {
+    const errorInfo = {
+      timestamp: new Date().toISOString(),
+      context,
+      error: error instanceof Error ? error.message : String(error),
+      isNetworkError: error instanceof TypeError && error.message.includes('fetch'),
+      consecutiveFailures: consecutiveFailures.current,
+    };
+    console.error('[AuthContext] Token refresh error:', errorInfo);
+  };
+
+  // Rate limiting with exponential backoff
+  const shouldAllowRefresh = () => {
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastRefreshAttempt.current;
+    const backoffDelay = Math.min(1000 * Math.pow(2, consecutiveFailures.current), 30000); // Max 30s
+    
+    if (timeSinceLastAttempt < backoffDelay) {
+      console.warn(`[AuthContext] Rate limited refresh attempt. Next retry in ${backoffDelay - timeSinceLastAttempt}ms`);
+      return false;
+    }
+    
+    lastRefreshAttempt.current = now;
+    return true;
+  };
+
+  // Perform token refresh with deduplication
+  const performRefresh = useCallback(async (): Promise<boolean> => {
+    // If a refresh is already in progress, wait for it
+    if (refreshPromise.current) {
+      console.log('[AuthContext] Refresh already in progress, waiting...');
+      await refreshPromise.current;
+      return true;
+    }
+
+    // Rate limiting check
+    if (!shouldAllowRefresh()) {
+      return false;
+    }
+
+    const release = await refreshMutex.current.acquire();
+    
+    try {
+      const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+      if (!storedRefreshToken) {
+        console.warn('[AuthContext] No refresh token available');
+        return false;
+      }
+
+      console.log('[AuthContext] Attempting token refresh...');
+      
+      const refreshResponse = await fetch("/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: storedRefreshToken }),
+        credentials: "include",
+      });
+
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        if (data.refreshToken) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+        }
+        // Invalidate queries to trigger re-fetch with new access token
+        await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        // Reset failure counter on success
+        consecutiveFailures.current = 0;
+        console.log('[AuthContext] Token refresh successful');
+        return true;
+      } else {
+        const error = await refreshResponse.text();
+        logRefreshError(new Error(`Refresh failed with status ${refreshResponse.status}: ${error}`), 'refresh_response');
+        consecutiveFailures.current++;
+        return false;
+      }
+    } catch (error) {
+      logRefreshError(error, 'refresh_network');
+      consecutiveFailures.current++;
+      return false;
+    } finally {
+      release();
+      refreshPromise.current = null;
+    }
+  }, [queryClient]);
+
   // Automatic token refresh on 401 errors
   useEffect(() => {
     // Set up global error handler for 401 responses
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
+      
       if (response.status === 401) {
         const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
         if (storedRefreshToken) {
-          // Try to refresh token
-          try {
-            const refreshResponse = await fetch("/auth/refresh", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refreshToken: storedRefreshToken }),
-              credentials: "include",
-            });
-
-            if (refreshResponse.ok) {
-              const data = await refreshResponse.json();
-              if (data.refreshToken) {
-                localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-              }
-              // Invalidate queries to trigger re-fetch with new access token
-              queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-              // Retry the original request
-              return originalFetch(...args);
-            } else {
-              // Refresh failed, redirect to login
-              localStorage.removeItem(REFRESH_TOKEN_KEY);
-              queryClient.clear();
-              setLocation("/login");
-            }
-          } catch (error) {
+          // Use mutex to prevent concurrent refresh attempts
+          const refreshSuccess = await performRefresh();
+          
+          if (refreshSuccess) {
+            // Retry the original request with new token
+            console.log('[AuthContext] Retrying original request after successful refresh');
+            return originalFetch(...args);
+          } else {
+            // Refresh failed, redirect to login
+            console.warn('[AuthContext] Refresh failed, redirecting to login');
             localStorage.removeItem(REFRESH_TOKEN_KEY);
             queryClient.clear();
             setLocation("/login");
           }
         } else {
           // No refresh token, redirect to login
+          console.warn('[AuthContext] No refresh token, redirecting to login');
           queryClient.clear();
           setLocation("/login");
         }
       }
+      
       return response;
     };
 
     return () => {
       window.fetch = originalFetch;
     };
-  }, [queryClient, setLocation]);
+  }, [queryClient, setLocation, performRefresh]);
 
   const user: AuthUser | null = me
     ? { id: me.id, email: me.email, name: me.name, role: me.role as "STAFF" | "MANAGER" }
@@ -111,37 +195,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [logoutMutation, queryClient, setLocation]);
 
   const refreshToken = useCallback(async () => {
-    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!storedRefreshToken) {
-      setLocation("/login");
-      return;
-    }
-
-    try {
-      const response = await fetch("/auth/refresh", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: storedRefreshToken }),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Refresh failed");
-      }
-
-      const data = await response.json();
-      // Update stored refresh token
-      if (data.refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-      }
-      // Invalidate queries to trigger re-fetch with new access token
-      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-    } catch (error) {
+    const refreshSuccess = await performRefresh();
+    if (!refreshSuccess) {
       localStorage.removeItem(REFRESH_TOKEN_KEY);
       queryClient.clear();
       setLocation("/login");
     }
-  }, [queryClient, setLocation]);
+  }, [performRefresh, queryClient, setLocation]);
 
   return (
     <AuthContext.Provider value={{

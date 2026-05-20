@@ -5,6 +5,30 @@
  * SpaFlow - Spa Management System API
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Machine-readable error code for programmatic handling
+ */
+export type ErrorResponseCode = typeof ErrorResponseCode[keyof typeof ErrorResponseCode];
+
+
+export const ErrorResponseCode = {
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  FORBIDDEN: 'FORBIDDEN',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  LOCKED: 'LOCKED',
+  PAYMENT_ERROR: 'PAYMENT_ERROR',
+} as const;
+
+export interface ErrorResponse {
+  /** Human-readable error message */
+  error: string;
+  /** Machine-readable error code for programmatic handling */
+  code?: ErrorResponseCode;
+}
+
 export type LivenessResponseStatus = typeof LivenessResponseStatus[keyof typeof LivenessResponseStatus];
 
 
@@ -589,6 +613,7 @@ export interface Product {
   description?: string | null;
   price: number;
   stock: number;
+  lowStockThreshold: number;
   /** @nullable */
   category?: string | null;
 }
@@ -598,6 +623,7 @@ export interface ProductInput {
   description?: string;
   price: number;
   stock: number;
+  lowStockThreshold?: number;
   category?: string;
 }
 
@@ -606,6 +632,7 @@ export interface ProductUpdate {
   description?: string;
   price?: number;
   stock?: number;
+  lowStockThreshold?: number;
   category?: string;
 }
 
@@ -616,14 +643,135 @@ export interface TransactionList {
   limit: number;
 }
 
+export type DashboardLowStockProductsItem = {
+  id?: number;
+  name?: string;
+  stock?: number;
+  lowStockThreshold?: number;
+  /** @nullable */
+  category?: string | null;
+};
+
 export interface Dashboard {
   lockerOccupancy: OccupancySummary;
   roomOccupancy: OccupancySummary;
   todayRevenue: number;
   activeClients: number;
   waitlistCount: number;
+  lowStockCount: number;
+  lowStockProducts?: DashboardLowStockProductsItem[];
   recentTransactions: Transaction[];
   activeRentals: RentalSession[];
+}
+
+export type RevenueReportDataItem = {
+  date: string;
+  revenue: number;
+  tax: number;
+  total: number;
+  transactionCount?: number;
+};
+
+export type RevenueReportGranularity = typeof RevenueReportGranularity[keyof typeof RevenueReportGranularity];
+
+
+export const RevenueReportGranularity = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface RevenueReport {
+  data: RevenueReportDataItem[];
+  totalRevenue: number;
+  totalTax?: number;
+  total?: number;
+  startDate: string;
+  endDate: string;
+  granularity: RevenueReportGranularity;
+}
+
+export type RevenueByTypeReportDataItemType = typeof RevenueByTypeReportDataItemType[keyof typeof RevenueByTypeReportDataItemType];
+
+
+export const RevenueByTypeReportDataItemType = {
+  locker_rental: 'locker_rental',
+  room_rental: 'room_rental',
+  membership: 'membership',
+  product: 'product',
+  renewal: 'renewal',
+  extension: 'extension',
+} as const;
+
+export type RevenueByTypeReportDataItem = {
+  type: RevenueByTypeReportDataItemType;
+  revenue: number;
+  tax: number;
+  total: number;
+  count: number;
+};
+
+export interface RevenueByTypeReport {
+  data: RevenueByTypeReportDataItem[];
+  totalRevenue: number;
+  totalTax?: number;
+  total?: number;
+  startDate: string;
+  endDate: string;
+}
+
+export type UtilizationReportDataItem = {
+  date: string;
+  occupiedCount: number;
+  totalCapacity: number;
+  utilizationRate: string;
+};
+
+export type UtilizationReportGranularity = typeof UtilizationReportGranularity[keyof typeof UtilizationReportGranularity];
+
+
+export const UtilizationReportGranularity = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface UtilizationReport {
+  data: UtilizationReportDataItem[];
+  averageUtilization: number;
+  totalCapacity: number;
+  startDate: string;
+  endDate: string;
+  granularity: UtilizationReportGranularity;
+}
+
+export type PeakHoursReportDataItem = {
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  hour: number;
+  lockerRentals: number;
+  roomRentals: number;
+  totalRentals: number;
+};
+
+export type PeakHoursReportPeakHour = {
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  hour: number;
+  totalRentals: number;
+} | null;
+
+export interface PeakHoursReport {
+  data: PeakHoursReportDataItem[];
+  peakHour: PeakHoursReportPeakHour;
+  averageRentalsPerHour: number;
+  totalRentals: number;
+  startDate: string;
+  endDate: string;
 }
 
 export interface AuditLog {
@@ -712,6 +860,11 @@ export const ListRoomsStatus = {
   reserved: 'reserved',
 } as const;
 
+export type ListLowStockProducts200 = {
+  data?: Product[];
+  count?: number;
+};
+
 export type ListTransactionsParams = {
 clientId?: number;
 /**
@@ -724,6 +877,100 @@ startDate?: string;
 endDate?: string;
 page?: number;
 limit?: number;
+};
+
+export type GetRevenueReportParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+/**
+ * Time granularity for aggregation
+ */
+granularity?: GetRevenueReportGranularity;
+};
+
+export type GetRevenueReportGranularity = typeof GetRevenueReportGranularity[keyof typeof GetRevenueReportGranularity];
+
+
+export const GetRevenueReportGranularity = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export type GetRevenueByTypeParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetLockerUtilizationParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+/**
+ * Time granularity for aggregation
+ */
+granularity?: GetLockerUtilizationGranularity;
+};
+
+export type GetLockerUtilizationGranularity = typeof GetLockerUtilizationGranularity[keyof typeof GetLockerUtilizationGranularity];
+
+
+export const GetLockerUtilizationGranularity = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export type GetRoomUtilizationParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+/**
+ * Time granularity for aggregation
+ */
+granularity?: GetRoomUtilizationGranularity;
+};
+
+export type GetRoomUtilizationGranularity = typeof GetRoomUtilizationGranularity[keyof typeof GetRoomUtilizationGranularity];
+
+
+export const GetRoomUtilizationGranularity = {
+  daily: 'daily',
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export type GetPeakHoursParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
 };
 
 export type ListAuditLogsParams = {

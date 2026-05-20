@@ -19,6 +19,7 @@ import {
 import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError } from "../lib/logger";
 import { LOCKER_TOTAL, SESSION_DURATION_MS, EXTENSION_DURATION_MS, EXTENSION_SURCHARGE_DIVISOR } from "../lib/constants";
+import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -38,7 +39,7 @@ function formatLocker(l: typeof lockersTable.$inferSelect, clientName?: string |
 router.get("/lockers", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListLockersQueryParams.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -78,19 +79,19 @@ router.get("/lockers/occupancy", requireAuth, apiLimiter, async (req, res): Prom
 router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = AssignLockerParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const parsed = AssignLockerBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, parsed.data.clientId));
   if (!client) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 
@@ -178,11 +179,11 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "LOCKER_NOT_FOUND") {
-        res.status(404).json({ error: "Locker not found" });
+        sendNotFoundError(res, "Locker not found");
         return;
       }
       if (error.message === "LOCKER_NOT_AVAILABLE") {
-        res.status(409).json({ error: "Locker is not available" });
+        sendConflictError(res, "Locker is not available");
         return;
       }
     }
@@ -217,13 +218,13 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
 router.post("/lockers/:id/release", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = ReleaseLockerParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
   if (!locker) {
-    res.status(404).json({ error: "Locker not found" });
+    sendNotFoundError(res, "Locker not found");
     return;
   }
 
@@ -279,18 +280,18 @@ router.post("/lockers/:id/release", requireAuth, apiLimiter, async (req, res): P
 router.post("/lockers/:id/renew", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = RenewLockerParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
   const parsed = RenewLockerBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
   const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
   if (!locker || locker.status !== "occupied") {
-    res.status(400).json({ error: "Locker is not occupied" });
+    sendValidationError(res, "Locker is not occupied");
     return;
   }
 
@@ -331,18 +332,18 @@ router.post("/lockers/:id/renew", requireAuth, apiLimiter, async (req, res): Pro
 router.post("/lockers/:id/extend", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = ExtendLockerParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
   const parsed = ExtendLockerBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
   const [locker] = await db.select().from(lockersTable).where(eq(lockersTable.id, params.data.id));
   if (!locker || locker.status !== "occupied") {
-    res.status(400).json({ error: "Locker is not occupied" });
+    sendValidationError(res, "Locker is not occupied");
     return;
   }
 

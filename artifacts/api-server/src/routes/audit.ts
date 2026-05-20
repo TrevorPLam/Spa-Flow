@@ -4,13 +4,14 @@ import { eq, sql, desc, and, gte, lte } from "drizzle-orm";
 import { requireManager } from "../lib/auth";
 import { ListAuditLogsQueryParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
+import { sendValidationError } from "../lib/response-formatters";
 
 const router = Router();
 
 router.get("/audit-logs", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const parsed = ListAuditLogsQueryParams.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 

@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { db, productsTable } from "@workspace/db";
-import { eq, count } from "drizzle-orm";
+import { eq, count, sql } from "drizzle-orm";
 import { requireAuth, requireManager, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { CreateProductBody, UpdateProductParams, UpdateProductBody, DeleteProductParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDelPattern } from "../lib/cache";
 import { z } from "zod";
+import { sendValidationError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -22,6 +23,7 @@ function formatProduct(p: typeof productsTable.$inferSelect) {
     description: p.description,
     price: parseFloat(p.price),
     stock: p.stock,
+    lowStockThreshold: p.lowStockThreshold,
     category: p.category,
   };
 }
@@ -76,7 +78,7 @@ router.get("/products", requireAuth, apiLimiter, async (req, res): Promise<void>
 router.post("/products", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CreateProductBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -85,6 +87,7 @@ router.post("/products", requireManager, apiLimiter, async (req, res): Promise<v
     description: parsed.data.description ?? null,
     price: String(parsed.data.price),
     stock: parsed.data.stock,
+    lowStockThreshold: parsed.data.lowStockThreshold ?? 5,
     category: parsed.data.category ?? null,
   }).returning();
 
@@ -109,6 +112,7 @@ router.patch("/products/:id", requireManager, apiLimiter, async (req, res): Prom
   if (parsed.data.description != null) updates.description = parsed.data.description;
   if (parsed.data.price != null) updates.price = String(parsed.data.price);
   if (parsed.data.stock != null) updates.stock = parsed.data.stock;
+  if (parsed.data.lowStockThreshold != null) updates.lowStockThreshold = parsed.data.lowStockThreshold;
   if (parsed.data.category != null) updates.category = parsed.data.category;
 
   const [product] = await db.update(productsTable).set(updates).where(eq(productsTable.id, params.data.id)).returning();
@@ -125,7 +129,7 @@ router.patch("/products/:id", requireManager, apiLimiter, async (req, res): Prom
 
 router.delete("/products/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteProductParams.safeParse(req.params);
-  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  if (!params.success) { sendValidationError(res, params.error.message); return; }
 
   await db.delete(productsTable).where(eq(productsTable.id, params.data.id));
   const actingUser = (req as AuthRequest).user!;
@@ -135,6 +139,19 @@ router.delete("/products/:id", requireManager, apiLimiter, async (req, res): Pro
   await cacheDelPattern("products:list:*");
   
   res.sendStatus(204);
+});
+
+router.get("/products/low-stock", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(sql`${productsTable.stock} <= ${productsTable.lowStockThreshold}`)
+    .orderBy(productsTable.name);
+
+  res.json({
+    data: products.map(formatProduct),
+    count: products.length,
+  });
 });
 
 export default router;

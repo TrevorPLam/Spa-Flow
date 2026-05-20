@@ -10,13 +10,14 @@ import { CheckInBody } from "@workspace/api-zod";
 import { checkinLimiter } from "../middleware/rateLimit";
 import { logTransactionError } from "../lib/logger";
 import { SESSION_DURATION_MS, MEMBERSHIP_ONE_TIME_COST, MEMBERSHIP_SIX_MONTH_COST } from "../lib/constants";
+import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
 
 const router = Router();
 
 router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<void> => {
   const parsed = CheckInBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -24,7 +25,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
   if (!client) {
-    res.status(404).json({ error: "Client not found" });
+    sendNotFoundError(res, "Client not found");
     return;
   }
 
@@ -40,14 +41,14 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     
     // Validate all products exist
     if (selectedProducts.length !== productIds.length) {
-      res.status(404).json({ error: "One or more products not found" });
+      sendNotFoundError(res, "One or more products not found");
       return;
     }
     
     // Validate stock availability
     for (const product of selectedProducts) {
       if (product.stock <= 0) {
-        res.status(409).json({ error: `Product "${product.name}" is out of stock` });
+        sendConflictError(res, `Product "${product.name}" is out of stock`);
         return;
       }
     }
@@ -64,15 +65,15 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     const rows = await db.execute(sql`SELECT * FROM lockers WHERE id = ${resourceId} FOR UPDATE`);
     // Type guard: safely extract locker from SQL result with null check
     const locker = rows.rows[0] ? rows.rows[0] as typeof lockersTable.$inferSelect : undefined;
-    if (!locker) { res.status(404).json({ error: "Locker not found" }); return; }
-    if (locker.status !== "available") { res.status(409).json({ error: "Locker is not available" }); return; }
+    if (!locker) { sendNotFoundError(res, "Locker not found"); return; }
+    if (locker.status !== "available") { sendConflictError(res, "Locker is not available"); return; }
     resourceName = locker.name;
   } else {
     const rows = await db.execute(sql`SELECT * FROM rooms WHERE id = ${resourceId} FOR UPDATE`);
     // Type guard: safely extract room from SQL result with null check
     const room = rows.rows[0] ? rows.rows[0] as { id: number; name: string; status: string } : undefined;
-    if (!room) { res.status(404).json({ error: "Room not found" }); return; }
-    if (room.status !== "available") { res.status(409).json({ error: "Room is not available" }); return; }
+    if (!room) { sendNotFoundError(res, "Room not found"); return; }
+    if (room.status !== "available") { sendConflictError(res, "Room is not available"); return; }
     resourceName = room.name;
   }
 
