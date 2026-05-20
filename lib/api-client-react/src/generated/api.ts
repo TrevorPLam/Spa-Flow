@@ -20,8 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccountLockedError,
   AssignResourceInput,
   AuditLogList,
+  AuthError,
   AuthUser,
   CheckInInput,
   CheckInResult,
@@ -38,18 +40,30 @@ import type {
   LivenessResponse,
   Locker,
   LoginInput,
+  LoginResponse,
+  Logout200,
   Membership,
   MembershipInput,
+  MessageResponse,
   OccupancySummary,
+  PasswordResetConfirmInput,
+  PasswordResetRequestInput,
   PriceCalculation,
   PriceCalculationInput,
   Product,
   ProductInput,
   ProductUpdate,
   ReadinessResponse,
+  RefreshTokenInput,
+  RefreshTokenResponse,
   RenewInput,
   RentalSession,
+  RevokeAllSessions200,
+  RevokeAllSessionsBody,
+  RevokeSession200,
+  RevokeSessionBody,
   Room,
+  SessionsList,
   Transaction,
   TransactionList,
   User,
@@ -76,7 +90,7 @@ export const getLivenessProbeUrl = () => {
 
 
 
-  return `/api/healthz/live`
+  return `/api/v1/healthz/live`
 }
 
 /**
@@ -99,7 +113,7 @@ export const livenessProbe = async ( options?: RequestInit): Promise<LivenessRes
 
 export const getLivenessProbeQueryKey = () => {
     return [
-    `/api/healthz/live`
+    `/api/v1/healthz/live`
     ] as const;
     }
 
@@ -153,7 +167,7 @@ export const getReadinessProbeUrl = () => {
 
 
 
-  return `/api/healthz/ready`
+  return `/api/v1/healthz/ready`
 }
 
 /**
@@ -176,7 +190,7 @@ export const readinessProbe = async ( options?: RequestInit): Promise<ReadinessR
 
 export const getReadinessProbeQueryKey = () => {
     return [
-    `/api/healthz/ready`
+    `/api/v1/healthz/ready`
     ] as const;
     }
 
@@ -230,15 +244,15 @@ export const getLoginUrl = () => {
 
 
 
-  return `/api/auth/login`
+  return `/api/v1/auth/login`
 }
 
 /**
  * @summary Staff login
  */
-export const login = async (loginInput: LoginInput, options?: RequestInit): Promise<AuthUser> => {
+export const login = async (loginInput: LoginInput, options?: RequestInit): Promise<LoginResponse> => {
 
-  return customFetch<AuthUser>(getLoginUrl(),
+  return customFetch<LoginResponse>(getLoginUrl(),
   {
     ...options,
     method: 'POST',
@@ -251,7 +265,7 @@ export const login = async (loginInput: LoginInput, options?: RequestInit): Prom
 
 
 
-export const getLoginMutationOptions = <TError = ErrorType<void>,
+export const getLoginMutationOptions = <TError = ErrorType<AuthError | AccountLockedError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext> => {
 
@@ -280,12 +294,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
     export type LoginMutationBody = BodyType<LoginInput>
-    export type LoginMutationError = ErrorType<void>
+    export type LoginMutationError = ErrorType<AuthError | AccountLockedError>
 
     /**
  * @summary Staff login
  */
-export const useLogin = <TError = ErrorType<void>,
+export const useLogin = <TError = ErrorType<AuthError | AccountLockedError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof login>>,
@@ -301,15 +315,15 @@ export const getLogoutUrl = () => {
 
 
 
-  return `/api/auth/logout`
+  return `/api/v1/auth/logout`
 }
 
 /**
  * @summary Staff logout
  */
-export const logout = async ( options?: RequestInit): Promise<void> => {
+export const logout = async ( options?: RequestInit): Promise<Logout200> => {
 
-  return customFetch<void>(getLogoutUrl(),
+  return customFetch<Logout200>(getLogoutUrl(),
   {
     ...options,
     method: 'POST'
@@ -321,7 +335,7 @@ export const logout = async ( options?: RequestInit): Promise<void> => {
 
 
 
-export const getLogoutMutationOptions = <TError = ErrorType<unknown>,
+export const getLogoutMutationOptions = <TError = ErrorType<AuthError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
 
@@ -350,12 +364,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>
 
-    export type LogoutMutationError = ErrorType<unknown>
+    export type LogoutMutationError = ErrorType<AuthError>
 
     /**
  * @summary Staff logout
  */
-export const useLogout = <TError = ErrorType<unknown>,
+export const useLogout = <TError = ErrorType<AuthError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof logout>>,
@@ -371,7 +385,7 @@ export const getGetMeUrl = () => {
 
 
 
-  return `/api/auth/me`
+  return `/api/v1/auth/me`
 }
 
 /**
@@ -394,12 +408,12 @@ export const getMe = async ( options?: RequestInit): Promise<AuthUser> => {
 
 export const getGetMeQueryKey = () => {
     return [
-    `/api/auth/me`
+    `/api/v1/auth/me`
     ] as const;
     }
 
 
-export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMeQueryOptions = <TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<AuthError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -418,14 +432,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
-export type GetMeQueryError = ErrorType<void>
+export type GetMeQueryError = ErrorType<AuthError>
 
 
 /**
  * @summary Get current user
  */
 
-export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<void>>(
+export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<AuthError>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -443,6 +457,439 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 
 
 
+export const getRefreshTokenUrl = () => {
+
+
+
+
+  return `/api/v1/auth/refresh`
+}
+
+/**
+ * @summary Refresh access token using refresh token
+ */
+export const refreshToken = async (refreshTokenInput: RefreshTokenInput, options?: RequestInit): Promise<RefreshTokenResponse> => {
+
+  return customFetch<RefreshTokenResponse>(getRefreshTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      refreshTokenInput,)
+  }
+);}
+
+
+
+
+export const getRefreshTokenMutationOptions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshToken>>, TError,{data: BodyType<RefreshTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshToken>>, TError,{data: BodyType<RefreshTokenInput>}, TContext> => {
+
+const mutationKey = ['refreshToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshToken>>, {data: BodyType<RefreshTokenInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  refreshToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshTokenMutationResult = NonNullable<Awaited<ReturnType<typeof refreshToken>>>
+    export type RefreshTokenMutationBody = BodyType<RefreshTokenInput>
+    export type RefreshTokenMutationError = ErrorType<AuthError>
+
+    /**
+ * @summary Refresh access token using refresh token
+ */
+export const useRefreshToken = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshToken>>, TError,{data: BodyType<RefreshTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refreshToken>>,
+        TError,
+        {data: BodyType<RefreshTokenInput>},
+        TContext
+      > => {
+      return useMutation(getRefreshTokenMutationOptions(options));
+    }
+
+export const getRequestPasswordResetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/password-reset/request`
+}
+
+/**
+ * @summary Request password reset via email
+ */
+export const requestPasswordReset = async (passwordResetRequestInput: PasswordResetRequestInput, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRequestPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passwordResetRequestInput,)
+  }
+);}
+
+
+
+
+export const getRequestPasswordResetMutationOptions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<PasswordResetRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<PasswordResetRequestInput>}, TContext> => {
+
+const mutationKey = ['requestPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestPasswordReset>>, {data: BodyType<PasswordResetRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestPasswordReset(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof requestPasswordReset>>>
+    export type RequestPasswordResetMutationBody = BodyType<PasswordResetRequestInput>
+    export type RequestPasswordResetMutationError = ErrorType<AuthError>
+
+    /**
+ * @summary Request password reset via email
+ */
+export const useRequestPasswordReset = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<PasswordResetRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestPasswordReset>>,
+        TError,
+        {data: BodyType<PasswordResetRequestInput>},
+        TContext
+      > => {
+      return useMutation(getRequestPasswordResetMutationOptions(options));
+    }
+
+export const getConfirmPasswordResetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/password-reset/confirm`
+}
+
+/**
+ * @summary Confirm password reset with token
+ */
+export const confirmPasswordReset = async (passwordResetConfirmInput: PasswordResetConfirmInput, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getConfirmPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      passwordResetConfirmInput,)
+  }
+);}
+
+
+
+
+export const getConfirmPasswordResetMutationOptions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPasswordReset>>, TError,{data: BodyType<PasswordResetConfirmInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPasswordReset>>, TError,{data: BodyType<PasswordResetConfirmInput>}, TContext> => {
+
+const mutationKey = ['confirmPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPasswordReset>>, {data: BodyType<PasswordResetConfirmInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmPasswordReset(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPasswordReset>>>
+    export type ConfirmPasswordResetMutationBody = BodyType<PasswordResetConfirmInput>
+    export type ConfirmPasswordResetMutationError = ErrorType<AuthError>
+
+    /**
+ * @summary Confirm password reset with token
+ */
+export const useConfirmPasswordReset = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPasswordReset>>, TError,{data: BodyType<PasswordResetConfirmInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPasswordReset>>,
+        TError,
+        {data: BodyType<PasswordResetConfirmInput>},
+        TContext
+      > => {
+      return useMutation(getConfirmPasswordResetMutationOptions(options));
+    }
+
+export const getListSessionsUrl = () => {
+
+
+
+
+  return `/api/v1/auth/sessions`
+}
+
+/**
+ * @summary List active sessions for current user
+ */
+export const listSessions = async ( options?: RequestInit): Promise<SessionsList> => {
+
+  return customFetch<SessionsList>(getListSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSessionsQueryKey = () => {
+    return [
+    `/api/v1/auth/sessions`
+    ] as const;
+    }
+
+
+export const getListSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<AuthError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) => listSessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSessions>>>
+export type ListSessionsQueryError = ErrorType<AuthError>
+
+
+/**
+ * @summary List active sessions for current user
+ */
+
+export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<AuthError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRevokeAllSessionsUrl = () => {
+
+
+
+
+  return `/api/v1/auth/sessions`
+}
+
+/**
+ * @summary Revoke all sessions except current
+ */
+export const revokeAllSessions = async (revokeAllSessionsBody?: RevokeAllSessionsBody, options?: RequestInit): Promise<RevokeAllSessions200> => {
+
+  return customFetch<RevokeAllSessions200>(getRevokeAllSessionsUrl(),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      revokeAllSessionsBody,)
+  }
+);}
+
+
+
+
+export const getRevokeAllSessionsMutationOptions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeAllSessions>>, TError,{data?: BodyType<RevokeAllSessionsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeAllSessions>>, TError,{data?: BodyType<RevokeAllSessionsBody>}, TContext> => {
+
+const mutationKey = ['revokeAllSessions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeAllSessions>>, {data?: BodyType<RevokeAllSessionsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  revokeAllSessions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeAllSessionsMutationResult = NonNullable<Awaited<ReturnType<typeof revokeAllSessions>>>
+    export type RevokeAllSessionsMutationBody = BodyType<RevokeAllSessionsBody> | undefined
+    export type RevokeAllSessionsMutationError = ErrorType<AuthError>
+
+    /**
+ * @summary Revoke all sessions except current
+ */
+export const useRevokeAllSessions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeAllSessions>>, TError,{data?: BodyType<RevokeAllSessionsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeAllSessions>>,
+        TError,
+        {data?: BodyType<RevokeAllSessionsBody>},
+        TContext
+      > => {
+      return useMutation(getRevokeAllSessionsMutationOptions(options));
+    }
+
+export const getRevokeSessionUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/auth/sessions/${id}`
+}
+
+/**
+ * @summary Revoke a specific session
+ */
+export const revokeSession = async (id: number,
+    revokeSessionBody?: RevokeSessionBody, options?: RequestInit): Promise<RevokeSession200> => {
+
+  return customFetch<RevokeSession200>(getRevokeSessionUrl(id),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      revokeSessionBody,)
+  }
+);}
+
+
+
+
+export const getRevokeSessionMutationOptions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,{id: number;data?: BodyType<RevokeSessionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,{id: number;data?: BodyType<RevokeSessionBody>}, TContext> => {
+
+const mutationKey = ['revokeSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeSession>>, {id: number;data?: BodyType<RevokeSessionBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  revokeSession(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeSessionMutationResult = NonNullable<Awaited<ReturnType<typeof revokeSession>>>
+    export type RevokeSessionMutationBody = BodyType<RevokeSessionBody> | undefined
+    export type RevokeSessionMutationError = ErrorType<AuthError>
+
+    /**
+ * @summary Revoke a specific session
+ */
+export const useRevokeSession = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,{id: number;data?: BodyType<RevokeSessionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeSession>>,
+        TError,
+        {id: number;data?: BodyType<RevokeSessionBody>},
+        TContext
+      > => {
+      return useMutation(getRevokeSessionMutationOptions(options));
+    }
+
 export const getListClientsUrl = (params?: ListClientsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -455,7 +902,7 @@ export const getListClientsUrl = (params?: ListClientsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/clients?${stringifiedParams}` : `/api/clients`
+  return stringifiedParams.length > 0 ? `/api/v1/clients?${stringifiedParams}` : `/api/v1/clients`
 }
 
 /**
@@ -478,7 +925,7 @@ export const listClients = async (params?: ListClientsParams, options?: RequestI
 
 export const getListClientsQueryKey = (params?: ListClientsParams,) => {
     return [
-    `/api/clients`, ...(params ? [params] : [])
+    `/api/v1/clients`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -532,7 +979,7 @@ export const getCreateClientUrl = () => {
 
 
 
-  return `/api/clients`
+  return `/api/v1/clients`
 }
 
 /**
@@ -603,7 +1050,7 @@ export const getGetClientUrl = (id: number,) => {
 
 
 
-  return `/api/clients/${id}`
+  return `/api/v1/clients/${id}`
 }
 
 /**
@@ -626,7 +1073,7 @@ export const getClient = async (id: number, options?: RequestInit): Promise<Clie
 
 export const getGetClientQueryKey = (id: number,) => {
     return [
-    `/api/clients/${id}`
+    `/api/v1/clients/${id}`
     ] as const;
     }
 
@@ -680,7 +1127,7 @@ export const getUpdateClientUrl = (id: number,) => {
 
 
 
-  return `/api/clients/${id}`
+  return `/api/v1/clients/${id}`
 }
 
 /**
@@ -752,7 +1199,7 @@ export const getDeleteClientUrl = (id: number,) => {
 
 
 
-  return `/api/clients/${id}`
+  return `/api/v1/clients/${id}`
 }
 
 /**
@@ -822,7 +1269,7 @@ export const getAddMembershipUrl = (id: number,) => {
 
 
 
-  return `/api/clients/${id}/memberships`
+  return `/api/v1/clients/${id}/memberships`
 }
 
 /**
@@ -894,7 +1341,7 @@ export const getGetClientRentalsUrl = (id: number,) => {
 
 
 
-  return `/api/clients/${id}/rentals`
+  return `/api/v1/clients/${id}/rentals`
 }
 
 /**
@@ -917,7 +1364,7 @@ export const getClientRentals = async (id: number, options?: RequestInit): Promi
 
 export const getGetClientRentalsQueryKey = (id: number,) => {
     return [
-    `/api/clients/${id}/rentals`
+    `/api/v1/clients/${id}/rentals`
     ] as const;
     }
 
@@ -971,7 +1418,7 @@ export const getGetClientTransactionsUrl = (id: number,) => {
 
 
 
-  return `/api/clients/${id}/transactions`
+  return `/api/v1/clients/${id}/transactions`
 }
 
 /**
@@ -994,7 +1441,7 @@ export const getClientTransactions = async (id: number, options?: RequestInit): 
 
 export const getGetClientTransactionsQueryKey = (id: number,) => {
     return [
-    `/api/clients/${id}/transactions`
+    `/api/v1/clients/${id}/transactions`
     ] as const;
     }
 
@@ -1055,7 +1502,7 @@ export const getListLockersUrl = (params?: ListLockersParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/lockers?${stringifiedParams}` : `/api/lockers`
+  return stringifiedParams.length > 0 ? `/api/v1/lockers?${stringifiedParams}` : `/api/v1/lockers`
 }
 
 /**
@@ -1078,7 +1525,7 @@ export const listLockers = async (params?: ListLockersParams, options?: RequestI
 
 export const getListLockersQueryKey = (params?: ListLockersParams,) => {
     return [
-    `/api/lockers`, ...(params ? [params] : [])
+    `/api/v1/lockers`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -1132,7 +1579,7 @@ export const getGetLockersOccupancyUrl = () => {
 
 
 
-  return `/api/lockers/occupancy`
+  return `/api/v1/lockers/occupancy`
 }
 
 /**
@@ -1155,7 +1602,7 @@ export const getLockersOccupancy = async ( options?: RequestInit): Promise<Occup
 
 export const getGetLockersOccupancyQueryKey = () => {
     return [
-    `/api/lockers/occupancy`
+    `/api/v1/lockers/occupancy`
     ] as const;
     }
 
@@ -1209,7 +1656,7 @@ export const getAssignLockerUrl = (id: number,) => {
 
 
 
-  return `/api/lockers/${id}/assign`
+  return `/api/v1/lockers/${id}/assign`
 }
 
 /**
@@ -1281,7 +1728,7 @@ export const getReleaseLockerUrl = (id: number,) => {
 
 
 
-  return `/api/lockers/${id}/release`
+  return `/api/v1/lockers/${id}/release`
 }
 
 /**
@@ -1351,7 +1798,7 @@ export const getRenewLockerUrl = (id: number,) => {
 
 
 
-  return `/api/lockers/${id}/renew`
+  return `/api/v1/lockers/${id}/renew`
 }
 
 /**
@@ -1423,7 +1870,7 @@ export const getExtendLockerUrl = (id: number,) => {
 
 
 
-  return `/api/lockers/${id}/extend`
+  return `/api/v1/lockers/${id}/extend`
 }
 
 /**
@@ -1502,7 +1949,7 @@ export const getListRoomsUrl = (params?: ListRoomsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/rooms?${stringifiedParams}` : `/api/rooms`
+  return stringifiedParams.length > 0 ? `/api/v1/rooms?${stringifiedParams}` : `/api/v1/rooms`
 }
 
 /**
@@ -1525,7 +1972,7 @@ export const listRooms = async (params?: ListRoomsParams, options?: RequestInit)
 
 export const getListRoomsQueryKey = (params?: ListRoomsParams,) => {
     return [
-    `/api/rooms`, ...(params ? [params] : [])
+    `/api/v1/rooms`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -1579,7 +2026,7 @@ export const getGetRoomsOccupancyUrl = () => {
 
 
 
-  return `/api/rooms/occupancy`
+  return `/api/v1/rooms/occupancy`
 }
 
 /**
@@ -1602,7 +2049,7 @@ export const getRoomsOccupancy = async ( options?: RequestInit): Promise<Occupan
 
 export const getGetRoomsOccupancyQueryKey = () => {
     return [
-    `/api/rooms/occupancy`
+    `/api/v1/rooms/occupancy`
     ] as const;
     }
 
@@ -1656,7 +2103,7 @@ export const getAssignRoomUrl = (id: number,) => {
 
 
 
-  return `/api/rooms/${id}/assign`
+  return `/api/v1/rooms/${id}/assign`
 }
 
 /**
@@ -1728,7 +2175,7 @@ export const getReleaseRoomUrl = (id: number,) => {
 
 
 
-  return `/api/rooms/${id}/release`
+  return `/api/v1/rooms/${id}/release`
 }
 
 /**
@@ -1798,7 +2245,7 @@ export const getRenewRoomUrl = (id: number,) => {
 
 
 
-  return `/api/rooms/${id}/renew`
+  return `/api/v1/rooms/${id}/renew`
 }
 
 /**
@@ -1870,7 +2317,7 @@ export const getExtendRoomUrl = (id: number,) => {
 
 
 
-  return `/api/rooms/${id}/extend`
+  return `/api/v1/rooms/${id}/extend`
 }
 
 /**
@@ -1942,7 +2389,7 @@ export const getCalculatePriceUrl = () => {
 
 
 
-  return `/api/pricing/calculate`
+  return `/api/v1/pricing/calculate`
 }
 
 /**
@@ -2013,7 +2460,7 @@ export const getCheckInUrl = () => {
 
 
 
-  return `/api/checkin`
+  return `/api/v1/checkin`
 }
 
 /**
@@ -2084,7 +2531,7 @@ export const getListWaitlistUrl = () => {
 
 
 
-  return `/api/waitlist`
+  return `/api/v1/waitlist`
 }
 
 /**
@@ -2107,7 +2554,7 @@ export const listWaitlist = async ( options?: RequestInit): Promise<WaitlistEntr
 
 export const getListWaitlistQueryKey = () => {
     return [
-    `/api/waitlist`
+    `/api/v1/waitlist`
     ] as const;
     }
 
@@ -2161,7 +2608,7 @@ export const getAddToWaitlistUrl = () => {
 
 
 
-  return `/api/waitlist`
+  return `/api/v1/waitlist`
 }
 
 /**
@@ -2232,7 +2679,7 @@ export const getRemoveFromWaitlistUrl = (id: number,) => {
 
 
 
-  return `/api/waitlist/${id}`
+  return `/api/v1/waitlist/${id}`
 }
 
 /**
@@ -2302,7 +2749,7 @@ export const getConfirmWaitlistAssignmentUrl = (id: number,) => {
 
 
 
-  return `/api/waitlist/${id}/confirm`
+  return `/api/v1/waitlist/${id}/confirm`
 }
 
 /**
@@ -2372,7 +2819,7 @@ export const getListProductsUrl = () => {
 
 
 
-  return `/api/products`
+  return `/api/v1/products`
 }
 
 /**
@@ -2395,7 +2842,7 @@ export const listProducts = async ( options?: RequestInit): Promise<Product[]> =
 
 export const getListProductsQueryKey = () => {
     return [
-    `/api/products`
+    `/api/v1/products`
     ] as const;
     }
 
@@ -2449,7 +2896,7 @@ export const getCreateProductUrl = () => {
 
 
 
-  return `/api/products`
+  return `/api/v1/products`
 }
 
 /**
@@ -2520,7 +2967,7 @@ export const getUpdateProductUrl = (id: number,) => {
 
 
 
-  return `/api/products/${id}`
+  return `/api/v1/products/${id}`
 }
 
 /**
@@ -2592,7 +3039,7 @@ export const getDeleteProductUrl = (id: number,) => {
 
 
 
-  return `/api/products/${id}`
+  return `/api/v1/products/${id}`
 }
 
 /**
@@ -2669,7 +3116,7 @@ export const getListTransactionsUrl = (params?: ListTransactionsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/transactions?${stringifiedParams}` : `/api/transactions`
+  return stringifiedParams.length > 0 ? `/api/v1/transactions?${stringifiedParams}` : `/api/v1/transactions`
 }
 
 /**
@@ -2692,7 +3139,7 @@ export const listTransactions = async (params?: ListTransactionsParams, options?
 
 export const getListTransactionsQueryKey = (params?: ListTransactionsParams,) => {
     return [
-    `/api/transactions`, ...(params ? [params] : [])
+    `/api/v1/transactions`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -2746,7 +3193,7 @@ export const getGetDashboardUrl = () => {
 
 
 
-  return `/api/dashboard`
+  return `/api/v1/dashboard`
 }
 
 /**
@@ -2769,7 +3216,7 @@ export const getDashboard = async ( options?: RequestInit): Promise<Dashboard> =
 
 export const getGetDashboardQueryKey = () => {
     return [
-    `/api/dashboard`
+    `/api/v1/dashboard`
     ] as const;
     }
 
@@ -2823,7 +3270,7 @@ export const getListUsersUrl = () => {
 
 
 
-  return `/api/users`
+  return `/api/v1/users`
 }
 
 /**
@@ -2846,7 +3293,7 @@ export const listUsers = async ( options?: RequestInit): Promise<User[]> => {
 
 export const getListUsersQueryKey = () => {
     return [
-    `/api/users`
+    `/api/v1/users`
     ] as const;
     }
 
@@ -2900,7 +3347,7 @@ export const getCreateUserUrl = () => {
 
 
 
-  return `/api/users`
+  return `/api/v1/users`
 }
 
 /**
@@ -2971,7 +3418,7 @@ export const getUpdateUserUrl = (id: number,) => {
 
 
 
-  return `/api/users/${id}`
+  return `/api/v1/users/${id}`
 }
 
 /**
@@ -3043,7 +3490,7 @@ export const getDeleteUserUrl = (id: number,) => {
 
 
 
-  return `/api/users/${id}`
+  return `/api/v1/users/${id}`
 }
 
 /**
@@ -3120,7 +3567,7 @@ export const getListAuditLogsUrl = (params?: ListAuditLogsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/audit-logs?${stringifiedParams}` : `/api/audit-logs`
+  return stringifiedParams.length > 0 ? `/api/v1/audit-logs?${stringifiedParams}` : `/api/v1/audit-logs`
 }
 
 /**
@@ -3143,7 +3590,7 @@ export const listAuditLogs = async (params?: ListAuditLogsParams, options?: Requ
 
 export const getListAuditLogsQueryKey = (params?: ListAuditLogsParams,) => {
     return [
-    `/api/audit-logs`, ...(params ? [params] : [])
+    `/api/v1/audit-logs`, ...(params ? [params] : [])
     ] as const;
     }
 

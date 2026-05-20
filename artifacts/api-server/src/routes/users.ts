@@ -7,6 +7,7 @@ import { writeAuditLog } from "../lib/audit";
 import { CreateUserBody, UpdateUserBody, UpdateUserParams, DeleteUserParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { BCRYPT_ROUNDS } from "../lib/constants";
+import { accountLockoutService } from "../services/accountLockout";
 
 const router = Router();
 
@@ -128,6 +129,33 @@ router.delete("/users/:id", requireManager, apiLimiter, async (req, res): Promis
   });
 
   res.sendStatus(204);
+});
+
+router.post("/users/:id/unlock", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const params = DeleteUserParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, params.data.id));
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  await accountLockoutService.resetAttempts(user.id);
+
+  const actingUser = (req as AuthRequest).user!;
+  await writeAuditLog({
+    userId: parseInt(actingUser.sub),
+    action: "UNLOCK_USER",
+    resourceType: "user",
+    resourceId: user.id,
+    description: `Unlocked user ${user.email}`,
+  });
+
+  res.json({ success: true, message: "Account unlocked successfully" });
 });
 
 export default router;

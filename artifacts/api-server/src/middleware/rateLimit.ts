@@ -17,6 +17,10 @@ export const authLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   skipSuccessfulRequests: true, // Don't count successful logins
+  skip: (req) => {
+    // Skip rate limiting in test environment
+    return process.env.NODE_ENV === 'test';
+  },
   handler: (req, res) => {
     logger.warn({
       msg: "Rate limit exceeded for auth endpoint",

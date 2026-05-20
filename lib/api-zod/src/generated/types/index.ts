@@ -6,10 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accountLockedError';
+export * from './accountLockedErrorCode';
 export * from './assignResourceInput';
 export * from './assignResourceInputMembershipType';
 export * from './auditLog';
 export * from './auditLogList';
+export * from './authError';
+export * from './authErrorCode';
 export * from './authUser';
 export * from './authUserRole';
 export * from './checkInInput';
@@ -39,11 +43,17 @@ export * from './livenessResponseStatus';
 export * from './locker';
 export * from './lockerStatus';
 export * from './loginInput';
+// Skip loginResponse - conflicts with Zod schema from api.ts
+export * from './loginResponseRole';
+export * from './logout200';
 export * from './membership';
 export * from './membershipInput';
 export * from './membershipInputType';
 export * from './membershipType';
+export * from './messageResponse';
 export * from './occupancySummary';
+export * from './passwordResetConfirmInput';
+export * from './passwordResetRequestInput';
 export * from './priceCalculation';
 export * from './priceCalculationInput';
 export * from './priceCalculationInputMembershipType';
@@ -54,12 +64,20 @@ export * from './productUpdate';
 export * from './readinessResponse';
 export * from './readinessResponseChecks';
 export * from './readinessResponseStatus';
+export * from './refreshTokenInput';
+// Skip refreshTokenResponse - conflicts with Zod schema from api.ts
 export * from './renewInput';
 export * from './rentalSession';
 export * from './rentalSessionResourceType';
 export * from './rentalSessionStatus';
+export * from './revokeAllSessions200';
+// Skip revokeAllSessionsBody - conflicts with Zod schema from api.ts
+export * from './revokeSession200';
+// Skip revokeSessionBody - conflicts with Zod schema from api.ts
 export * from './room';
 export * from './roomStatus';
+export * from './session';
+export * from './sessionsList';
 export * from './transaction';
 export * from './transactionList';
 export * from './transactionType';

@@ -17,6 +17,8 @@ import { logger } from "./lib/logger";
 import { logCacheStats } from "./lib/cache";
 import { getEnv } from "./lib/env";
 import { isSentryInitialized, captureUserContext, captureRequestContext } from "./lib/sentry";
+import { correlationIdMiddleware } from "./middleware/correlationId";
+import { requestIdMiddleware } from "./middleware/requestId";
 import "./jobs/cron";
 
 const app: Express = express();
@@ -28,14 +30,6 @@ const REQUEST_TIMEOUT = '30s';
 // This must be called after middleware that could take time to process
 const haltOnTimedOut = (req: Request, res: Response, next: NextFunction) => {
   if (!req.timedout) next();
-};
-
-// Request ID generation middleware - should be first in the middleware chain
-const requestIdMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const requestId = req.headers['x-request-id'] as string || randomUUID();
-  req.id = requestId;
-  res.setHeader('X-Request-ID', requestId);
-  next();
 };
 
 // CSRF token generation and validation
@@ -81,6 +75,9 @@ const csrfTokenMiddleware = (req: Request, res: Response, next: NextFunction) =>
 
 // Request ID middleware - must be first in the chain
 app.use(requestIdMiddleware);
+
+// Correlation ID middleware - for traceability across requests
+app.use(correlationIdMiddleware);
 
 // Request timeout middleware - must be early in the chain
 app.use(timeout(REQUEST_TIMEOUT));
@@ -145,7 +142,8 @@ app.use(
     serializers: {
       req(req) {
         return {
-          id: req.id,
+          requestId: (req as any).requestId,
+          correlationId: (req as any).correlationId,
           method: req.method,
           url: req.url?.split("?")[0],
         };
@@ -197,7 +195,7 @@ app.use(haltOnTimedOut);
 // Timeout error handler - returns 504 Gateway Timeout when request exceeds time limit
 app.use((req: Request, res: Response, next: NextFunction): void => {
   if (req.timedout) {
-    logger.warn({ requestId: req.id, url: req.url }, 'Request timed out');
+    logger.warn({ requestId: (req as any).requestId, url: req.url }, 'Request timed out');
     res.status(504).json({ error: 'Request timeout' });
     return;
   }
@@ -206,16 +204,22 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 
 // CSRF protection middleware (exempt health endpoints for monitoring systems)
 const csrfMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // Skip CSRF for health check endpoints to allow monitoring systems
-  if (req.path.startsWith('/healthz/') || req.path.startsWith('/api/v1/healthz/')) {
+  // Skip CSRF for health check endpoints and login for development
+  if (req.path.startsWith('/healthz/') || 
+      req.path.startsWith('/api/v1/healthz/') ||
+      req.path === '/api/auth/login' ||
+      req.path === '/api/v1/auth/login') {
     return next();
   }
   csrfTokenMiddleware(req, res, next);
 };
 
 const csrfProtectionMiddlewareExempt = (req: Request, res: Response, next: NextFunction) => {
-  // Skip CSRF for health check endpoints to allow monitoring systems
-  if (req.path.startsWith('/healthz/') || req.path.startsWith('/api/v1/healthz/')) {
+  // Skip CSRF for health check endpoints and login for development
+  if (req.path.startsWith('/healthz/') || 
+      req.path.startsWith('/api/v1/healthz/') ||
+      req.path === '/api/auth/login' ||
+      req.path === '/api/v1/auth/login') {
     return next();
   }
   csrfProtectionMiddleware(req, res, next);

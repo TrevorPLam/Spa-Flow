@@ -1,3 +1,13 @@
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Load .env from project root
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "../../..");
+dotenv.config({ path: path.resolve(projectRoot, ".env") });
+
 import app from "./app";
 import { logger } from "./lib/logger";
 import { validateEnv } from "./lib/env";

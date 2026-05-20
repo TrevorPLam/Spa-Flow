@@ -49,6 +49,8 @@ export type ReadinessResponseChecks = {
   square: HealthCheck;
   twilio: HealthCheck;
   redis: HealthCheck;
+  jwt_secret: HealthCheck;
+  encryption_key: HealthCheck;
 };
 
 export interface ReadinessResponse {
@@ -74,6 +76,111 @@ export interface AuthUser {
   email: string;
   name: string;
   role: AuthUserRole;
+}
+
+export type LoginResponseRole = typeof LoginResponseRole[keyof typeof LoginResponseRole];
+
+
+export const LoginResponseRole = {
+  STAFF: 'STAFF',
+  MANAGER: 'MANAGER',
+} as const;
+
+export interface LoginResponse {
+  id: number;
+  email: string;
+  name: string;
+  role: LoginResponseRole;
+  /** Refresh token for obtaining new access tokens */
+  refreshToken: string;
+}
+
+export interface RefreshTokenInput {
+  /** Refresh token to exchange for new access token */
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  /** New refresh token (old one is invalidated) */
+  refreshToken: string;
+  user: AuthUser;
+}
+
+export interface PasswordResetRequestInput {
+  email: string;
+}
+
+export interface PasswordResetConfirmInput {
+  /** Password reset token from email */
+  token: string;
+  /**
+     * New password (minimum 15 characters per NIST SP 800-63B Rev 4)
+     * @minLength 15
+     * @maxLength 64
+     */
+  newPassword: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
+export interface Session {
+  id: number;
+  userId: number;
+  /**
+     * Hash of user agent string (privacy)
+     * @nullable
+     */
+  userAgent?: string | null;
+  createdAt: string;
+  expiresAt: string;
+  /** Whether this is the current session */
+  isCurrent: boolean;
+}
+
+export interface SessionsList {
+  sessions: Session[];
+}
+
+/**
+ * Error code for programmatic handling
+ */
+export type AuthErrorCode = typeof AuthErrorCode[keyof typeof AuthErrorCode];
+
+
+export const AuthErrorCode = {
+  AUTH_001: 'AUTH_001',
+  AUTH_002: 'AUTH_002',
+  AUTH_003: 'AUTH_003',
+  AUTH_004: 'AUTH_004',
+  AUTH_005: 'AUTH_005',
+  AUTH_006: 'AUTH_006',
+  AUTH_007: 'AUTH_007',
+  AUTH_008: 'AUTH_008',
+  AUTH_009: 'AUTH_009',
+  AUTH_010: 'AUTH_010',
+} as const;
+
+export interface AuthError {
+  /** Error code for programmatic handling */
+  code: AuthErrorCode;
+  /** Human-readable error message */
+  error: string;
+}
+
+export type AccountLockedErrorCode = typeof AccountLockedErrorCode[keyof typeof AccountLockedErrorCode];
+
+
+export const AccountLockedErrorCode = {
+  AUTH_007: 'AUTH_007',
+} as const;
+
+export interface AccountLockedError {
+  code: AccountLockedErrorCode;
+  error: string;
+  /** Timestamp when account lockout expires */
+  lockedUntil: string;
 }
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -539,6 +646,29 @@ export interface AuditLogList {
   page: number;
   limit: number;
 }
+
+export type Logout200 = {
+  success?: boolean;
+};
+
+export type RevokeAllSessionsBody = {
+  /** Current refresh token to keep active */
+  refreshToken?: string;
+};
+
+export type RevokeAllSessions200 = {
+  success?: boolean;
+  revokedCount?: number;
+};
+
+export type RevokeSessionBody = {
+  /** Current refresh token to prevent revoking current session */
+  refreshToken?: string;
+};
+
+export type RevokeSession200 = {
+  success?: boolean;
+};
 
 export type ListClientsParams = {
 search?: string;

@@ -70,6 +70,9 @@ paths:
       operationId: login
       tags: [auth]
       summary: Staff login
+      x-rateLimit:
+        limit: 5
+        window: 15min
       requestBody:
         required: true
         content:
@@ -82,24 +85,62 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthUser"
+                $ref: "#/components/schemas/LoginResponse"
         "401":
           description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "403":
+          description: Account locked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountLockedError"
+        "429":
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+          headers:
+            Retry-After:
+              description: Seconds until rate limit resets
+              schema:
+                type: integer
 
   /auth/logout:
     post:
       operationId: logout
       tags: [auth]
       summary: Staff logout
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
 
   /auth/me:
     get:
       operationId: getMe
       tags: [auth]
       summary: Get current user
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Current user
@@ -109,6 +150,194 @@ paths:
                 $ref: "#/components/schemas/AuthUser"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [auth]
+      summary: Refresh access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenInput"
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshTokenResponse"
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /auth/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      tags: [auth]
+      summary: Request password reset via email
+      x-rateLimit:
+        limit: 3
+        window: 15min
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequestInput"
+      responses:
+        "200":
+          description: Password reset email sent (generic response for security)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /auth/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      tags: [auth]
+      summary: Confirm password reset with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetConfirmInput"
+      responses:
+        "200":
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid token or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /auth/sessions:
+    get:
+      operationId: listSessions
+      tags: [auth]
+      summary: List active sessions for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionsList"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+    delete:
+      operationId: revokeAllSessions
+      tags: [auth]
+      summary: Revoke all sessions except current
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  description: Current refresh token to keep active
+      responses:
+        "200":
+          description: Sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  revokedCount:
+                    type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /auth/sessions/{id}:
+    delete:
+      operationId: revokeSession
+      tags: [auth]
+      summary: Revoke a specific session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Session ID to revoke
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  description: Current refresh token to prevent revoking current session
+      responses:
+        "200":
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "400":
+          description: Cannot revoke current session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
 
   # Clients
   /clients:
@@ -869,6 +1098,12 @@ paths:
                 $ref: "#/components/schemas/AuditLogList"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token for authentication
   schemas:
     LivenessResponse:
       type: object
@@ -893,7 +1128,7 @@ components:
           enum: [ready, not_ready]
         checks:
           type: object
-          required: [database, square, twilio, redis]
+          required: [database, square, twilio, redis, jwt_secret, encryption_key]
           properties:
             database:
               $ref: "#/components/schemas/HealthCheck"
@@ -902,6 +1137,10 @@ components:
             twilio:
               $ref: "#/components/schemas/HealthCheck"
             redis:
+              $ref: "#/components/schemas/HealthCheck"
+            jwt_secret:
+              $ref: "#/components/schemas/HealthCheck"
+            encryption_key:
               $ref: "#/components/schemas/HealthCheck"
 
     HealthCheck:
@@ -942,6 +1181,135 @@ components:
         role:
           type: string
           enum: [STAFF, MANAGER]
+
+    LoginResponse:
+      type: object
+      required: [id, email, name, role, refreshToken]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [STAFF, MANAGER]
+        refreshToken:
+          type: string
+          description: Refresh token for obtaining new access tokens
+
+    RefreshTokenInput:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token to exchange for new access token
+
+    RefreshTokenResponse:
+      type: object
+      required: [refreshToken, user]
+      properties:
+        refreshToken:
+          type: string
+          description: New refresh token (old one is invalidated)
+        user:
+          $ref: "#/components/schemas/AuthUser"
+
+    PasswordResetRequestInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    PasswordResetConfirmInput:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+          description: Password reset token from email
+        newPassword:
+          type: string
+          minLength: 15
+          maxLength: 64
+          description: New password (minimum 15 characters per NIST SP 800-63B Rev 4)
+
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    Session:
+      type: object
+      required: [id, userId, createdAt, expiresAt, isCurrent]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userAgent:
+          type: ["string", "null"]
+          description: Hash of user agent string (privacy)
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        isCurrent:
+          type: boolean
+          description: Whether this is the current session
+
+    SessionsList:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+
+    AuthError:
+      type: object
+      required: [code, error]
+      properties:
+        code:
+          type: string
+          description: Error code for programmatic handling
+          enum:
+            - AUTH_001
+            - AUTH_002
+            - AUTH_003
+            - AUTH_004
+            - AUTH_005
+            - AUTH_006
+            - AUTH_007
+            - AUTH_008
+            - AUTH_009
+            - AUTH_010
+        error:
+          type: string
+          description: Human-readable error message
+
+    AccountLockedError:
+      type: object
+      required: [code, error, lockedUntil]
+      properties:
+        code:
+          type: string
+          enum: [AUTH_007]
+        error:
+          type: string
+        lockedUntil:
+          type: string
+          format: date-time
+          description: Timestamp when account lockout expires
 
     # Users
     User:

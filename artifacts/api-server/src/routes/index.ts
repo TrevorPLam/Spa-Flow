@@ -13,6 +13,7 @@ import transactionsRouter from "./transactions";
 import dashboardRouter from "./dashboard";
 import auditRouter from "./audit";
 import configRouter from "./config";
+import testRouter from "./test";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(transactionsRouter);
 router.use(dashboardRouter);
 router.use(auditRouter);
 router.use(configRouter);
+router.use(testRouter);
 
 export default router;

@@ -11,6 +11,7 @@ import {
   ScrollText,
   LogOut,
   Waves,
+  Monitor,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/waitlist", label: "Waitlist", icon: ClipboardList },
   { href: "/products", label: "Products", icon: ShoppingBag },
   { href: "/transactions", label: "Transactions", icon: Receipt },
+  { href: "/sessions", label: "Sessions", icon: Monitor },
 ];
 
 const managerItems = [

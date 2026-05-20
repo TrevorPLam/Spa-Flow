@@ -12,4 +12,6 @@ export type ReadinessResponseChecks = {
   square: HealthCheck;
   twilio: HealthCheck;
   redis: HealthCheck;
+  jwt_secret: HealthCheck;
+  encryption_key: HealthCheck;
 };

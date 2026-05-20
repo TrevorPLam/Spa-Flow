@@ -8,3 +8,5 @@ export * from "./waitlist";
 export * from "./products";
 export * from "./transactions";
 export * from "./audit_logs";
+export * from "./refresh_tokens";
+export * from "./password_reset_tokens";

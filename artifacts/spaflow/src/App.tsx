@@ -19,6 +19,7 @@ import ProductsPage from "@/pages/products";
 import TransactionsPage from "@/pages/transactions";
 import UsersPage from "@/pages/users";
 import AuditLogsPage from "@/pages/audit-logs";
+import SessionsPage from "@/pages/sessions";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/transactions" component={() => <ProtectedRoute component={TransactionsPage} />} />
       <Route path="/users" component={() => <ProtectedRoute component={UsersPage} />} />
       <Route path="/audit-logs" component={() => <ProtectedRoute component={AuditLogsPage} />} />
+      <Route path="/sessions" component={() => <ProtectedRoute component={SessionsPage} />} />
       <Route component={NotFound} />
     </Switch>
   );

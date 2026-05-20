@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, pgEnum, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,6 +12,9 @@ export const usersTable = pgTable("users", {
   role: roleEnum("role").notNull().default("STAFF"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  lastFailedLoginAt: timestamp("last_failed_login_at", { withTimezone: true }),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });

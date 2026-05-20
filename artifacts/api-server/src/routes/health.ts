@@ -133,25 +133,104 @@ async function checkRedis(): Promise<{ status: HealthCheckStatus; message?: stri
   const startTime = Date.now();
   try {
     const client = getRedisClient();
-    
+
     // Simple PING command to check Redis connection
     const result = await client.ping();
-    
+
     if (result === 'PONG') {
       return { status: "healthy", latency_ms: Date.now() - startTime };
     } else {
-      return { 
-        status: "unhealthy", 
+      return {
+        status: "unhealthy",
         message: "Redis ping failed",
-        latency_ms: Date.now() - startTime 
+        latency_ms: Date.now() - startTime
       };
     }
   } catch (error) {
     logger.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Redis health check failed");
-    return { 
-      status: "degraded", 
+    return {
+      status: "degraded",
       message: error instanceof Error ? error.message : "Unknown Redis error",
-      latency_ms: Date.now() - startTime 
+      latency_ms: Date.now() - startTime
+    };
+  }
+}
+
+// Helper function to check JWT secret configuration
+async function checkJwtSecret(): Promise<{ status: HealthCheckStatus; message?: string; latency_ms: number }> {
+  const startTime = Date.now();
+  try {
+    const env = getEnv();
+    const jwtSecret = env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      return {
+        status: "unhealthy",
+        message: "JWT_SECRET is not set",
+        latency_ms: Date.now() - startTime
+      };
+    }
+
+    // JWT_SECRET should be at least 32 characters (32 bytes when hex-encoded)
+    if (jwtSecret.length < 32) {
+      return {
+        status: "unhealthy",
+        message: `JWT_SECRET is too short (${jwtSecret.length} characters, minimum 32 required)`,
+        latency_ms: Date.now() - startTime
+      };
+    }
+
+    return { status: "healthy", latency_ms: Date.now() - startTime };
+  } catch (error) {
+    logger.error({ error: error instanceof Error ? error.message : "Unknown error" }, "JWT secret health check failed");
+    return {
+      status: "unhealthy",
+      message: error instanceof Error ? error.message : "Unknown JWT secret error",
+      latency_ms: Date.now() - startTime
+    };
+  }
+}
+
+// Helper function to check encryption key configuration
+async function checkEncryptionKey(): Promise<{ status: HealthCheckStatus; message?: string; latency_ms: number }> {
+  const startTime = Date.now();
+  try {
+    const env = getEnv();
+    const encryptionKey = env.ENCRYPTION_KEY;
+
+    if (!encryptionKey) {
+      return {
+        status: "unhealthy",
+        message: "ENCRYPTION_KEY is not set",
+        latency_ms: Date.now() - startTime
+      };
+    }
+
+    // ENCRYPTION_KEY should be valid base64 and at least 32 bytes when decoded
+    try {
+      const decoded = Buffer.from(encryptionKey, 'base64');
+      if (decoded.length < 32) {
+        return {
+          status: "unhealthy",
+          message: `ENCRYPTION_KEY is too short (${decoded.length} bytes when decoded, minimum 32 bytes required)`,
+          latency_ms: Date.now() - startTime
+        };
+      }
+    } catch (error) {
+      return {
+        status: "unhealthy",
+        message: "ENCRYPTION_KEY is not valid base64",
+        latency_ms: Date.now() - startTime
+      };
+    }
+
+    return { status: "healthy", latency_ms: Date.now() - startTime };
+  } catch (error) {
+    logger.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Encryption key health check failed");
+    return {
+      status: "unhealthy",
+      message: error instanceof Error ? error.message : "Unknown encryption key error",
+      latency_ms: Date.now() - startTime
     };
   }
 }
@@ -169,19 +248,21 @@ router.get("/healthz/live", healthLimiter, (_req, res) => {
 });
 
 // Readiness probe - checks if dependencies are available
-// Should check database, external services
+// Should check database, external services, auth configuration
 router.get("/healthz/ready", healthLimiter, async (_req, res) => {
-  const [database, square, twilio, redis] = await Promise.all([
+  const [database, square, twilio, redis, jwtSecret, encryptionKey] = await Promise.all([
     checkDatabase(),
     checkSquare(),
     checkTwilio(),
     checkRedis(),
+    checkJwtSecret(),
+    checkEncryptionKey(),
   ]);
 
   // Determine overall readiness
-  // If database is unhealthy, we're not ready
-  // If external services are degraded but database is healthy, we're still ready
-  const isReady = database.status === "healthy";
+  // If database, JWT secret, or encryption key is unhealthy, we're not ready
+  // If external services are degraded but core dependencies are healthy, we're still ready
+  const isReady = database.status === "healthy" && jwtSecret.status === "healthy" && encryptionKey.status === "healthy";
 
   const data: ReadinessResponse = {
     status: isReady ? "ready" : "not_ready",
@@ -190,6 +271,8 @@ router.get("/healthz/ready", healthLimiter, async (_req, res) => {
       square,
       twilio,
       redis,
+      jwt_secret: jwtSecret,
+      encryption_key: encryptionKey,
     },
   };
 

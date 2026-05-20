@@ -53,6 +53,20 @@ const envSchema = z.object({
   SENTRY_AUTH_TOKEN: z.string().optional(),
   SENTRY_ORG: z.string().optional(),
   SENTRY_PROJECT: z.string().optional(),
+
+  // Account Lockout Configuration
+  LOCKOUT_THRESHOLD: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(20)).default(5),
+  LOCKOUT_DURATION_MS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(60000)).default(900000), // 15 minutes default
+
+  // Authentication Configuration
+  // JWT_EXPIRY: Access token expiration time (e.g., "15m", "1h")
+  // Recommended: 15 minutes per JWT security best practices
+  JWT_EXPIRY: z.string().regex(/^\d+[smhd]$/, 'JWT_EXPIRY must be in format like "15m", "1h", "1d"').default('15m'),
+  // COOKIE_NAME: Name of the HTTP-only cookie for session token
+  COOKIE_NAME: z.string().min(1).max(100).default('spaflow_session'),
+  // REFRESH_TOKEN_EXPIRY_DAYS: Number of days refresh tokens are valid
+  // Recommended: 7-14 days per security best practices
+  REFRESH_TOKEN_EXPIRY_DAYS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(30)).default(7),
 });
 
 export type Env = z.infer<typeof envSchema>;

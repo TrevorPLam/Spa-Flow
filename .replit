@@ -45,6 +45,7 @@ timeoutMs = 20000
 [userenv.shared]
 ENCRYPTION_KEY = "T/2AwPPGwpuLm+z5CNyb2sfSm5lLaGhso0ewX7KGp2s="
 JWT_SECRET = "grA0sIbVPwxYyNTBats9qGSfuT8jEctWXiszfKayBjYntdkgCBOWhcZSsxvJiXKM"
+CSRF_SECRET = "T/2AwPPGwpuLm+z5CNyb2sfSm5lLaGhso0ewX7KGp2s="
 TAX_RATE = "0.08875"
 
 [[ports]]

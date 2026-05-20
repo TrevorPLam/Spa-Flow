@@ -43,6 +43,16 @@ export const ReadinessProbeResponse = zod.object({
   "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
   "message": zod.string().optional().describe('Optional message describing the check result'),
   "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
+}),
+  "jwt_secret": zod.object({
+  "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
+  "message": zod.string().optional().describe('Optional message describing the check result'),
+  "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
+}),
+  "encryption_key": zod.object({
+  "status": zod.enum(['healthy', 'unhealthy', 'degraded']),
+  "message": zod.string().optional().describe('Optional message describing the check result'),
+  "latency_ms": zod.number().optional().describe('Latency of the health check in milliseconds')
 })
 })
 })
@@ -60,7 +70,16 @@ export const LoginResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['STAFF', 'MANAGER'])
+  "role": zod.enum(['STAFF', 'MANAGER']),
+  "refreshToken": zod.string().describe('Refresh token for obtaining new access tokens')
+})
+
+
+/**
+ * @summary Staff logout
+ */
+export const LogoutResponse = zod.object({
+  "success": zod.boolean().optional()
 })
 
 
@@ -72,6 +91,98 @@ export const GetMeResponse = zod.object({
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.enum(['STAFF', 'MANAGER'])
+})
+
+
+/**
+ * @summary Refresh access token using refresh token
+ */
+export const RefreshTokenBody = zod.object({
+  "refreshToken": zod.string().describe('Refresh token to exchange for new access token')
+})
+
+export const RefreshTokenResponse = zod.object({
+  "refreshToken": zod.string().describe('New refresh token (old one is invalidated)'),
+  "user": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "role": zod.enum(['STAFF', 'MANAGER'])
+})
+})
+
+
+/**
+ * @summary Request password reset via email
+ */
+export const RequestPasswordResetBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const RequestPasswordResetResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Confirm password reset with token
+ */
+export const confirmPasswordResetBodyNewPasswordMin = 15;
+export const confirmPasswordResetBodyNewPasswordMax = 64;
+
+
+
+export const ConfirmPasswordResetBody = zod.object({
+  "token": zod.string().describe('Password reset token from email'),
+  "newPassword": zod.string().min(confirmPasswordResetBodyNewPasswordMin).max(confirmPasswordResetBodyNewPasswordMax).describe('New password (minimum 15 characters per NIST SP 800-63B Rev 4)')
+})
+
+export const ConfirmPasswordResetResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List active sessions for current user
+ */
+export const ListSessionsResponse = zod.object({
+  "sessions": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "userAgent": zod.string().nullish().describe('Hash of user agent string (privacy)'),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "isCurrent": zod.boolean().describe('Whether this is the current session')
+}))
+})
+
+
+/**
+ * @summary Revoke all sessions except current
+ */
+export const RevokeAllSessionsBody = zod.object({
+  "refreshToken": zod.string().optional().describe('Current refresh token to keep active')
+})
+
+export const RevokeAllSessionsResponse = zod.object({
+  "success": zod.boolean().optional(),
+  "revokedCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Revoke a specific session
+ */
+export const RevokeSessionParams = zod.object({
+  "id": zod.coerce.number().describe('Session ID to revoke')
+})
+
+export const RevokeSessionBody = zod.object({
+  "refreshToken": zod.string().optional().describe('Current refresh token to prevent revoking current session')
+})
+
+export const RevokeSessionResponse = zod.object({
+  "success": zod.boolean().optional()
 })
 
 
