@@ -4,6 +4,22 @@ import bcrypt from "bcryptjs";
 async function seed() {
   console.log("Seeding database...");
 
+  // Validate required environment variables
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const staffPassword = process.env.STAFF_PASSWORD;
+
+  if (!adminPassword) {
+    console.error("ERROR: ADMIN_PASSWORD environment variable is required");
+    console.error("Please set ADMIN_PASSWORD in your .env file before running the seed script");
+    process.exit(1);
+  }
+
+  if (!staffPassword) {
+    console.error("ERROR: STAFF_PASSWORD environment variable is required");
+    console.error("Please set STAFF_PASSWORD in your .env file before running the seed script");
+    process.exit(1);
+  }
+
   // Seed lockers L1-L167
   const lockerValues = Array.from({ length: 167 }, (_, i) => ({
     name: `L${i + 1}`,
@@ -27,7 +43,6 @@ async function seed() {
   console.log("Rooms seeded (R1-R38)");
 
   // Seed default admin user
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "SpaFlow2024!";
   const adminHash = await bcrypt.hash(adminPassword, 12);
 
   await db.insert(usersTable).values({
@@ -36,10 +51,9 @@ async function seed() {
     passwordHash: adminHash,
     role: 'MANAGER'
   }).onConflictDoNothing();
-  console.log(`Admin user created: admin@spaflow.com / ${adminPassword}`);
+  console.log(`Admin user created: admin@spaflow.com`);
 
   // Seed a staff user
-  const staffPassword = "Staff2024!";
   const staffHash = await bcrypt.hash(staffPassword, 12);
   await db.insert(usersTable).values({
     email: 'staff@spaflow.com',
@@ -47,7 +61,7 @@ async function seed() {
     passwordHash: staffHash,
     role: 'STAFF'
   }).onConflictDoNothing();
-  console.log(`Staff user created: staff@spaflow.com / ${staffPassword}`);
+  console.log(`Staff user created: staff@spaflow.com`);
 
   console.log("Seeding complete!");
   process.exit(0);

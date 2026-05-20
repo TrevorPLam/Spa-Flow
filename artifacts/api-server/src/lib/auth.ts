@@ -1,7 +1,7 @@
-import { SignJWT, jwtVerify, type JWTPayload, errors as joseErrors } from "jose";
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable, refreshTokensTable } from "@workspace/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { getEnv } from "./env";
 import { logger } from "./logger";
 import bcrypt from "bcryptjs";
@@ -9,6 +9,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { createAuthErrorResponse, AuthErrorCodes } from "./authErrors";
+import { BCRYPT_ROUNDS } from "./constants";
 
 const JWT_SECRET_KEY = new TextEncoder().encode(getEnv().JWT_SECRET);
 const JWT_EXPIRY = getEnv().JWT_EXPIRY;
@@ -18,7 +19,7 @@ const COOKIE_NAME = getEnv().COOKIE_NAME;
 // Pre-computed bcrypt hash of a dummy password for timing-safe comparison
 // This prevents timing attacks by ensuring password comparison takes constant time
 // even when user doesn't exist
-const DUMMY_PASSWORD_HASH = bcrypt.hashSync("dummy-password-for-timing-safe-comparison", 10);
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("dummy-password-for-timing-safe-comparison", BCRYPT_ROUNDS);
 
 /**
  * Hash a token for logging purposes.
@@ -286,7 +287,7 @@ export async function generateRefreshToken(userId: number, userAgent?: string): 
   const token = randomBytes(32).toString("hex");
 
   // Hash the token before storing (bcrypt is suitable for this use case)
-  const tokenHash = await bcrypt.hash(token, 10);
+  const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
 
   // Calculate expiration date (7 days from now)
   const expiresAt = new Date();

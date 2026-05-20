@@ -1,4 +1,3 @@
-import { DEFAULT_TAX_RATE } from "./constants";
 import { getEnv } from "./env";
 
 export type CustomerType = "MEMBER" | "NON_MEMBER";

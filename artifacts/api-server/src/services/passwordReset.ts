@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { logger } from "../lib/logger";
 import { validatePassword } from "../lib/auth";
 import { getEnv } from "../lib/env";
+import { BCRYPT_ROUNDS } from "../lib/constants";
 
 const PASSWORD_RESET_TOKEN_EXPIRY_MINUTES = 30; // OWASP recommends 15-60 minutes
 
@@ -55,7 +56,7 @@ export class PasswordResetTokenService {
     const token = randomBytes(32).toString("hex");
 
     // Hash the token before storing (bcrypt is suitable for this use case)
-    const tokenHash = await bcrypt.hash(token, 10);
+    const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
 
     // Calculate expiration date (30 minutes from now per OWASP best practices)
     const expiresAt = new Date();
@@ -152,7 +153,7 @@ export class PasswordResetTokenService {
     }
 
     // Hash the new password
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    const newPasswordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
     // Update user's password
     await db

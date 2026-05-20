@@ -329,7 +329,6 @@ describe('Check-in API', () => {
 
   describe('Contract Validation', () => {
     it('should validate POST /api/checkin request against OpenAPI spec', async () => {
-      const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
 

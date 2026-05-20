@@ -4,8 +4,8 @@ import express from 'express';
 import authRouter from './auth';
 import { db, auditLogsTable, usersTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
-import { signToken, setAuthCookie, clearAuthCookie } from '../lib/auth';
 import bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../lib/constants';
 
 // Create test app
 const app = express();
@@ -25,7 +25,7 @@ describe('Auth Audit Logging Integration Tests', () => {
     process.env.LOCKOUT_DURATION_MS = '900000';
 
     // Create test user
-    const passwordHash = await bcrypt.hash(testPassword, 10);
+    const passwordHash = await bcrypt.hash(testPassword, BCRYPT_ROUNDS);
     const [user] = await db.insert(usersTable).values({
       email: testEmail,
       name: 'Audit Test User',

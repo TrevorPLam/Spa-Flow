@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { LivenessResponse, ReadinessResponse, HealthCheckStatus } from "@workspace/api-zod";
-import { db, pool } from "@workspace/db";
+import { pool } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { getTwilioCredentials, getTwilioAuthHeader, getEnv } from "../lib/env";
 import { getRedisClient } from "../lib/cache";

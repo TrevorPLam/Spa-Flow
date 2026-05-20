@@ -90,7 +90,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   const clientAge = dob ? calculateAge(dob) : 25;
   const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
 
-  const { subtotal: rentalSubtotal, appliedRules } = calculatePrice({
+  const { subtotal: rentalSubtotal } = calculatePrice({
     customerType,
     productType: resourceType.toUpperCase() as ProductType,
     startTime: new Date(),

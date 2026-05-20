@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { sessionService } from "./session";
 import { db, refreshTokensTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { BCRYPT_ROUNDS } from "../lib/constants";
 
 describe("SessionService", () => {
   const testUserId = 99999;
@@ -39,14 +40,14 @@ describe("SessionService", () => {
       // Create multiple test sessions
       const session1 = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
       }).returning();
 
       const session2 = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token2", 10),
+        tokenHash: await bcrypt.hash("token2", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
       }).returning();
@@ -65,7 +66,7 @@ describe("SessionService", () => {
       // Create an active session
       const activeSession = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("active", 10),
+        tokenHash: await bcrypt.hash("active", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
@@ -73,7 +74,7 @@ describe("SessionService", () => {
       // Create a revoked session
       const revokedSession = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("revoked", 10),
+        tokenHash: await bcrypt.hash("revoked", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         revokedAt: new Date(),
         userAgent: "Mozilla/5.0 Firefox",
@@ -87,7 +88,7 @@ describe("SessionService", () => {
     });
 
     it("should mark current session when token hash provided", async () => {
-      const tokenHash = await bcrypt.hash("current-token", 10);
+      const tokenHash = await bcrypt.hash("current-token", BCRYPT_ROUNDS);
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
         tokenHash,
@@ -105,14 +106,14 @@ describe("SessionService", () => {
     it("should not mark as current when token hash does not match", async () => {
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("different-token", 10),
+        tokenHash: await bcrypt.hash("different-token", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
       testSessionIds.push(session[0].id);
 
-      const sessions = await sessionService.listSessions(testUserId, await bcrypt.hash("current-token", 10));
+      const sessions = await sessionService.listSessions(testUserId, await bcrypt.hash("current-token", BCRYPT_ROUNDS));
       expect(sessions).toHaveLength(1);
       expect(sessions[0].isCurrent).toBe(false);
     });
@@ -122,7 +123,7 @@ describe("SessionService", () => {
     it("should revoke a session by ID", async () => {
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
@@ -149,7 +150,7 @@ describe("SessionService", () => {
       const otherUserId = testUserId + 1;
       const session = await db.insert(refreshTokensTable).values({
         userId: otherUserId,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
@@ -173,14 +174,14 @@ describe("SessionService", () => {
       // Create multiple sessions
       const session1 = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
       const session2 = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token2", 10),
+        tokenHash: await bcrypt.hash("token2", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Safari",
       }).returning();
@@ -198,14 +199,14 @@ describe("SessionService", () => {
     it("should keep current session active when provided", async () => {
       const session1 = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
       const session2 = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token2", 10),
+        tokenHash: await bcrypt.hash("token2", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Safari",
       }).returning();
@@ -239,7 +240,7 @@ describe("SessionService", () => {
   describe("getSessionIdForToken", () => {
     it("should return session ID for valid token", async () => {
       const token = "valid-token-12345";
-      const tokenHash = await bcrypt.hash(token, 10);
+      const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
         tokenHash,
@@ -260,7 +261,7 @@ describe("SessionService", () => {
 
     it("should return null for revoked session token", async () => {
       const token = "revoked-token-12345";
-      const tokenHash = await bcrypt.hash(token, 10);
+      const tokenHash = await bcrypt.hash(token, BCRYPT_ROUNDS);
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
         tokenHash,
@@ -280,7 +281,7 @@ describe("SessionService", () => {
     it("should parse Chrome on Windows", async () => {
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token", 10),
+        tokenHash: await bcrypt.hash("token", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       }).returning();
@@ -295,7 +296,7 @@ describe("SessionService", () => {
     it("should parse Safari on iPhone", async () => {
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token", 10),
+        tokenHash: await bcrypt.hash("token", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
       }).returning();
@@ -311,7 +312,7 @@ describe("SessionService", () => {
     it("should return 'Unknown Device' for null user agent", async () => {
       const session = await db.insert(refreshTokensTable).values({
         userId: testUserId,
-        tokenHash: await bcrypt.hash("token", 10),
+        tokenHash: await bcrypt.hash("token", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: null,
       }).returning();

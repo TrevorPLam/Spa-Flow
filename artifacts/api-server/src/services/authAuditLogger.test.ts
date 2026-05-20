@@ -95,7 +95,7 @@ describe('AuthAuditLogger', () => {
 
     it('should log error to logger when database insert fails', async () => {
       const mockError = new Error('Database connection failed');
-      const mockInsert = vi.mocked(db.insert).mockReturnValue({
+      vi.mocked(db.insert).mockReturnValue({
         values: vi.fn().mockRejectedValue(mockError),
       } as any);
 
@@ -155,7 +155,7 @@ describe('AuthAuditLogger', () => {
 
     it('should log error to logger when database insert fails', async () => {
       const mockError = new Error('Database connection failed');
-      const mockInsert = vi.mocked(db.insert).mockReturnValue({
+      vi.mocked(db.insert).mockReturnValue({
         values: vi.fn().mockRejectedValue(mockError),
       } as any);
 

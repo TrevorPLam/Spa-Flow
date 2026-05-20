@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   signToken,
   verifyToken,
@@ -8,9 +8,6 @@ import {
   requireAuth,
   requireManager,
   timingSafeLogin,
-  generateRefreshToken,
-  verifyRefreshToken,
-  rotateRefreshToken,
   isValidRole,
   type AuthPayload,
   type AuthRequest,

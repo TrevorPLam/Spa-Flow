@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import authRouter from './auth';
 import { db, usersTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../lib/constants';
 
 // Create test app
 const app = express();
@@ -25,8 +26,8 @@ describe('Auth Role Validation Integration Tests', () => {
 
   describe('role validation in login endpoint', () => {
     it('should accept valid STAFF role', async () => {
-      // Create test user with valid role
-      const passwordHash = await bcrypt.hash(testPassword, 10);
+      // Create test user with valid roleBCRYPT_ROUNDS
+      const passwordHash = await bcrypt.hash(testPassword, BCRYPT_ROUNDS);
       const [user] = await db.insert(usersTable).values({
         email: testEmail,
         name: 'Role Test User',
@@ -53,7 +54,7 @@ describe('Auth Role Validation Integration Tests', () => {
       const managerEmail = 'manager-role-test@example.com';
       
       // Create test user with MANAGER role
-      const passwordHash = await bcrypt.hash(testPassword, 10);
+      const passwordHash = await bcrypt.hash(testPassword, BCRYPT_ROUNDS);
       const [user] = await db.insert(usersTable).values({
         email: managerEmail,
         name: 'Manager Role Test User',
@@ -81,12 +82,11 @@ describe('Auth Role Validation Integration Tests', () => {
       // database constraints are bypassed (e.g., via direct SQL manipulation)
       // We mock the database query to simulate this scenario
       
-      const originalSelect = db.select;
       const mockUser = {
         id: 999,
         email: testEmail,
         name: 'Invalid Role User',
-        passwordHash: await bcrypt.hash(testPassword, 10),
+        passwordHash: await bcrypt.hash(testPassword, BCRYPT_ROUNDS),
         role: 'ADMIN' as any, // Invalid role not in enum
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -119,7 +119,7 @@ describe('Auth Role Validation Integration Tests', () => {
   describe('role validation in refresh endpoint', () => {
     it('should accept valid role in token refresh', async () => {
       // Create test user
-      const passwordHash = await bcrypt.hash(testPassword, 10);
+      const passwordHash = await bcrypt.hash(testPassword, BCRYPT_ROUNDS);
       const [user] = await db.insert(usersTable).values({
         email: testEmail,
         name: 'Refresh Role Test User',

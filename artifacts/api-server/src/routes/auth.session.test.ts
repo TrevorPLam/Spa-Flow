@@ -5,6 +5,7 @@ import { db, refreshTokensTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { signToken } from "../lib/auth";
+import { BCRYPT_ROUNDS } from "../lib/constants";
 
 describe("Session Management Endpoints", () => {
   let testUser: any;
@@ -13,7 +14,7 @@ describe("Session Management Endpoints", () => {
 
   beforeEach(async () => {
     // Create a test user
-    const passwordHash = await bcrypt.hash("TestPassword123!@#", 10);
+    const passwordHash = await bcrypt.hash("TestPassword123!@#", BCRYPT_ROUNDS);
     const [user] = await db.insert(usersTable).values({
       email: "session-test@example.com",
       name: "Session Test User",
@@ -66,14 +67,14 @@ describe("Session Management Endpoints", () => {
       // Create test sessions
       const session1 = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
       }).returning();
 
       const session2 = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("token2", 10),
+        tokenHash: await bcrypt.hash("token2", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
       }).returning();
@@ -102,7 +103,7 @@ describe("Session Management Endpoints", () => {
       // Create active session
       const activeSession = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("active", 10),
+        tokenHash: await bcrypt.hash("active", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
@@ -110,7 +111,7 @@ describe("Session Management Endpoints", () => {
       // Create revoked session
       const revokedSession = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("revoked", 10),
+        tokenHash: await bcrypt.hash("revoked", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         revokedAt: new Date(),
         userAgent: "Mozilla/5.0 Firefox",
@@ -132,7 +133,7 @@ describe("Session Management Endpoints", () => {
     it("should revoke a specific session", async () => {
       const session = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
@@ -172,7 +173,7 @@ describe("Session Management Endpoints", () => {
 
     it("should not revoke session belonging to different user", async () => {
       // Create another user
-      const otherPasswordHash = await bcrypt.hash("OtherPassword123!@#", 10);
+      const otherPasswordHash = await bcrypt.hash("OtherPassword123!@#", BCRYPT_ROUNDS);
       const [otherUser] = await db.insert(usersTable).values({
         email: "other-session-test@example.com",
         name: "Other Session Test User",
@@ -183,7 +184,7 @@ describe("Session Management Endpoints", () => {
       // Create session for other user
       const otherSession = await db.insert(refreshTokensTable).values({
         userId: otherUser.id,
-        tokenHash: await bcrypt.hash("other-token", 10),
+        tokenHash: await bcrypt.hash("other-token", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
@@ -217,14 +218,14 @@ describe("Session Management Endpoints", () => {
       // Create multiple sessions
       const session1 = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("token1", 10),
+        tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
       const session2 = await db.insert(refreshTokensTable).values({
         userId: testUser.id,
-        tokenHash: await bcrypt.hash("token2", 10),
+        tokenHash: await bcrypt.hash("token2", BCRYPT_ROUNDS),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Safari",
       }).returning();

@@ -10,11 +10,10 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Lock, LockOpen } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";

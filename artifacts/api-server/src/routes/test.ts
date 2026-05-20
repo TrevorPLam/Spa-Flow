@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth, type AuthRequest } from "../lib/auth";
-import { db, passwordResetTokensTable, usersTable } from "@workspace/db";
+import { requireAuth } from "../lib/auth";
+import { db, passwordResetTokensTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { getEnv } from "../lib/env";
 import { logger } from "../lib/logger";

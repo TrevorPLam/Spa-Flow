@@ -1,5 +1,3 @@
-import type { User, Client, Locker, Room, Membership } from '@workspace/db';
-
 /**
  * Seed data types for test database seeding
  * These interfaces define the structure of test data to be seeded

@@ -6,6 +6,7 @@ import { db, refreshTokensTable, usersTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { AuthErrorCodes, AuthErrorMessages } from '../lib/authErrors';
+import { BCRYPT_ROUNDS } from '../lib/constants';
 
 // Create test app
 const app = express();
@@ -25,7 +26,7 @@ describe('Refresh Token Integration Tests', () => {
     process.env.LOCKOUT_DURATION_MS = '900000';
 
     // Create test user
-    const passwordHash = await bcrypt.hash(testPassword, 10);
+    const passwordHash = await bcrypt.hash(testPassword, BCRYPT_ROUNDS);
     const [user] = await db.insert(usersTable).values({
       email: testEmail,
       name: 'Refresh Test User',
@@ -192,12 +193,10 @@ describe('Refresh Token Integration Tests', () => {
   describe('refresh token storage', () => {
     it('should store refresh token hash in database', async () => {
       // Login to get refresh token
-      const loginResponse = await request(app)
+      await request(app)
         .post('/auth/login')
         .send({ email: testEmail, password: testPassword })
         .expect(200);
-
-      const { refreshToken } = loginResponse.body;
 
       // Verify token is stored in database
       const tokens = await db.select().from(refreshTokensTable)
@@ -220,7 +219,7 @@ describe('Refresh Token Integration Tests', () => {
       const { refreshToken: initialToken } = loginResponse.body;
 
       // Rotate token
-      const refreshResponse = await request(app)
+      await request(app)
         .post('/auth/refresh')
         .send({ refreshToken: initialToken })
         .expect(200);
@@ -229,7 +228,6 @@ describe('Refresh Token Integration Tests', () => {
       const tokens = await db.select().from(refreshTokensTable)
         .where(eq(refreshTokensTable.userId, testUserId));
 
-      const oldToken = tokens.find(t => t.tokenHash); // Can't compare hashes directly
       expect(tokens.length).toBe(2); // Old (revoked) and new (active)
       const revokedTokens = tokens.filter(t => t.revokedAt !== null);
       expect(revokedTokens.length).toBe(1);

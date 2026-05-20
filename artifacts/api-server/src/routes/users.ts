@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireManager, requireAuth, type AuthRequest } from "../lib/auth";
+import { requireManager, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { CreateUserBody, UpdateUserBody, UpdateUserParams, DeleteUserParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";

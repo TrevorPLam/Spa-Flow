@@ -3,7 +3,6 @@ import { useRoute, Link } from "wouter";
 import {
   useGetClient,
   useUpdateClient,
-  useDeleteClient,
   useGetClientRentals,
   useGetClientTransactions,
   getGetClientQueryKey,

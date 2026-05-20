@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestUserInDb, cleanDatabase } from '../test/test-helpers';
-import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
 
 describe('Users API', () => {
   beforeEach(async () => {
@@ -242,7 +240,7 @@ describe('Users API', () => {
 
     it('should return 400 when attempting to delete own account', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
-      const user = await createTestUserInDb({ email: 'user@example.com', name: 'User' });
+      await createTestUserInDb({ email: 'user@example.com', name: 'User' });
 
       // Simulate deleting own account by using the same user ID from auth token
       // Note: This test verifies the protection logic, but in real scenario the ID comes from token

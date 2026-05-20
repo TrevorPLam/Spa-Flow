@@ -1,6 +1,5 @@
 import { db, refreshTokensTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
-import { createHash } from "crypto";
 
 /**
  * Session information for display to users
@@ -12,18 +11,6 @@ export interface SessionInfo {
   expiresAt: Date;
   userAgent: string | null;
   isCurrent: boolean;
-}
-
-/**
- * Hash a user agent string for privacy-preserving device identification.
- * This allows users to recognize their devices without exposing full user agent strings.
- *
- * @param userAgent - The user agent string to hash
- * @returns A short hash of the user agent (first 8 chars for identification)
- */
-function hashUserAgent(userAgent: string): string {
-  const prefix = userAgent.substring(0, Math.min(50, userAgent.length));
-  return createHash("sha256").update(prefix).digest("hex").substring(0, 12);
 }
 
 /**

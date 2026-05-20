@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, DoorOpen, DollarSign, Users, ClipboardList, Clock } from "lucide-react";
+import { Lock, DoorOpen, DollarSign, Users, Clock } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 

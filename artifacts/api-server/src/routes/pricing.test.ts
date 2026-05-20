@@ -1,8 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
-import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
 
 describe('Pricing API', () => {
   beforeEach(async () => {

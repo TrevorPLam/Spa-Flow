@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   useListClients,
   useListLockers,
@@ -125,7 +122,6 @@ export default function CheckInPage() {
   async function handleProceedToPayment() {
     if (!selectedClient || !selectedResource) return;
 
-    const effectiveMembership = hasExistingMembership ? selectedClient.membershipStatus : membershipType;
     const result = await calculatePrice.mutateAsync({
       data: {
         clientId: selectedClient.id,
@@ -163,12 +159,6 @@ export default function CheckInPage() {
     }
   }
 
-  function handleCardTokenizeError(error: Error) {
-    // Provide user-friendly error messages for common Square errors
-    const errorMessage = error.message || "Card tokenization failed";
-    setCardTokenizationError(errorMessage);
-    setPaymentToken(null);
-  }
 
   async function handlePayment() {
     if (!selectedClient || !selectedResource) return;

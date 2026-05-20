@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
 
 const MEMBERSHIP_LABELS = { none: "None", one_time: "One-time", six_month: "6-month" };
 const MEMBERSHIP_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {

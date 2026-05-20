@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestRoomInDb, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
-import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
 
 describe('Rooms API', () => {
   beforeEach(async () => {

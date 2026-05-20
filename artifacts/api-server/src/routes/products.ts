@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, productsTable } from "@workspace/db";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { requireAuth, requireManager, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { CreateProductBody, UpdateProductParams, UpdateProductBody, DeleteProductParams } from "@workspace/api-zod";

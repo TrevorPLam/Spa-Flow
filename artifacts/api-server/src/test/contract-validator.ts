@@ -1,7 +1,6 @@
 import SwaggerParser from '@apidevtools/swagger-parser';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 let apiSpec: any = null;
@@ -105,7 +104,7 @@ export async function validateResponse(
     }
 
     // Validate the response body against the schema
-    const validate = ajv.compile(schema);
+    const validate = validator.compile(schema);
     const valid = validate(responseBody);
 
     if (!valid && validate.errors) {
@@ -138,7 +137,7 @@ export async function validateRequestBody(
 ): Promise<{ valid: boolean; errors: string[] }> {
   try {
     const spec = await loadApiSpec();
-    const validator = await getValidator();
+    await getValidator();
 
     // Normalize path
     const normalizedPath = path.replace(/^\/api\/v1/, '').replace(/^\/api/, '');

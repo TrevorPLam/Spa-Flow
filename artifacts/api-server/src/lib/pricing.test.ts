@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   calculatePrice,
   calculateAge,
@@ -6,7 +6,6 @@ import {
   getTaxRate,
   computeTotal,
   type PricingInput,
-  type CustomerType,
   type ProductType,
 } from './pricing';
 

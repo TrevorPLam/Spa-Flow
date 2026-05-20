@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { db, usersTable } from '@workspace/db';
-import { eq } from 'drizzle-orm';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { db } from '@workspace/db';
 import { AccountLockoutService } from './accountLockout';
 
 // Mock the database

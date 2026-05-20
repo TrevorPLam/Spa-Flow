@@ -3,7 +3,7 @@ import { db, clientsTable, membershipsTable, rentalSessionsTable, transactionsTa
 import { eq, ilike, or, sql, and, desc } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
-import { encryptField, decryptField, maybeDecrypt } from "../lib/encryption";
+import { encryptField, maybeDecrypt } from "../lib/encryption";
 import {
   ListClientsQueryParams,
   CreateClientBody,

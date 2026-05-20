@@ -2,10 +2,9 @@ import { useState } from "react";
 import { useListTransactions, getListTransactionsQueryKey } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, Search } from "lucide-react";
+import { Receipt } from "lucide-react";
 import { format } from "date-fns";
 
 const TYPE_COLORS: Record<string, "default" | "secondary" | "outline"> = {
@@ -19,12 +18,10 @@ const TYPE_COLORS: Record<string, "default" | "secondary" | "outline"> = {
 
 export default function TransactionsPage() {
   const [page, setPage] = useState(1);
-  const [clientIdFilter, setClientIdFilter] = useState<number | undefined>();
-  const [searchInput, setSearchInput] = useState("");
 
   const { data, isLoading } = useListTransactions(
-    { page, limit: 25, clientId: clientIdFilter },
-    { query: { queryKey: getListTransactionsQueryKey({ page, limit: 25, clientId: clientIdFilter }) } }
+    { page, limit: 25 },
+    { query: { queryKey: getListTransactionsQueryKey({ page, limit: 25 }) } }
   );
 
   const transactions = data?.transactions ?? [];

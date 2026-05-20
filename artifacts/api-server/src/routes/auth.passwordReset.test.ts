@@ -5,6 +5,7 @@ import authRouter from './auth';
 import { db, passwordResetTokensTable, refreshTokensTable, usersTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS } from '../lib/constants';
 
 // Create test app
 const app = express();
@@ -24,7 +25,7 @@ describe('Password Reset Integration Tests', () => {
     process.env.LOCKOUT_DURATION_MS = '900000';
 
     // Create test user
-    const passwordHash = await bcrypt.hash(testPassword, 10);
+    const passwordHash = await bcrypt.hash(testPassword, BCRYPT_ROUNDS);
     const [user] = await db.insert(usersTable).values({
       email: testEmail,
       name: 'Password Reset Test User',
@@ -122,7 +123,7 @@ describe('Password Reset Integration Tests', () => {
       // Generate a test token (in production, this comes from email)
       const { randomBytes } = await import('crypto');
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)
@@ -180,7 +181,7 @@ describe('Password Reset Integration Tests', () => {
       // Generate test token
       const { randomBytes } = await import('crypto');
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)
@@ -216,7 +217,7 @@ describe('Password Reset Integration Tests', () => {
       // Generate test token
       const { randomBytes } = await import('crypto');
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)
@@ -246,7 +247,7 @@ describe('Password Reset Integration Tests', () => {
       // Generate test token
       const { randomBytes } = await import('crypto');
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)
@@ -276,7 +277,7 @@ describe('Password Reset Integration Tests', () => {
       // Generate test token
       const { randomBytes } = await import('crypto');
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)
@@ -297,8 +298,8 @@ describe('Password Reset Integration Tests', () => {
       const { randomBytes } = await import('crypto');
       const token1 = randomBytes(32).toString('hex');
       const token2 = randomBytes(32).toString('hex');
-      const hash1 = await bcrypt.hash(token1, 10);
-      const hash2 = await bcrypt.hash(token2, 10);
+      const hash1 = await bcrypt.hash(token1, BCRYPT_ROUNDS);
+      const hash2 = await bcrypt.hash(token2, BCRYPT_ROUNDS);
 
       await db.insert(refreshTokensTable).values([
         { userId: testUserId, tokenHash: hash1, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
@@ -317,7 +318,7 @@ describe('Password Reset Integration Tests', () => {
         .where(eq(passwordResetTokensTable.userId, testUserId));
 
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)
@@ -355,7 +356,7 @@ describe('Password Reset Integration Tests', () => {
       // Generate test token
       const { randomBytes } = await import('crypto');
       const testToken = randomBytes(32).toString('hex');
-      const tokenHash = await bcrypt.hash(testToken, 10);
+      const tokenHash = await bcrypt.hash(testToken, BCRYPT_ROUNDS);
       
       await db
         .update(passwordResetTokensTable)

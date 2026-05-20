@@ -41,7 +41,7 @@ router.get("/audit-logs", requireManager, apiLimiter, async (req, res): Promise<
     logs: logs.map(l => ({
       id: l.id,
       userId: l.userId,
-      userName: userMap.get(l.userId) ?? null,
+      userName: l.userId != null ? userMap.get(l.userId) ?? null : null,
       action: l.action,
       resourceType: l.resourceType,
       resourceId: l.resourceId,

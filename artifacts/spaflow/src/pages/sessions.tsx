@@ -19,7 +19,7 @@ interface Session {
 }
 
 export default function SessionsPage() {
-  const { user, isManager, refreshToken } = useAuth();
+  const { refreshToken } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);

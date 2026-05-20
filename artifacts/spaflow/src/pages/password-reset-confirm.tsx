@@ -6,7 +6,7 @@ import { useSearchParams, Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Waves, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
+import { Waves, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 const confirmResetSchema = z.object({
   token: z.string().min(1, "Reset token is required"),

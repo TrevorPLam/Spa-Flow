@@ -18,7 +18,6 @@ import { ClipboardList, Search, X, Check } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { cn } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
   waiting: "secondary",

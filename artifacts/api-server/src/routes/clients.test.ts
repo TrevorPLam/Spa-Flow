@@ -250,7 +250,6 @@ describe('Clients API', () => {
     });
 
     it('should validate POST /api/clients request against OpenAPI spec', async () => {
-      const authHeaders = await createAuthenticatedRequest('STAFF');
       const newClient = {
         email: 'newclient@example.com',
         phone: '555-0123',

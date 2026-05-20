@@ -1,8 +1,6 @@
-import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { db } from '@workspace/db';
-import { sql } from 'drizzle-orm';
 import * as schema from '@workspace/db/schema';
-import { seedTestData, cleanupTestData } from './seed';
+import { seedTestData } from './seed';
 
 // Load test environment variables
 process.env.NODE_ENV = 'test';

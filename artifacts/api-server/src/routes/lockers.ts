@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, lockersTable, clientsTable, rentalSessionsTable, transactionsTable } from "@workspace/db";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { processSquarePayment } from "../lib/square";

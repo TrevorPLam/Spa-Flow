@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 describe("Graceful Shutdown Integration Tests", () => {
   it("should have graceful shutdown function exported", async () => {
