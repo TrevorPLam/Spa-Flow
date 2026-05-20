@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { render as renderWithProviders } from '@/test/test-utils';
 import { Layout } from './Layout';
 
-describe('Layout', () => {
+describe('Layout', { tags: ['@smoke', '@critical'] }, () => {
   describe('Authentication Redirect', () => {
     it('redirects to login when user is not authenticated', () => {
       // Arrange

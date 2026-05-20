@@ -15,7 +15,7 @@ vi.mock('@/hooks/use-toast', () => ({
   }),
 }));
 
-describe('ClientNewPage', () => {
+describe('ClientNewPage', { tags: ['@smoke', '@critical'] }, () => {
   describe('Rendering', () => {
     it('renders page title', () => {
       // Arrange

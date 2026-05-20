@@ -1,22 +1,8 @@
 import pino from "pino";
 import { getEnv } from "./env";
+import { createBootstrapLogger } from "./logger-bootstrap";
 
-/**
- * Creates a bootstrap logger for use before full environment initialization.
- * This avoids circular dependency between logger.ts and env.ts.
- * The bootstrap logger uses minimal configuration and defaults to 'info' level.
- */
-export function createBootstrapLogger() {
-  return pino({
-    level: 'info',
-    transport: process.env.NODE_ENV !== 'production'
-      ? {
-          target: "pino-pretty",
-          options: { colorize: true },
-        }
-      : undefined,
-  });
-}
+export { createBootstrapLogger };
 
 const env = getEnv();
 const isProduction = env.NODE_ENV === "production";

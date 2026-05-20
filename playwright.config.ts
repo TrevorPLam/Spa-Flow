@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? '50%' : undefined,
   timeout: 30000,
-  reporter: [
+  reporter: process.env.CI ? [['blob'], ['list']] : [
     ['html'],
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['list']

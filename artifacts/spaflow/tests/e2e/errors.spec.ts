@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 
-test.describe('Error Handling', () => {
+test.describe('Error Handling', { tag: ['@regression'] }, () => {
   test('should show 404 page for non-existent route', async ({ page }) => {
     await page.goto('/non-existent-route');
 

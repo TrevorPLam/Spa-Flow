@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { AuthErrorCodes, AuthErrorMessages } from '../lib/authErrors';
 
-describe('Auth Error Response Format Tests', () => {
+describe('Auth Error Response Format Tests', { tags: ['@regression'] }, () => {
   describe('error code consistency', () => {
     it('should use consistent error code format', () => {
       Object.values(AuthErrorCodes).forEach((code) => {

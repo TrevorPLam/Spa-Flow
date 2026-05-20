@@ -18,7 +18,7 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { BCRYPT_ROUNDS } from './constants';
 
-describe('auth', () => {
+describe('auth', { tags: ['@smoke', '@critical'] }, () => {
   const validSecret = 'a'.repeat(32);
 
   beforeEach(() => {

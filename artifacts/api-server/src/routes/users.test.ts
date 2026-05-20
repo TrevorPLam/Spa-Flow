@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestUserInDb, cleanDatabase } from '../test/test-helpers';
 
-describe('Users API', () => {
+describe('Users API', { tags: ['@smoke', '@critical'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

@@ -18,7 +18,7 @@ vi.mock('../lib/logger', () => ({
   },
 }));
 
-describe('AuthAuditLogger', () => {
+describe('AuthAuditLogger', { tags: ['@regression', '@integration'] }, () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "./app";
 
-describe("Correlation ID Integration Tests", () => {
+describe("Correlation ID Integration Tests", { tags: ['@integration'] }, () => {
   it("request without header gets new correlation ID", async () => {
     const response = await request(app).get("/healthz");
 

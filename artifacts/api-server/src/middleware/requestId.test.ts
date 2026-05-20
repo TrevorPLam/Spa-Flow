@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Request, Response, NextFunction } from "express";
 import { requestIdMiddleware } from "./requestId";
 
-describe("requestIdMiddleware", () => {
+describe("requestIdMiddleware", { tags: ['@regression'] }, () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
   let mockNext: NextFunction;

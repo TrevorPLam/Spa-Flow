@@ -4,7 +4,7 @@ import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from 
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
 
-describe('Transactions API', () => {
+describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

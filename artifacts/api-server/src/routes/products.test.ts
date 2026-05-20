@@ -11,7 +11,7 @@ vi.mock('../lib/cache', () => ({
   cacheDelPattern: vi.fn(async () => {}),
 }));
 
-describe('Products API', () => {
+describe('Products API', { tags: ['@regression'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestRoomInDb, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 
-describe('Rooms API', () => {
+describe('Rooms API', { tags: ['@regression'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

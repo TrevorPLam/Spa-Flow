@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createBootstrapLogger } from './logger';
+import { createBootstrapLogger } from './logger-bootstrap';
 
-// Bootstrap logger to avoid circular dependency with logger.ts
+// Use bootstrap logger to avoid circular dependency
 // logger.ts imports from env.ts, so env.ts cannot use the main logger
 const bootstrapLogger = createBootstrapLogger();
 

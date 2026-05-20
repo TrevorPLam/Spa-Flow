@@ -5,7 +5,7 @@ import {
   maybeDecrypt,
 } from './encryption';
 
-describe('encryption', () => {
+describe('encryption', { tags: ['@regression'] }, () => {
   const validKey = Buffer.alloc(32, 'a').toString('base64');
 
   beforeEach(() => {

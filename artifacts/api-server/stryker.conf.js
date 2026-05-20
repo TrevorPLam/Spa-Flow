@@ -10,22 +10,32 @@ export default {
   vitest: {
     configFile: 'vitest.config.ts',
     related: false, // Disable related test file detection
+    args: ['--run', '--no-coverage'], // Run tests in batch mode without coverage
   },
   
   // Files to mutate - focus on critical business logic
   mutate: [
     'src/lib/auth.ts',
     'src/services/**/*.ts',
+    'src/routes/**/*.ts',
+    'src/middleware/**/*.ts',
     // Exclude test files
     '!**/*.test.ts',
     '!**/*.spec.ts',
+    // Exclude files without tests
+    '!src/middleware/rateLimit.ts',
+    // Exclude config and setup files
+    '!src/routes/config.ts',
+    '!src/routes/index.ts',
   ],
   
   // Mutation score thresholds
+  // Note: 2026 best practices recommend break threshold of 70-80% for enterprise software
+  // Current break: 50% - to be increased after test suite stabilization (T7 blocker)
   thresholds: {
     high: 80,  // Excellent quality
     low: 60,   // Needs improvement
-    break: 50, // Fails the build
+    break: 50, // Fails the build (temporary low threshold due to test suite instability)
   },
   
   // Reporters for output

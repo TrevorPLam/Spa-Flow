@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { CheckInPage } from './pages/CheckInPage';
 
-test.describe('Check-in Flow', () => {
+test.describe('Check-in Flow', { tag: ['@smoke', '@critical'] }, () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();

@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { requireAuth } from "../lib/auth";
-import { db, passwordResetTokensTable } from "@workspace/db";
+import { db, passwordResetTokensTable, usersTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import { getEnv } from "../lib/env";
 import { logger } from "../lib/logger";
+import bcrypt from "bcryptjs";
+import { BCRYPT_ROUNDS } from "../lib/constants";
 
 const router = Router();
 
@@ -17,6 +19,77 @@ const testOnlyMiddleware = (req: any, res: any, next: any) => {
 };
 
 router.use(testOnlyMiddleware);
+
+/**
+ * POST /test/users
+ * Test-only endpoint to create a test user with known credentials.
+ * This is needed for E2E test isolation - each test can create its own user.
+ * Returns the created user with the plaintext password (for test use only).
+ */
+router.post("/users", async (req: any, res): Promise<void> => {
+  try {
+    const { email, password, name, role = 'STAFF' } = req.body;
+
+    if (!email || !password || !name) {
+      res.status(400).json({ error: "email, password, and name are required" });
+      return;
+    }
+
+    // Hash the password
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    // Create the user
+    const [user] = await db
+      .insert(usersTable)
+      .values({
+        email,
+        passwordHash,
+        name,
+        role,
+      })
+      .returning();
+
+    logger.warn({ userId: user.id, email }, "Test-only endpoint accessed: user creation");
+
+    // Return user with plaintext password (for test use only)
+    res.status(201).json({
+      id: user.id,
+      email: user.email,
+      password, // Plaintext password for test use
+      name: user.name,
+      role: user.role,
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to create test user");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * DELETE /test/users/:id
+ * Test-only endpoint to delete a test user.
+ * This is needed for E2E test cleanup.
+ */
+router.delete("/users/:id", async (req: any, res): Promise<void> => {
+  const userIdParam = req.params.id;
+  const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam);
+
+  if (isNaN(userId)) {
+    res.status(400).json({ error: "Invalid user ID" });
+    return;
+  }
+
+  try {
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+
+    logger.warn({ userId }, "Test-only endpoint accessed: user deletion");
+
+    res.json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    logger.error({ error, userId }, "Failed to delete test user");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 /**
  * GET /test/password-reset-token/:userId

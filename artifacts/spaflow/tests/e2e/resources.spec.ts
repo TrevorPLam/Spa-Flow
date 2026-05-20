@@ -3,7 +3,7 @@ import { LoginPage } from './pages/LoginPage';
 import { LockersPage } from './pages/LockersPage';
 import { RoomsPage } from './pages/RoomsPage';
 
-test.describe('Resource Management', () => {
+test.describe('Resource Management', { tag: ['@regression'] }, () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { cn } from './utils';
 
-describe('cn utility function', () => {
+describe('cn utility function', { tags: ['@regression'] }, () => {
   describe('Basic functionality', () => {
     it('merges class names correctly', () => {
       // Arrange & Act

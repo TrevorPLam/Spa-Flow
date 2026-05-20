@@ -4,7 +4,7 @@ import { createAuthenticatedRequest, createTestClientInDb, createTestRoomInDb, c
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
 
-describe('Waitlist API', () => {
+describe('Waitlist API', { tags: ['@regression'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

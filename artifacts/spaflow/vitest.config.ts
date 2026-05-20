@@ -16,6 +16,43 @@ export default defineConfig({
     hookTimeout: 10000,
     pool: 'threads',
     fileParallelism: true,
+    tags: [
+      {
+        name: 'smoke',
+        description: 'Critical functionality tests that verify basic application health',
+      },
+      {
+        name: 'regression',
+        description: 'Tests that ensure new changes don\'t break existing functionality',
+      },
+      {
+        name: 'critical',
+        description: 'High-priority tests that must pass for application stability',
+      },
+      {
+        name: 'integration',
+        description: 'Tests that verify integration between components or services',
+      },
+      {
+        name: 'slow',
+        description: 'Tests that take longer to execute',
+        timeout: 60_000,
+      },
+      {
+        name: 'flaky',
+        description: 'Tests that are known to be unstable',
+        retry: process.env.CI ? 3 : 0,
+        timeout: 30_000,
+        priority: 1,
+      },
+      {
+        name: 'quarantine',
+        description: 'Tests that are quarantined due to flakiness - excluded from CI runs',
+        retry: 0,
+        timeout: 30_000,
+        priority: 0,
+      },
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

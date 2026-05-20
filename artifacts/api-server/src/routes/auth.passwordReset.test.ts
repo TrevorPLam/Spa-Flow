@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRouter);
 
-describe('Password Reset Integration Tests', () => {
+describe('Password Reset Integration Tests', { tags: ['@regression', '@integration'] }, () => {
   let testUserId: number;
   const testEmail = 'password-reset-test@example.com';
   const testPassword = 'old-password-12345678'; // 15+ chars per NIST 2025

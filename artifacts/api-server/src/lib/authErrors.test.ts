@@ -6,7 +6,7 @@ import {
   type AuthErrorResponse,
 } from "./authErrors";
 
-describe("authErrors", () => {
+describe("authErrors", { tags: ['@regression'] }, () => {
   describe("AuthErrorCodes", () => {
     it("should have all required error codes", () => {
       expect(AuthErrorCodes.UNAUTHORIZED).toBe("AUTH_001");

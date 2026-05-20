@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { signToken } from "../lib/auth";
 import { BCRYPT_ROUNDS } from "../lib/constants";
 
-describe("Session Management Endpoints", () => {
+describe("Session Management Endpoints", { tags: ['@smoke', '@critical'] }, () => {
   let testUser: any;
   let authToken: string;
   let testSessionIds: number[] = [];

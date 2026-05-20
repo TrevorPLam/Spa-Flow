@@ -7,7 +7,11 @@
     "hello": "tsx ./src/hello.ts",
     "seed": "tsx ./src/seed.ts",
     "verify": "tsx ./src/verify-indexes.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "detect-flaky:playwright": "tsx ./detect-flaky-playwright.ts",
+    "detect-flaky:api-server": "tsx ./detect-flaky-vitest.ts api-server",
+    "detect-flaky:spaflow": "tsx ./detect-flaky-vitest.ts spaflow",
+    "generate-flakiness-dashboard": "tsx ./generate-flakiness-dashboard.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

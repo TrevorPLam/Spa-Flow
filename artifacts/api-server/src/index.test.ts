@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-describe("Graceful Shutdown Integration Tests", () => {
+describe("Graceful Shutdown Integration Tests", { tags: ['@regression', '@integration'] }, () => {
   it("should have graceful shutdown function exported", async () => {
     const { gracefulShutdown } = await import("./index");
     expect(typeof gracefulShutdown).toBe("function");

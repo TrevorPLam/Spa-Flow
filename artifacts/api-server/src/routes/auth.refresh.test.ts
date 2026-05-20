@@ -13,7 +13,7 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRouter);
 
-describe('Refresh Token Integration Tests', () => {
+describe('Refresh Token Integration Tests', { tags: ['@regression', '@integration'] }, () => {
   let testUserId: number;
   const testEmail = 'refresh-test@example.com';
   const testPassword = 'TestPassword123!';

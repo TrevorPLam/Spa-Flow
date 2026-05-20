@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { BCRYPT_ROUNDS } from "../lib/constants";
 
-describe("SessionService", () => {
+describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
   const testUserId = 99999;
   let testSessionIds: number[] = [];
 

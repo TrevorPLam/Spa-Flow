@@ -14,7 +14,7 @@ const STAFF_USER = {
   name: 'Staff Member'
 };
 
-test.describe('Security-Focused E2E Tests', () => {
+test.describe('Security-Focused E2E Tests', { tag: ['@regression', '@critical'] }, () => {
   test.describe('CSRF Protection Tests', () => {
     test('should require authentication for POST requests', async ({ request }) => {
       // Try to create a client without authentication
