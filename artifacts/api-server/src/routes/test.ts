@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { requireAuth } from "../lib/auth";
 import { db, passwordResetTokensTable, usersTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
@@ -10,10 +10,11 @@ import { BCRYPT_ROUNDS } from "../lib/constants";
 const router = Router();
 
 // Middleware to ensure test-only routes are only accessible in test environment
-const testOnlyMiddleware = (req: any, res: any, next: any) => {
+const testOnlyMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const env = getEnv();
   if (env.NODE_ENV !== 'test' && env.NODE_ENV !== 'development') {
-    return res.status(404).json({ error: "Not found" });
+    res.status(404).json({ error: "Not found" });
+    return;
   }
   next();
 };
@@ -26,7 +27,7 @@ router.use(testOnlyMiddleware);
  * This is needed for E2E test isolation - each test can create its own user.
  * Returns the created user with the plaintext password (for test use only).
  */
-router.post("/users", async (req: any, res): Promise<void> => {
+router.post("/users", async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name, role = 'STAFF' } = req.body;
 
@@ -70,7 +71,7 @@ router.post("/users", async (req: any, res): Promise<void> => {
  * Test-only endpoint to delete a test user.
  * This is needed for E2E test cleanup.
  */
-router.delete("/users/:id", async (req: any, res): Promise<void> => {
+router.delete("/users/:id", async (req: Request, res: Response): Promise<void> => {
   const userIdParam = req.params.id;
   const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam);
 
@@ -97,7 +98,7 @@ router.delete("/users/:id", async (req: any, res): Promise<void> => {
  * This is needed for E2E testing since tokens are generated randomly and not sent via email in test mode.
  * Only accessible by authenticated users (MANAGER role recommended).
  */
-router.get("/password-reset-token/:userId", requireAuth, async (req: any, res): Promise<void> => {
+router.get("/password-reset-token/:userId", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const userIdParam = req.params.id;
   const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam);
 
@@ -147,7 +148,7 @@ router.get("/password-reset-token/:userId", requireAuth, async (req: any, res): 
  * Test-only endpoint to manually expire a password reset token for testing.
  * Only accessible by authenticated users.
  */
-router.post("/password-reset-token/:userId/expire", requireAuth, async (req: any, res): Promise<void> => {
+router.post("/password-reset-token/:userId/expire", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const userIdParam = req.params.id;
   const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam);
 

@@ -714,11 +714,27 @@ export const ListRoomsStatus = {
 
 export type ListTransactionsParams = {
 clientId?: number;
+/**
+ * Filter transactions created on or after this date (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * Filter transactions created on or before this date (ISO 8601 format)
+ */
+endDate?: string;
 page?: number;
 limit?: number;
 };
 
 export type ListAuditLogsParams = {
+/**
+ * Filter audit logs created on or after this date (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * Filter audit logs created on or before this date (ISO 8601 format)
+ */
+endDate?: string;
 page?: number;
 limit?: number;
 action?: string;

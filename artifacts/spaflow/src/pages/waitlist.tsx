@@ -14,6 +14,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ClipboardList, Search, X, Check } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +43,8 @@ export default function WaitlistPage() {
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [selectedClientName, setSelectedClientName] = useState("");
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [removeId, setRemoveId] = useState<number | null>(null);
 
   const { data: waitlist = [] } = useListWaitlist({ query: { queryKey: getListWaitlistQueryKey() } });
   const waitlistArray = Array.isArray(waitlist) ? waitlist : [];
@@ -66,8 +79,14 @@ export default function WaitlistPage() {
   }
 
   function handleRemove(id: number) {
-    removeFromWaitlist.mutate({ id }, {
-      onSuccess: () => { toast({ title: "Removed from waitlist" }); invalidate(); },
+    setRemoveId(id);
+    setShowRemoveConfirm(true);
+  }
+
+  function confirmRemove() {
+    if (removeId === null) return;
+    removeFromWaitlist.mutate({ id: removeId }, {
+      onSuccess: () => { toast({ title: "Removed from waitlist" }); invalidate(); setShowRemoveConfirm(false); setRemoveId(null); },
       onError: () => toast({ title: "Failed to remove", variant: "destructive" }),
     });
   }
@@ -179,15 +198,33 @@ export default function WaitlistPage() {
                           Confirm
                         </Button>
                       )}
-                      <Button
-                        data-testid={`button-remove-waitlist-${entry.id}`}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemove(entry.id)}
-                        disabled={removeFromWaitlist.isPending}
-                      >
-                        <X size={14} />
-                      </Button>
+                      <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            data-testid={`button-remove-waitlist-${entry.id}`}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemove(entry.id)}
+                            disabled={removeFromWaitlist.isPending}
+                          >
+                            <X size={14} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove from waitlist?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will remove {entry.clientName} from the waitlist. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </li>
                 ))}

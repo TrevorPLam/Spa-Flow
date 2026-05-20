@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { DateRangePicker, DateRangePresets } from "@/components/ui/date-range-picker";
 import { ScrollText, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,10 +14,17 @@ export default function AuditLogsPage() {
   const { isManager } = useAuth();
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState("");
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>();
 
   const { data, isLoading } = useListAuditLogs(
-    { page, limit: 50, action: actionFilter || undefined },
-    { query: { queryKey: getListAuditLogsQueryKey({ page, limit: 50, action: actionFilter || undefined }) } }
+    { 
+      page, 
+      limit: 50, 
+      action: actionFilter || undefined,
+      startDate: dateRange?.from?.toISOString(),
+      endDate: dateRange?.to?.toISOString(),
+    },
+    { query: { queryKey: getListAuditLogsQueryKey({ page, limit: 50, action: actionFilter || undefined, startDate: dateRange?.from?.toISOString(), endDate: dateRange?.to?.toISOString() }) } }
   );
 
   const logs = data?.logs ?? [];
@@ -45,6 +53,23 @@ export default function AuditLogsPage() {
               className="pl-9"
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <DateRangePresets 
+            value={dateRange}
+            onChange={(range) => {
+              setDateRange(range);
+              setPage(1);
+            }}
+          />
+          <DateRangePicker 
+            value={dateRange}
+            onChange={(range) => {
+              setDateRange(range);
+              setPage(1);
+            }}
+          />
         </div>
 
         <Card>

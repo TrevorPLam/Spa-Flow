@@ -18,10 +18,16 @@ const TYPE_COLORS: Record<string, "default" | "secondary" | "outline"> = {
 
 export default function TransactionsPage() {
   const [page, setPage] = useState(1);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>();
 
   const { data, isLoading } = useListTransactions(
-    { page, limit: 25 },
-    { query: { queryKey: getListTransactionsQueryKey({ page, limit: 25 }) } }
+    { 
+      page, 
+      limit: 25,
+      startDate: dateRange?.from?.toISOString(),
+      endDate: dateRange?.to?.toISOString(),
+    },
+    { query: { queryKey: getListTransactionsQueryKey({ page, limit: 25, startDate: dateRange?.from?.toISOString(), endDate: dateRange?.to?.toISOString() }) } }
   );
 
   const transactions = data?.transactions ?? [];
@@ -34,6 +40,23 @@ export default function TransactionsPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Receipt size={20} />Transactions</h1>
           <p className="text-sm text-muted-foreground">{total} total</p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <DateRangePresets 
+            value={dateRange}
+            onChange={(range) => {
+              setDateRange(range);
+              setPage(1);
+            }}
+          />
+          <DateRangePicker 
+            value={dateRange}
+            onChange={(range) => {
+              setDateRange(range);
+              setPage(1);
+            }}
+          />
         </div>
 
         <Card>

@@ -251,8 +251,18 @@ router.get("/auth/sessions", requireAuth, async (req, res): Promise<void> => {
 
   if (refreshToken && typeof refreshToken === 'string') {
     // Get all non-revoked tokens to find the current one
-    const { refreshTokensTable } = await import("@workspace/db");
-    const { isNull } = await import("drizzle-orm");
+    let refreshTokensTable: any;
+    let isNull: any;
+    try {
+      const dbModule = await import("@workspace/db");
+      const drizzleModule = await import("drizzle-orm");
+      refreshTokensTable = dbModule.refreshTokensTable;
+      isNull = drizzleModule.isNull;
+    } catch (error) {
+      logger.error({ error }, "Failed to import database modules");
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
     const tokens = await db
       .select({ tokenHash: refreshTokensTable.tokenHash })
       .from(refreshTokensTable)

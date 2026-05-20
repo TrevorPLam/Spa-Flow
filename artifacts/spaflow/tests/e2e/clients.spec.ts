@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { ClientsPage } from './pages/ClientsPage';
+import { assertNoCriticalViolations } from './helpers/accessibility';
 
 test.describe('Client Management', { tag: ['@smoke', '@critical'] }, () => {
   test.beforeEach(async ({ page }) => {
@@ -18,6 +19,9 @@ test.describe('Client Management', { tag: ['@smoke', '@critical'] }, () => {
 
     // Visual regression check for clients page
     await expect(page).toHaveScreenshot('clients-page.png');
+
+    // Accessibility check for clients page
+    await assertNoCriticalViolations(page);
   });
 
   test('should search clients', async ({ page }) => {
@@ -51,6 +55,9 @@ test.describe('Client Management', { tag: ['@smoke', '@critical'] }, () => {
 
     // Verify client form is visible
     await expect(clientsPage.isClientFormVisible()).resolves.toBe(true);
+
+    // Accessibility check for client form
+    await assertNoCriticalViolations(page);
 
     // Fill client form
     await clientsPage.fillClientForm('Test Client', 'test@example.com', '555-1234');

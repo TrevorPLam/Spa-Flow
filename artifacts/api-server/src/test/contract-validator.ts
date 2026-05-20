@@ -37,7 +37,7 @@ async function getValidator() {
   addFormats(ajv);
 
   // Add all schemas from the OpenAPI spec to AJV
-  if (spec.components?.schemas) {
+  if (spec && spec.components?.schemas) {
     Object.entries(spec.components.schemas).forEach(([name, schema]) => {
       ajv!.addSchema(schema as object, `#/components/schemas/${name}`);
     });
@@ -58,7 +58,7 @@ export async function validateResponse(
   path: string,
   method: string,
   statusCode: number,
-  responseBody: any
+  responseBody: unknown
 ): Promise<{ valid: boolean; errors: string[] }> {
   try {
     const spec = await loadApiSpec();
@@ -133,7 +133,7 @@ export async function validateResponse(
 export async function validateRequestBody(
   path: string,
   method: string,
-  requestBody: any
+  requestBody: unknown
 ): Promise<{ valid: boolean; errors: string[] }> {
   try {
     const spec = await loadApiSpec();

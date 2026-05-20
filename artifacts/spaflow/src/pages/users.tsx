@@ -12,6 +12,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +49,8 @@ export default function UsersPage() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<{ id: number } | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
 
   const { data: users = [], isLoading } = useListUsers({ query: { queryKey: getListUsersQueryKey() } });
   const createUser = useCreateUser();
@@ -128,17 +141,38 @@ export default function UsersPage() {
                       <td className="px-6 py-4">
                         <div className="flex gap-2 justify-end">
                           <Button variant="ghost" size="sm" onClick={() => openEdit(u)}><Pencil size={14} /></Button>
-                          <Button
-                            data-testid={`button-delete-user-${u.id}`}
-                            variant="ghost"
-                            size="sm"
-                            disabled={u.id === currentUser?.id}
-                            onClick={() => deleteUser.mutate({ id: u.id }, {
-                              onSuccess: () => { toast({ title: "User deleted" }); invalidate(); },
-                            })}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                data-testid={`button-delete-user-${u.id}`}
+                                variant="ghost"
+                                size="sm"
+                                disabled={u.id === currentUser?.id}
+                                onClick={() => { setDeleteUserId(u.id); setShowDeleteConfirm(true); }}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete user?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete {u.name} ({u.email}). This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => {
+                                  if (deleteUserId === null) return;
+                                  deleteUser.mutate({ id: deleteUserId }, {
+                                    onSuccess: () => { toast({ title: "User deleted" }); invalidate(); setShowDeleteConfirm(false); setDeleteUserId(null); },
+                                  });
+                                }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </td>
                     </tr>

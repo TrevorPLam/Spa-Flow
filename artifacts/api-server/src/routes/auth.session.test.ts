@@ -7,8 +7,19 @@ import bcrypt from "bcryptjs";
 import { signToken } from "../lib/auth";
 import { BCRYPT_ROUNDS } from "../lib/constants";
 
+// Type for test user based on database schema
+type TestUser = {
+  id: number;
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: 'STAFF' | 'MANAGER';
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 describe("Session Management Endpoints", { tags: ['@smoke', '@critical'] }, () => {
-  let testUser: any;
+  let testUser: TestUser;
   let authToken: string;
   let testSessionIds: number[] = [];
 

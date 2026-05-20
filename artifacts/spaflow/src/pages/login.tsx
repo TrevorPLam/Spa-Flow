@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Waves } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   email: z.string().email("Valid email required"),
@@ -18,6 +19,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { user, isLoading, login } = useAuth();
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -33,8 +35,14 @@ export default function LoginPage() {
     setIsPending(true);
     try {
       await login(values.email, values.password);
-    } catch {
-      setError("Invalid email or password");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Invalid email or password";
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: errorMessage,
+      });
     } finally {
       setIsPending(false);
     }

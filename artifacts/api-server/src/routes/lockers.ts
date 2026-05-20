@@ -43,6 +43,8 @@ router.get("/lockers", requireAuth, apiLimiter, async (req, res): Promise<void> 
   }
 
   const { status } = parsed.data;
+  // Type guard: status is validated by Zod schema to be one of these values
+  // This assertion is safe because ListLockersQueryParams already validates the status enum
   const where = status ? eq(lockersTable.status, status as "available" | "occupied" | "reserved") : undefined;
   const lockers = await db.select().from(lockersTable).where(where).orderBy(lockersTable.id);
 
@@ -130,7 +132,8 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
       const lockerRows = await tx.execute(
         sql`SELECT * FROM lockers WHERE id = ${params.data.id} FOR UPDATE`
       );
-      const locker = lockerRows.rows[0] as typeof lockersTable.$inferSelect | undefined;
+      // Type guard: safely extract locker from SQL result with null check
+      const locker = lockerRows.rows[0] ? lockerRows.rows[0] as typeof lockersTable.$inferSelect : undefined;
 
       if (!locker) {
         throw new Error("LOCKER_NOT_FOUND");

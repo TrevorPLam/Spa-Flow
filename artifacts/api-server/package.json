@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:coverage:ci": "vitest run --coverage",
     "test:changed": "vitest run --changed",
+    "test:contract": "vitest run src/test/contract.test.ts src/test/zod-schema-validation.test.ts",
     "test:mutation": "stryker run",
     "test:mutation:ci": "stryker run --concurrency 2",
     "test:seed": "tsx src/test/seed.ts",

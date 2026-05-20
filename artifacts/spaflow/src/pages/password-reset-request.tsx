@@ -7,6 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Waves, ArrowLeft, Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const requestResetSchema = z.object({
   email: z.string().email("Valid email required"),
@@ -15,6 +16,7 @@ const requestResetSchema = z.object({
 type RequestResetForm = z.infer<typeof requestResetSchema>;
 
 export default function PasswordResetRequestPage() {
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -41,8 +43,18 @@ export default function PasswordResetRequestPage() {
       }
 
       setSuccess(true);
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for password reset instructions",
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to request password reset");
+      const errorMessage = err instanceof Error ? err.message : "Failed to request password reset";
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Password reset failed",
+        description: errorMessage,
+      });
     } finally {
       setIsPending(false);
     }

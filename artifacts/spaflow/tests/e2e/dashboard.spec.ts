@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { assertNoCriticalViolations } from './helpers/accessibility';
 
 test.describe('Dashboard Navigation', { tag: ['@smoke', '@critical'] }, () => {
   test.beforeEach(async ({ page }) => {
@@ -22,6 +23,9 @@ test.describe('Dashboard Navigation', { tag: ['@smoke', '@critical'] }, () => {
 
     expect(lockerOccupancy).toBeDefined();
     expect(roomOccupancy).toBeDefined();
+
+    // Accessibility check for dashboard
+    await assertNoCriticalViolations(page);
   });
 
   test('should display navigation menu', async ({ page }) => {

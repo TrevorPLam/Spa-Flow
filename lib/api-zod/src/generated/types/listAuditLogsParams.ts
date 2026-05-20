@@ -7,6 +7,14 @@
  */
 
 export type ListAuditLogsParams = {
+/**
+ * Filter audit logs created on or after this date (ISO 8601 format)
+ */
+startDate?: Date;
+/**
+ * Filter audit logs created on or before this date (ISO 8601 format)
+ */
+endDate?: Date;
 page?: number;
 limit?: number;
 action?: string;

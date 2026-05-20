@@ -8,6 +8,14 @@
 
 export type ListTransactionsParams = {
 clientId?: number;
+/**
+ * Filter transactions created on or after this date (ISO 8601 format)
+ */
+startDate?: Date;
+/**
+ * Filter transactions created on or before this date (ISO 8601 format)
+ */
+endDate?: Date;
 page?: number;
 limit?: number;
 };

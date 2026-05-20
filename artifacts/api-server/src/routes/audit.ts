@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, auditLogsTable, usersTable } from "@workspace/db";
-import { eq, sql, desc, and } from "drizzle-orm";
+import { eq, sql, desc, and, gte, lte } from "drizzle-orm";
 import { requireManager } from "../lib/auth";
 import { ListAuditLogsQueryParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
@@ -14,12 +14,14 @@ router.get("/audit-logs", requireManager, apiLimiter, async (req, res): Promise<
     return;
   }
 
-  const { page, limit, action, userId } = parsed.data;
+  const { startDate, endDate, page, limit, action, userId } = parsed.data;
   const offset = ((page ?? 1) - 1) * (limit ?? 50);
 
   const conditions = [];
   if (action) conditions.push(sql`${auditLogsTable.action} ILIKE ${'%' + action + '%'}`);
   if (userId) conditions.push(eq(auditLogsTable.userId, userId));
+  if (startDate) conditions.push(gte(auditLogsTable.createdAt, startDate));
+  if (endDate) conditions.push(lte(auditLogsTable.createdAt, endDate));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 

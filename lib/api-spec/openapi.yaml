@@ -961,6 +961,18 @@ paths:
           in: query
           schema:
             type: integer
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+            description: Filter transactions created on or after this date (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+            description: Filter transactions created on or before this date (ISO 8601 format)
         - name: page
           in: query
           schema:
@@ -1071,6 +1083,18 @@ paths:
       tags: [audit]
       summary: List audit logs (manager only)
       parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+            description: Filter audit logs created on or after this date (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+            description: Filter audit logs created on or before this date (ISO 8601 format)
         - name: page
           in: query
           schema:

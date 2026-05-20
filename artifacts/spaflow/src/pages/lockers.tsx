@@ -13,6 +13,17 @@ import { Layout } from "@/components/layout/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Lock } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +35,7 @@ export default function LockersPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedLocker, setSelectedLocker] = useState<number | null>(null);
+  const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
 
   const { data: lockers = [] } = useListLockers({}, { query: { queryKey: getListLockersQueryKey({}) } });
   const { data: occupancy } = useGetLockersOccupancy({ query: { queryKey: getGetLockersOccupancyQueryKey() } });
@@ -42,9 +54,13 @@ export default function LockersPage() {
 
   async function handleRelease(id: number) {
     release.mutate({ id }, {
-      onSuccess: () => { toast({ title: "Locker released" }); invalidate(); setSelectedLocker(null); },
+      onSuccess: () => { toast({ title: "Locker released" }); invalidate(); setSelectedLocker(null); setShowReleaseConfirm(false); },
       onError: () => toast({ title: "Failed to release locker", variant: "destructive" }),
     });
+  }
+
+  function handleReleaseClick() {
+    setShowReleaseConfirm(true);
   }
 
   async function handleRenew(id: number) {
@@ -133,15 +149,33 @@ export default function LockersPage() {
                 </div>
               )}
               <div className="flex gap-2 pt-2">
-                <Button
-                  data-testid="button-release-locker"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleRelease(selected.id)}
-                  disabled={release.isPending}
-                >
-                  Release
-                </Button>
+                <AlertDialog open={showReleaseConfirm} onOpenChange={setShowReleaseConfirm}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      data-testid="button-release-locker"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleReleaseClick}
+                      disabled={release.isPending}
+                    >
+                      Release
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Release locker?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will immediately release locker {selected?.name}. The client will lose access to their belongings. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleRelease(selected.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Release
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <Button
                   data-testid="button-renew-locker"
                   variant="outline"

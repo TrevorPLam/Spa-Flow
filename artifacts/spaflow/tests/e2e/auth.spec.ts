@@ -8,6 +8,7 @@ import {
   getManagerAuthHeaders,
   type TestUser,
 } from './helpers/test-data';
+import { assertNoCriticalViolations } from './helpers/accessibility';
 
 // Lockout test configuration
 const LOCKOUT_THRESHOLD = 5;
@@ -40,6 +41,9 @@ test.describe('Authentication Flow', { tag: ['@smoke', '@critical'] }, () => {
 
     // Visual regression check for dashboard after login
     await expect(page).toHaveScreenshot('dashboard-logged-in.png');
+
+    // Accessibility check for dashboard after login
+    await assertNoCriticalViolations(page);
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
@@ -58,6 +62,11 @@ test.describe('Authentication Flow', { tag: ['@smoke', '@critical'] }, () => {
 
     // Visual regression check for login page
     await expect(page).toHaveScreenshot('login-page.png');
+  });
+
+  test('should not have critical accessibility violations on login page', async ({ page }) => {
+    await page.goto('/login');
+    await assertNoCriticalViolations(page);
   });
 
   test('should maintain session across page navigation', async ({ page }) => {

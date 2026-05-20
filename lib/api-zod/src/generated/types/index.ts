@@ -43,7 +43,7 @@ export * from './livenessResponseStatus';
 export * from './locker';
 export * from './lockerStatus';
 export * from './loginInput';
-// Skip loginResponse - conflicts with Zod schema from api.ts
+export * from './loginResponse';
 export * from './loginResponseRole';
 export * from './logout200';
 export * from './membership';
@@ -65,15 +65,15 @@ export * from './readinessResponse';
 export * from './readinessResponseChecks';
 export * from './readinessResponseStatus';
 export * from './refreshTokenInput';
-// Skip refreshTokenResponse - conflicts with Zod schema from api.ts
+export * from './refreshTokenResponse';
 export * from './renewInput';
 export * from './rentalSession';
 export * from './rentalSessionResourceType';
 export * from './rentalSessionStatus';
 export * from './revokeAllSessions200';
-// Skip revokeAllSessionsBody - conflicts with Zod schema from api.ts
+export * from './revokeAllSessionsBody';
 export * from './revokeSession200';
-// Skip revokeSessionBody - conflicts with Zod schema from api.ts
+export * from './revokeSessionBody';
 export * from './room';
 export * from './roomStatus';
 export * from './session';

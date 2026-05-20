@@ -62,13 +62,15 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   let resourceName = "";
   if (resourceType === "locker") {
     const rows = await db.execute(sql`SELECT * FROM lockers WHERE id = ${resourceId} FOR UPDATE`);
-    const locker = rows.rows[0] as typeof lockersTable.$inferSelect | undefined;
+    // Type guard: safely extract locker from SQL result with null check
+    const locker = rows.rows[0] ? rows.rows[0] as typeof lockersTable.$inferSelect : undefined;
     if (!locker) { res.status(404).json({ error: "Locker not found" }); return; }
     if (locker.status !== "available") { res.status(409).json({ error: "Locker is not available" }); return; }
     resourceName = locker.name;
   } else {
     const rows = await db.execute(sql`SELECT * FROM rooms WHERE id = ${resourceId} FOR UPDATE`);
-    const room = rows.rows[0] as { id: number; name: string; status: string } | undefined;
+    // Type guard: safely extract room from SQL result with null check
+    const room = rows.rows[0] ? rows.rows[0] as { id: number; name: string; status: string } : undefined;
     if (!room) { res.status(404).json({ error: "Room not found" }); return; }
     if (room.status !== "available") { res.status(409).json({ error: "Room is not available" }); return; }
     resourceName = room.name;

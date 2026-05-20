@@ -4,7 +4,7 @@ import { signToken } from '../lib/auth';
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
 
-export { cleanDatabase } from './setup';
+export { cleanDatabase } from '../../../../lib/test-utils/src';
 
 // Test helpers for API testing
 export async function createAuthenticatedRequest(role: 'STAFF' | 'MANAGER' = 'STAFF') {

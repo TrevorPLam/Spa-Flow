@@ -44,6 +44,8 @@ router.get("/rooms", requireAuth, apiLimiter, async (req, res): Promise<void> =>
   }
 
   const { status } = parsed.data;
+  // Type guard: status is validated by Zod schema to be one of these values
+  // This assertion is safe because ListRoomsQueryParams already validates the status enum
   const where = status ? eq(roomsTable.status, status as "available" | "occupied" | "reserved") : undefined;
   const rooms = await db.select().from(roomsTable).where(where).orderBy(roomsTable.id);
 
@@ -96,7 +98,8 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
   const roomRows = await db.execute(
     sql`SELECT * FROM rooms WHERE id = ${params.data.id} FOR UPDATE`
   );
-  const room = roomRows.rows[0] as typeof roomsTable.$inferSelect | undefined;
+  // Type guard: safely extract room from SQL result with null check
+  const room = roomRows.rows[0] ? roomRows.rows[0] as typeof roomsTable.$inferSelect : undefined;
 
   if (!room) {
     res.status(404).json({ error: "Room not found" });
@@ -363,17 +366,19 @@ export async function assignNextWaitlistEntry(roomId: number): Promise<void> {
   );
 
   if (rows.rows.length === 0) return;
-  const entry = rows.rows[0] as { id: number; client_id: number; client_phone: string; client_name: string };
+  // Type guard: safely extract entry from SQL result with null check
+  const entry = rows.rows[0] ? rows.rows[0] as { id: number; client_id: number; client_phone: string; client_name: string } : undefined;
+  if (!entry) return;
 
   const confirmBy = new Date(Date.now() + WAITLIST_CONFIRM_MS);
   // Rationale: Using raw SQL with NOW() for timestamp assignment in conjunction with FOR UPDATE locking
   // This ensures atomic assignment of room to waitlist entry with proper timestamps
   await db.execute(
-    sql`UPDATE waitlist_entries SET status = 'assigned', assigned_room_id = ${roomId}, assigned_at = NOW(), confirm_by = ${confirmBy} WHERE id = ${entry.id}`
+    sql`UPDATE waitlist_entries SET status = 'assigned', assigned_room_id = ${roomId}, assigned_at = NOW(), confirm_by = ${confirmBy} WHERE id = ${entry!.id}`
   );
   await db.update(roomsTable).set({ status: "reserved" }).where(eq(roomsTable.id, roomId));
 
-  if (entry.client_phone) {
+  if (entry!.client_phone) {
     await sendSms(entry.client_phone, WAITLIST_ROOM_MSG);
   }
 }

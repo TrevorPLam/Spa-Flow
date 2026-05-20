@@ -66,10 +66,19 @@ export default function CheckInPage() {
           const config = await response.json();
           setTaxRate(config.taxRate);
         } else {
-          console.error('Failed to fetch config from API');
+          toast({
+            variant: "destructive",
+            title: "Configuration error",
+            description: "Failed to fetch tax rate from server",
+          });
         }
       } catch (error) {
-        console.error('Error fetching config:', error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        toast({
+          variant: "destructive",
+          title: "Configuration error",
+          description: `Error fetching config: ${errorMessage}`,
+        });
       }
     }
     

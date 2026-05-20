@@ -13,6 +13,17 @@ import { Layout } from "@/components/layout/Layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { DoorOpen } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +35,7 @@ export default function RoomsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null);
+  const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
 
   const { data: rooms = [] } = useListRooms({}, { query: { queryKey: getListRoomsQueryKey({}) } });
   const { data: occupancy } = useGetRoomsOccupancy({ query: { queryKey: getGetRoomsOccupancyQueryKey() } });
@@ -42,9 +54,13 @@ export default function RoomsPage() {
 
   async function handleRelease(id: number) {
     release.mutate({ id }, {
-      onSuccess: () => { toast({ title: "Room released" }); invalidate(); setSelectedRoom(null); },
+      onSuccess: () => { toast({ title: "Room released" }); invalidate(); setSelectedRoom(null); setShowReleaseConfirm(false); },
       onError: () => toast({ title: "Failed to release room", variant: "destructive" }),
     });
+  }
+
+  function handleReleaseClick() {
+    setShowReleaseConfirm(true);
   }
 
   async function handleRenew(id: number) {
@@ -140,15 +156,33 @@ export default function RoomsPage() {
                 </div>
               )}
               <div className="flex gap-2 pt-2">
-                <Button
-                  data-testid="button-release-room"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleRelease(selected.id)}
-                  disabled={release.isPending}
-                >
-                  Release
-                </Button>
+                <AlertDialog open={showReleaseConfirm} onOpenChange={setShowReleaseConfirm}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      data-testid="button-release-room"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleReleaseClick}
+                      disabled={release.isPending}
+                    >
+                      Release
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Release room?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will immediately release room {selected?.name}. The client will lose access to the room. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleRelease(selected.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Release
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <Button
                   data-testid="button-renew-room"
                   variant="outline"

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, transactionsTable, clientsTable } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and, gte, lte } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { ListTransactionsQueryParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
@@ -15,10 +15,15 @@ router.get("/transactions", requireAuth, apiLimiter, async (req, res): Promise<v
     return;
   }
 
-  const { clientId, page, limit } = parsed.data;
+  const { clientId, startDate, endDate, page, limit } = parsed.data;
   const offset = ((page ?? 1) - 1) * (limit ?? DEFAULT_PAGE_SIZE);
 
-  const where = clientId ? eq(transactionsTable.clientId, clientId) : undefined;
+  const conditions = [];
+  if (clientId) conditions.push(eq(transactionsTable.clientId, clientId));
+  if (startDate) conditions.push(gte(transactionsTable.createdAt, startDate));
+  if (endDate) conditions.push(lte(transactionsTable.createdAt, endDate));
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const [txns, countResult] = await Promise.all([
     db.select().from(transactionsTable).where(where).orderBy(desc(transactionsTable.createdAt)).limit(limit ?? DEFAULT_PAGE_SIZE).offset(offset),

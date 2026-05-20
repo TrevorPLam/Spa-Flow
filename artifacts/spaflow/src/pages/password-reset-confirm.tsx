@@ -7,6 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Waves, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const confirmResetSchema = z.object({
   token: z.string().min(1, "Reset token is required"),
@@ -22,6 +23,7 @@ const confirmResetSchema = z.object({
 type ConfirmResetForm = z.infer<typeof confirmResetSchema>;
 
 export default function PasswordResetConfirmPage() {
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -64,8 +66,18 @@ export default function PasswordResetConfirmPage() {
       }
 
       setSuccess(true);
+      toast({
+        title: "Password reset successful",
+        description: "Your password has been reset successfully",
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reset password");
+      const errorMessage = err instanceof Error ? err.message : "Failed to reset password";
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Password reset failed",
+        description: errorMessage,
+      });
     } finally {
       setIsPending(false);
     }

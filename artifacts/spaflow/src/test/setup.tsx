@@ -1,9 +1,20 @@
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { server } from './mocks/server';
+
+// MSW server setup
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' });
+});
 
 afterEach(() => {
   cleanup();
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
 });
 
 // Mock AuthContext
@@ -17,21 +28,6 @@ vi.mock('@/contexts/AuthContext', () => ({
     refreshToken: vi.fn(),
     isManager: false,
   }),
-}));
-
-// Mock API client
-vi.mock('@workspace/api-client-react', () => ({
-  useGetMe: () => ({ data: null, isLoading: false }),
-  useLogin: () => ({ mutateAsync: vi.fn() }),
-  useLogout: () => ({ mutateAsync: vi.fn() }),
-  useGetDashboard: () => ({ data: null, isLoading: false }),
-  useCreateClient: () => ({ mutate: vi.fn(), isPending: false }),
-  useListClients: () => ({ data: { clients: [], total: 0 }, isLoading: false }),
-  getGetMeQueryKey: () => ['me'],
-  getGetDashboardQueryKey: () => ['dashboard'],
-  getGetLockersOccupancyQueryKey: () => ['lockers'],
-  getGetRoomsOccupancyQueryKey: () => ['rooms'],
-  getListClientsQueryKey: () => ['clients'],
 }));
 
 // Mock wouter

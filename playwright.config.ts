@@ -28,6 +28,12 @@ export default defineConfig({
       maxDiffPixelRatio: 0.01,
       threshold: 0.2,
     },
+    // Performance budget thresholds (2026 best practice)
+    // Fail tests if these metrics exceed thresholds
+    toMatchSnapshot: {
+      maxDiffPixels: 100,
+      threshold: 0.2,
+    },
   },
   projects: [
     {

@@ -860,6 +860,8 @@ export const listTransactionsQueryLimitDefault = 20;
 
 export const ListTransactionsQueryParams = zod.object({
   "clientId": zod.coerce.number().optional(),
+  "startDate": zod.date().optional(),
+  "endDate": zod.date().optional(),
   "page": zod.coerce.number().default(listTransactionsQueryPageDefault),
   "limit": zod.coerce.number().default(listTransactionsQueryLimitDefault)
 })
@@ -991,6 +993,8 @@ export const listAuditLogsQueryPageDefault = 1;
 export const listAuditLogsQueryLimitDefault = 50;
 
 export const ListAuditLogsQueryParams = zod.object({
+  "startDate": zod.date().optional(),
+  "endDate": zod.date().optional(),
   "page": zod.coerce.number().default(listAuditLogsQueryPageDefault),
   "limit": zod.coerce.number().default(listAuditLogsQueryLimitDefault),
   "action": zod.coerce.string().optional(),
