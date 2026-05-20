@@ -2,11 +2,9 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 
-const BASE_URL = 'http://localhost:5173';
-
 test.describe('Error Handling', () => {
   test('should show 404 page for non-existent route', async ({ page }) => {
-    await page.goto(`${BASE_URL}/non-existent-route`);
+    await page.goto('/non-existent-route');
 
     // Verify 404 error is shown
     await expect(page.locator('text=404')).toBeVisible();
@@ -14,16 +12,16 @@ test.describe('Error Handling', () => {
   });
 
   test('should redirect to login when accessing protected route unauthenticated', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto('/dashboard');
 
     // Verify redirect to login
-    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await expect(page).toHaveURL('/login');
   });
 
   test('should show validation error on invalid form submission', async ({ page }) => {
     const loginPage = new LoginPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
 
     // Submit empty form
     await page.getByRole('button', { name: /login|sign in/i }).click();
@@ -35,7 +33,7 @@ test.describe('Error Handling', () => {
   test('should show error message on invalid login credentials', async ({ page }) => {
     const loginPage = new LoginPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login('invalid@example.com', 'wrongpassword');
 
     // Verify error message is shown
@@ -46,7 +44,7 @@ test.describe('Error Handling', () => {
   test('should handle API error gracefully', async ({ page }) => {
     const loginPage = new LoginPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
 
     // Mock API error by intercepting requests
     await page.route('**/auth/login', route => {
@@ -66,7 +64,7 @@ test.describe('Error Handling', () => {
   test('should show network error when offline', async ({ page }) => {
     const loginPage = new LoginPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
 
     // Simulate offline mode
     await page.context().setOffline(true);
@@ -83,7 +81,7 @@ test.describe('Error Handling', () => {
   test('should handle timeout on slow API response', async ({ page }) => {
     const loginPage = new LoginPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
 
     // Mock slow API response
     await page.route('**/auth/login', route => {

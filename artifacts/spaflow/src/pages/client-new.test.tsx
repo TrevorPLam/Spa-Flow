@@ -16,34 +16,44 @@ vi.mock('@/hooks/use-toast', () => ({
 }));
 
 describe('ClientNewPage', () => {
-  it('renders form fields', () => {
-    renderWithProviders(<ClientNewPage />);
-    
-    expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/membership/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
-  });
+  describe('Rendering', () => {
+    it('renders page title', () => {
+      // Arrange
+      renderWithProviders(<ClientNewPage />);
 
-  it('renders identification section', () => {
-    renderWithProviders(<ClientNewPage />);
-    
-    expect(screen.getByLabelText(/date of birth/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/address/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/document/i)).toBeInTheDocument();
-  });
+      // Assert
+      expect(screen.getByText(/new client/i)).toBeInTheDocument();
+    });
 
-  it('renders submit and cancel buttons', () => {
-    renderWithProviders(<ClientNewPage />);
-    
-    expect(screen.getByRole('button', { name: /create client/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-  });
+    it('renders form fields', () => {
+      // Arrange
+      renderWithProviders(<ClientNewPage />);
 
-  it('renders page title', () => {
-    renderWithProviders(<ClientNewPage />);
-    
-    expect(screen.getByText(/new client/i)).toBeInTheDocument();
+      // Assert
+      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/membership/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
+    });
+
+    it('renders identification section', () => {
+      // Arrange
+      renderWithProviders(<ClientNewPage />);
+
+      // Assert
+      expect(screen.getByLabelText(/date of birth/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/address/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/document/i)).toBeInTheDocument();
+    });
+
+    it('renders submit and cancel buttons', () => {
+      // Arrange
+      renderWithProviders(<ClientNewPage />);
+
+      // Assert
+      expect(screen.getByRole('button', { name: /create client/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    });
   });
 });

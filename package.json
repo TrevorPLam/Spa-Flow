@@ -12,7 +12,9 @@
     "test:load:clients": "k6 run load-tests/client-search.js",
     "test:load:dashboard": "k6 run load-tests/dashboard.js",
     "test:load:checkin": "k6 run load-tests/checkin-flow.js",
-    "test:load:all": "k6 run load-tests/health-check.js && k6 run load-tests/client-search.js && k6 run load-tests/dashboard.js && k6 run load-tests/checkin-flow.js"
+    "test:load:all": "k6 run load-tests/health-check.js && k6 run load-tests/client-search.js && k6 run load-tests/dashboard.js && k6 run load-tests/checkin-flow.js",
+    "test:changed": "pnpm -r --filter \"...[origin/main]\" --if-present run test:changed",
+    "test:affected": "pnpm -r --filter \"...[origin/main]\" --if-present run test"
   },
   "private": true,
   "devDependencies": {

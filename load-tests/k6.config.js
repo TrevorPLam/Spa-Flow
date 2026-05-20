@@ -13,4 +13,4 @@ export const options = {
   },
 };
 
-export const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:3000/api';
+export const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:5000/api';

@@ -16,18 +16,18 @@ const ADMIN_USER = {
   password: 'SpaFlow2024!',
   name: 'Admin'
 };
-const BASE_URL = 'http://localhost:5173';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5000';
 
 test.describe('Authentication Flow', () => {
   test('should login with valid credentials', async ({ page }) => {
     const loginPage = new LoginPage(page);
     const dashboardPage = new DashboardPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(ADMIN_USER.email, ADMIN_USER.password);
     await loginPage.waitForLoginSuccess();
 
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL('/dashboard');
     await expect(dashboardPage.isDashboardLoaded()).resolves.toBe(true);
 
     // Visual regression check for dashboard after login
@@ -37,7 +37,7 @@ test.describe('Authentication Flow', () => {
   test('should show error with invalid credentials', async ({ page }) => {
     const loginPage = new LoginPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login('invalid@example.com', 'wrongpassword');
 
     const errorMessage = await loginPage.getErrorMessage();
@@ -45,8 +45,8 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should redirect to login when accessing protected route unauthenticated', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL('/login');
 
     // Visual regression check for login page
     await expect(page).toHaveScreenshot('login-page.png');
@@ -56,15 +56,15 @@ test.describe('Authentication Flow', () => {
     const loginPage = new LoginPage(page);
     const dashboardPage = new DashboardPage(page);
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(ADMIN_USER.email, ADMIN_USER.password);
     await loginPage.waitForLoginSuccess();
 
-    await page.goto(`${BASE_URL}/clients`);
-    await expect(page).toHaveURL(`${BASE_URL}/clients`);
+    await page.goto('/clients');
+    await expect(page).toHaveURL('/clients');
 
-    await page.goto(`${BASE_URL}/dashboard`);
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await page.goto('/dashboard');
+    await expect(page).toHaveURL('/dashboard');
     await expect(dashboardPage.isDashboardLoaded()).resolves.toBe(true);
   });
 });
@@ -73,7 +73,7 @@ test.describe('Account Lockout', () => {
   test.beforeEach(async ({ request }) => {
     // Reset lockout state for staff user before each test
     try {
-      const loginResponse = await request.post('http://localhost:5000/auth/login', {
+      const loginResponse = await request.post(`${API_BASE_URL}/auth/login`, {
         data: {
           email: ADMIN_USER.email,
           password: ADMIN_USER.password
@@ -82,7 +82,7 @@ test.describe('Account Lockout', () => {
 
       if (loginResponse.ok()) {
         const cookies = loginResponse.headers['set-cookie'];
-        const users = await request.get('http://localhost:5000/users', {
+        const users = await request.get(`${API_BASE_URL}/users`, {
           headers: {
             'Cookie': cookies
           }
@@ -92,7 +92,7 @@ test.describe('Account Lockout', () => {
           const staffUser = usersData.find((u: any) => u.email === LOCKOUT_TEST_USER.email);
           if (staffUser) {
             // Reset lockout state by unlocking the user
-            await request.post(`http://localhost:5000/users/${staffUser.id}/unlock`, {
+            await request.post(`${API_BASE_URL}/users/${staffUser.id}/unlock`, {
               headers: {
                 'Cookie': cookies
               }
@@ -110,7 +110,7 @@ test.describe('Account Lockout', () => {
 
     // Attempt login N-1 times (threshold - 1)
     for (let i = 0; i < LOCKOUT_THRESHOLD - 1; i++) {
-      await page.goto(`${BASE_URL}/login`);
+      await page.goto('/login');
       await loginPage.login(LOCKOUT_TEST_USER.email, 'wrongpassword');
       
       const errorMessage = await loginPage.getErrorMessage();
@@ -118,11 +118,11 @@ test.describe('Account Lockout', () => {
     }
 
     // Nth attempt (threshold) should still allow login with correct credentials
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(LOCKOUT_TEST_USER.email, LOCKOUT_TEST_USER.password);
     await loginPage.waitForLoginSuccess();
 
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL('/dashboard');
   });
 
   test('should lock account after threshold failed attempts', async ({ page }) => {
@@ -130,7 +130,7 @@ test.describe('Account Lockout', () => {
 
     // Attempt login N times to trigger lockout
     for (let i = 0; i < LOCKOUT_THRESHOLD; i++) {
-      await page.goto(`${BASE_URL}/login`);
+      await page.goto('/login');
       await loginPage.login(LOCKOUT_TEST_USER.email, 'wrongpassword');
       
       const errorMessage = await loginPage.getErrorMessage();
@@ -144,12 +144,12 @@ test.describe('Account Lockout', () => {
     }
 
     // Attempt login with correct credentials during lockout should fail
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(LOCKOUT_TEST_USER.email, LOCKOUT_TEST_USER.password);
     
     const errorMessage = await loginPage.getErrorMessage();
     expect(errorMessage).toContain('locked');
-    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await expect(page).toHaveURL('/login');
   });
 
   test('should remain locked during lockout period', async ({ page }) => {
@@ -157,7 +157,7 @@ test.describe('Account Lockout', () => {
 
     // Trigger lockout
     for (let i = 0; i < LOCKOUT_THRESHOLD; i++) {
-      await page.goto(`${BASE_URL}/login`);
+      await page.goto('/login');
       await loginPage.login(LOCKOUT_TEST_USER.email, 'wrongpassword');
     }
 
@@ -165,12 +165,12 @@ test.describe('Account Lockout', () => {
     await page.waitForTimeout(2000);
 
     // Should still be locked
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(LOCKOUT_TEST_USER.email, LOCKOUT_TEST_USER.password);
     
     const errorMessage = await loginPage.getErrorMessage();
     expect(errorMessage).toContain('locked');
-    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await expect(page).toHaveURL('/login');
   });
 
   test('should allow login after lockout expires', async ({ page, request }) => {
@@ -178,14 +178,14 @@ test.describe('Account Lockout', () => {
 
     // Trigger lockout
     for (let i = 0; i < LOCKOUT_THRESHOLD; i++) {
-      await page.goto(`${BASE_URL}/login`);
+      await page.goto('/login');
       await loginPage.login(LOCKOUT_TEST_USER.email, 'wrongpassword');
     }
 
     // Manually expire the lockout by updating the database
     // This is a test-only operation to avoid waiting 15 minutes
     try {
-      const loginResponse = await request.post('http://localhost:5000/auth/login', {
+      const loginResponse = await request.post(`${API_BASE_URL}/auth/login`, {
         data: {
           email: 'admin@spaflow.com',
           password: 'SpaFlow2024!'
@@ -195,7 +195,7 @@ test.describe('Account Lockout', () => {
       if (loginResponse.ok()) {
         const cookies = loginResponse.headers['set-cookie'];
         // Get user ID first
-        const usersResponse = await request.get('http://localhost:5000/users', {
+        const usersResponse = await request.get(`${API_BASE_URL}/users`, {
           headers: {
             'Cookie': cookies
           }
@@ -207,7 +207,7 @@ test.describe('Account Lockout', () => {
           
           if (testUser) {
             // Reset lockout via database (simulating time passing)
-            await request.post(`http://localhost:5000/users/${testUser.id}/unlock`, {
+            await request.post(`${API_BASE_URL}/users/${testUser.id}/unlock`, {
               headers: {
                 'Cookie': cookies
               }
@@ -220,11 +220,11 @@ test.describe('Account Lockout', () => {
     }
 
     // Should now be able to login
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(LOCKOUT_TEST_USER.email, LOCKOUT_TEST_USER.password);
     await loginPage.waitForLoginSuccess();
 
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL('/dashboard');
   });
 
   test('should allow manager to unlock locked account', async ({ page, request }) => {
@@ -232,19 +232,19 @@ test.describe('Account Lockout', () => {
 
     // Trigger lockout
     for (let i = 0; i < LOCKOUT_THRESHOLD; i++) {
-      await page.goto(`${BASE_URL}/login`);
+      await page.goto('/login');
       await loginPage.login(LOCKOUT_TEST_USER.email, 'wrongpassword');
     }
 
     // Verify account is locked
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(LOCKOUT_TEST_USER.email, LOCKOUT_TEST_USER.password);
     
     let errorMessage = await loginPage.getErrorMessage();
     expect(errorMessage).toContain('locked');
 
     // Login as manager and unlock the account
-    const managerLoginResponse = await request.post('http://localhost:5000/auth/login', {
+    const managerLoginResponse = await request.post(`${API_BASE_URL}/auth/login`, {
       data: {
         email: 'admin@spaflow.com',
         password: 'SpaFlow2024!'
@@ -279,11 +279,11 @@ test.describe('Account Lockout', () => {
     expect(unlockData.success).toBe(true);
 
     // Now the locked user should be able to login
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await loginPage.login(LOCKOUT_TEST_USER.email, LOCKOUT_TEST_USER.password);
     await loginPage.waitForLoginSuccess();
 
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL('/dashboard');
   });
 });
 
@@ -303,15 +303,15 @@ test.describe('Session Refresh', () => {
 
     // Set refresh token in localStorage and navigate to dashboard
     // The httpOnly cookie is already set by the API call
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await page.evaluate((refreshToken) => {
       localStorage.setItem('spaflow_refresh_token', refreshToken);
     }, loginData.refreshToken);
 
     // Navigate to dashboard - the client should handle auth state
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto('/dashboard');
     // If the access token is expired, the client's automatic refresh should handle it
-    await expect(page).toHaveURL(`${BASE_URL}/dashboard`);
+    await expect(page).toHaveURL('/dashboard');
   });
 
   test('should rotate refresh token on each use', async ({ page, request }) => {
@@ -329,7 +329,7 @@ test.describe('Session Refresh', () => {
     expect(initialRefreshToken).toBeDefined();
 
     // Use the refresh token to get a new one
-    const refreshResponse = await request.post('http://localhost:5000/auth/refresh', {
+    const refreshResponse = await request.post(`${API_BASE_URL}/auth/refresh`, {
       data: {
         refreshToken: initialRefreshToken
       }
@@ -354,7 +354,7 @@ test.describe('Session Refresh', () => {
 
   test('should reject invalid refresh token', async ({ page, request }) => {
     // Try to refresh with an invalid token
-    const refreshResponse = await request.post('http://localhost:5000/auth/refresh', {
+    const refreshResponse = await request.post(`${API_BASE_URL}/auth/refresh`, {
       data: {
         refreshToken: 'invalid-refresh-token'
       }
@@ -369,16 +369,16 @@ test.describe('Session Refresh', () => {
 
   test('should redirect to login when refresh fails', async ({ page }) => {
     // Set an invalid refresh token in localStorage
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await page.evaluate(() => {
       localStorage.setItem('spaflow_refresh_token', 'invalid-refresh-token');
     });
 
     // Navigate to a protected route
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto('/dashboard');
 
     // Should redirect to login due to refresh failure
-    await expect(page).toHaveURL(`${BASE_URL}/login`);
+    await expect(page).toHaveURL('/login');
   });
 
   test('should handle refresh token expiration gracefully', async ({ request }) => {
@@ -397,7 +397,7 @@ test.describe('Session Refresh', () => {
     // Manually expire the refresh token in the database by revoking all sessions
     // This simulates a token that has been revoked or expired
     try {
-      const adminLoginResponse = await request.post('http://localhost:5000/auth/login', {
+      const adminLoginResponse = await request.post(`${API_BASE_URL}/auth/login`, {
         data: {
           email: ADMIN_USER.email,
           password: ADMIN_USER.password
@@ -407,7 +407,7 @@ test.describe('Session Refresh', () => {
       if (adminLoginResponse.ok()) {
         const cookies = adminLoginResponse.headers()['set-cookie'];
         // Revoke all sessions for the user
-        await request.delete('http://localhost:5000/auth/sessions', {
+        await request.delete(`${API_BASE_URL}/auth/sessions`, {
           headers: {
             'Cookie': cookies || ''
           }
@@ -418,7 +418,7 @@ test.describe('Session Refresh', () => {
     }
 
     // Try to use the now-expired refresh token
-    const refreshResponse = await request.post('http://localhost:5000/auth/refresh', {
+    const refreshResponse = await request.post(`${API_BASE_URL}/auth/refresh`, {
       data: {
         refreshToken: refreshToken
       }
@@ -449,7 +449,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should request password reset with valid email', async ({ page, request }) => {
-    await page.goto(`${BASE_URL}/password-reset-request`);
+    await page.goto('/password-reset-request');
 
     // Fill in email
     await page.fill('[data-testid="input-email"]', PASSWORD_RESET_USER.email);
@@ -463,7 +463,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should request password reset with non-existent email (user enumeration protection)', async ({ page }) => {
-    await page.goto(`${BASE_URL}/password-reset-request`);
+    await page.goto('/password-reset-request');
 
     // Fill in non-existent email
     await page.fill('[data-testid="input-email"]', 'nonexistent@example.com');
@@ -477,7 +477,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should validate email format on password reset request', async ({ page }) => {
-    await page.goto(`${BASE_URL}/password-reset-request`);
+    await page.goto('/password-reset-request');
 
     // Fill in invalid email
     await page.fill('[data-testid="input-email"]', 'invalid-email');
@@ -491,7 +491,7 @@ test.describe('Password Reset', () => {
 
   test('should reset password with valid token via API', async ({ request }) => {
     // Step 1: Request password reset
-    const requestResponse = await request.post('http://localhost:5000/auth/password-reset/request', {
+    const requestResponse = await request.post(`${API_BASE_URL}/auth/password-reset/request`, {
       data: {
         email: PASSWORD_RESET_USER.email
       }
@@ -508,7 +508,7 @@ test.describe('Password Reset', () => {
     }
 
     // Step 2: Confirm password reset with the token
-    const confirmResponse = await request.post('http://localhost:5000/auth/password-reset/confirm', {
+    const confirmResponse = await request.post(`${API_BASE_URL}/auth/password-reset/confirm`, {
       data: {
         token: requestData.token,
         newPassword: PASSWORD_RESET_USER.newPassword
@@ -554,7 +554,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should reject password reset with invalid token', async ({ page }) => {
-    await page.goto(`${BASE_URL}/password-reset-confirm?token=invalidtoken123`);
+    await page.goto('/password-reset-confirm?token=invalidtoken123');
 
     // Fill in new password
     await page.fill('[data-testid="input-new-password"]', PASSWORD_RESET_USER.newPassword);
@@ -569,7 +569,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should enforce password complexity on reset', async ({ page }) => {
-    await page.goto(`${BASE_URL}/password-reset-confirm?token=sometoken`);
+    await page.goto('/password-reset-confirm?token=sometoken');
 
     // Fill in weak password (less than 15 characters)
     await page.fill('[data-testid="input-new-password"]', PASSWORD_RESET_USER.weakPassword);
@@ -583,7 +583,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should require password confirmation on reset', async ({ page }) => {
-    await page.goto(`${BASE_URL}/password-reset-confirm?token=sometoken`);
+    await page.goto('/password-reset-confirm?token=sometoken');
 
     // Fill in password with mismatched confirmation
     await page.fill('[data-testid="input-new-password"]', PASSWORD_RESET_USER.newPassword);
@@ -597,7 +597,7 @@ test.describe('Password Reset', () => {
   });
 
   test('should reject password reset with password too long', async ({ page }) => {
-    await page.goto(`${BASE_URL}/password-reset-confirm?token=sometoken`);
+    await page.goto('/password-reset-confirm?token=sometoken');
 
     // Fill in password that exceeds 64 characters
     const longPassword = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -613,7 +613,7 @@ test.describe('Password Reset', () => {
 
   test('should reject password reset with expired token', async ({ request }) => {
     // Request a reset token
-    const requestResponse = await request.post('http://localhost:5000/auth/password-reset/request', {
+    const requestResponse = await request.post(`${API_BASE_URL}/auth/password-reset/request`, {
       data: {
         email: PASSWORD_RESET_USER.email
       }
@@ -653,7 +653,7 @@ test.describe('Password Reset', () => {
     expect(user).toBeDefined();
 
     // Manually expire the token in the database using test endpoint
-    const expireResponse = await request.post(`http://localhost:5000/test/password-reset-token/${user.id}/expire`, {
+    const expireResponse = await request.post(`${API_BASE_URL}/test/password-reset-token/${user.id}/expire`, {
       headers: {
         'Cookie': adminCookies || ''
       }
@@ -666,7 +666,7 @@ test.describe('Password Reset', () => {
     }
 
     // Try to use the expired token
-    const confirmResponse = await request.post('http://localhost:5000/auth/password-reset/confirm', {
+    const confirmResponse = await request.post(`${API_BASE_URL}/auth/password-reset/confirm`, {
       data: {
         token: requestData.token,
         newPassword: PASSWORD_RESET_USER.newPassword

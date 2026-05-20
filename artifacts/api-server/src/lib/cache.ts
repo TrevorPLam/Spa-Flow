@@ -36,9 +36,11 @@ export interface CacheOptions {
 export function getRedisClient(): RedisClientType {
   if (!redisClient) {
     const env = getEnv();
-    const redisUrl = env.REDIS_URL || 'redis://localhost:6379';
+    if (!env.REDIS_URL) {
+      throw new Error('REDIS_URL environment variable is required for cache functionality');
+    }
     redisClient = createClient({
-      url: redisUrl,
+      url: env.REDIS_URL,
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {

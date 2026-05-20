@@ -10,7 +10,10 @@ vi.mock('@/components/layout/Layout', () => ({
 
 describe('DashboardPage', () => {
   it('renders loading state', () => {
+    // Arrange
     renderWithProviders(<DashboardPage />);
+
+    // Assert
     expect(screen.getByText(/loading dashboard/i)).toBeInTheDocument();
   });
 });

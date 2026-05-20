@@ -1,11 +1,9 @@
 import { z } from 'zod';
+import { createBootstrapLogger } from './logger';
 
-// Simple bootstrap logger to avoid circular dependency with logger.ts
+// Bootstrap logger to avoid circular dependency with logger.ts
 // logger.ts imports from env.ts, so env.ts cannot use the main logger
-const bootstrapLogger = {
-  error: (...args: unknown[]) => console.error(...args),
-  info: (...args: unknown[]) => console.log(...args),
-};
+const bootstrapLogger = createBootstrapLogger();
 
 const envSchema = z.object({
   // Database
@@ -45,6 +43,11 @@ const envSchema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().regex(/^\+[1-9]\d{6,14}$/, 'TWILIO_PHONE_NUMBER must be in E.164 format (e.g., +14155552671)').optional(),
+
+  // Email Configuration (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM_ADDRESS: z.string().email('EMAIL_FROM_ADDRESS must be a valid email address').optional(),
+  EMAIL_FROM_NAME: z.string().default('SpaFlow'),
 
   // Square (optional for health checks)
   SQUARE_ACCESS_TOKEN: z.string().optional(),
@@ -107,6 +110,12 @@ export function getEnv(): Env {
   return validatedEnv;
 }
 
+// Reset cached environment for test isolation
+// Call this in test setup when using vi.stubEnv() to ensure fresh environment validation
+export function resetEnv(): void {
+  validatedEnv = null;
+}
+
 // Helper function to get Twilio credentials with validation
 export function getTwilioCredentials(): { accountSid: string | undefined; authToken: string | undefined } {
   const env = getEnv();
@@ -140,5 +149,15 @@ export function getDatabaseConfig() {
       lockTimeout: env.DB_LOCK_TIMEOUT_MS,
       idleInTransactionSessionTimeout: env.DB_IDLE_IN_TRANSACTION_TIMEOUT_MS,
     },
+  };
+}
+
+// Helper function to get email configuration
+export function getEmailConfig() {
+  const env = getEnv();
+  return {
+    apiKey: env.RESEND_API_KEY,
+    fromAddress: env.EMAIL_FROM_ADDRESS,
+    fromName: env.EMAIL_FROM_NAME,
   };
 }

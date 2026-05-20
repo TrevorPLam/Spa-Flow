@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/21</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -112,14 +112,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -128,19 +128,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,15 +156,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 &nbsp;
-function <span class="fstat-no" title="function not covered" >formatDuration(m</span>s: number) {
-<span class="cstat-no" title="statement not covered" >  if (ms &lt;= 0) <span class="cstat-no" title="statement not covered" >return "Expired";</span></span>
-  const totalSec = <span class="cstat-no" title="statement not covered" >Math.floor(ms / 1000);</span>
-  const h = <span class="cstat-no" title="statement not covered" >Math.floor(totalSec / 3600);</span>
-  const m = <span class="cstat-no" title="statement not covered" >Math.floor((totalSec % 3600) / 60);</span>
-  const s = <span class="cstat-no" title="statement not covered" >totalSec % 60;</span>
-<span class="cstat-no" title="statement not covered" >  if (h &gt; 0) <span class="cstat-no" title="statement not covered" >return `${h}h ${m}m`;</span></span>
-<span class="cstat-no" title="statement not covered" >  if (m &gt; 0) <span class="cstat-no" title="statement not covered" >return `${m}m ${s.toString().padStart(2, "0")}s`;</span></span>
-<span class="cstat-no" title="statement not covered" >  return `${s}s`;</span>
+function formatDuration(ms: number) {
+  if (ms &lt;= 0) return "Expired";
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h &gt; 0) return `${h}h ${m}m`;
+  if (m &gt; 0) return `${m}m ${s.toString().padStart(2, "0")}s`;
+  return `${s}s`;
 }
 &nbsp;
 interface CountdownProps {
@@ -172,20 +172,20 @@ interface CountdownProps {
   className?: string;
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >Countdown({</span> expiresAt, className }: CountdownProps) {
-  const [remaining, setRemaining<span class="cstat-no" title="statement not covered" >] = useState(<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >e</span>xpiresAt.getTime() - Date.now())</span>;</span>
+export function Countdown({ expiresAt, className }: CountdownProps) {
+  const [remaining, setRemaining] = useState(() =&gt; expiresAt.getTime() - Date.now());
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  useEffect(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
-    const interval = <span class="cstat-no" title="statement not covered" >setInterval(<span class="fstat-no" title="function not covered" >() =&gt; {</span></span>
-<span class="cstat-no" title="statement not covered" >      setRemaining(expiresAt.getTime() - Date.now());</span>
+  useEffect(() =&gt; {
+    const interval = setInterval(() =&gt; {
+      setRemaining(expiresAt.getTime() - Date.now());
     }, 1000);
-<span class="cstat-no" title="statement not covered" >    return <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >c</span>learInterval(interval);</span></span>
+    return () =&gt; clearInterval(interval);
   }, [expiresAt]);
 &nbsp;
-  const isUrgent = <span class="cstat-no" title="statement not covered" >remaining &lt; 30 * 60 * 1000; // &lt; 30 min</span>
-  const isExpired = <span class="cstat-no" title="statement not covered" >remaining &lt;= 0;</span>
+  const isUrgent = remaining &lt; 30 * 60 * 1000; // &lt; 30 min
+  const isExpired = remaining &lt;= 0;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return (</span>
+  return (
     &lt;span
       data-testid="text-countdown"
       className={cn(
@@ -205,7 +205,7 @@ export function <span class="fstat-no" title="function not covered" >Countdown({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-20T01:54:34.077Z
+                at 2026-05-20T16:04:37.283Z
             </div>
         <script src="../prettify.js"></script>
         <script>

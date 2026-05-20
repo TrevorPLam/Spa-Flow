@@ -376,8 +376,8 @@
 
 ---
 
-## [ ] TASK-003: Implement Email Service Integration
-**Status:** Pending
+## [x] TASK-003: Implement Email Service Integration
+**Status:** Complete
 **Priority:** High
 
 ### Related File Paths
@@ -609,8 +609,8 @@
 
 ---
 
-## [ ] TASK-014: Replace Hardcoded Localhost URLs with Environment Variables
-**Status:** Pending
+## [x] TASK-014: Replace Hardcoded Localhost URLs with Environment Variables
+**Status:** Complete
 **Priority:** High
 
 ### Related File Paths

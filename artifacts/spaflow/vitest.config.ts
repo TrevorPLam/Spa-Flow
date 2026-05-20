@@ -11,6 +11,11 @@ export default defineConfig({
     include: ['**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'tests/e2e'],
     css: true,
+    timeout: 10000,
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    pool: 'threads',
+    fileParallelism: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -21,6 +26,13 @@ export default defineConfig({
         '**/*.spec.{ts,tsx}',
         'src/main.tsx',
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+        perFile: true,
+      },
     },
   },
   resolve: {

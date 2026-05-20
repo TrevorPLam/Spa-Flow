@@ -6,6 +6,7 @@ import { logger } from "../lib/logger";
 import { validatePassword } from "../lib/auth";
 import { getEnv } from "../lib/env";
 import { BCRYPT_ROUNDS } from "../lib/constants";
+import { emailService } from "./email";
 
 const PASSWORD_RESET_TOKEN_EXPIRY_MINUTES = 30; // OWASP recommends 15-60 minutes
 
@@ -34,6 +35,8 @@ export class PasswordResetTokenService {
    * @returns Result with success and generic message
    */
   async requestReset(email: string): Promise<PasswordResetRequestResult> {
+    const env = getEnv();
+
     // Always query database to prevent timing-based user enumeration
     const [user] = await db
       .select({
@@ -76,11 +79,17 @@ export class PasswordResetTokenService {
       "Password reset token generated (email would be sent in production)"
     );
 
-    // TODO: Integrate email service to send reset link
-    // The email should contain a link like: https://app.com/reset-password?token=xxx
+    // Send password reset email
+    try {
+      // Construct reset link - in production, this should use the actual frontend URL
+      const resetLink = `${env.BASE_PATH}/reset-password?token=${token}`;
+      await emailService.sendPasswordReset(user.email, resetLink, PASSWORD_RESET_TOKEN_EXPIRY_MINUTES);
+    } catch (error) {
+      // Log error but don't fail the request - token is still valid
+      logger.error({ error, userId: user.id, email: user.email }, "Failed to send password reset email");
+    }
 
     // In test/development mode, include the token in the response for E2E testing
-    const env = getEnv();
     const result: PasswordResetRequestResult = {
       success: true,
       message: "If an account with this email exists, a password reset link has been sent.",
@@ -186,7 +195,21 @@ export class PasswordResetTokenService {
       "Password reset completed, all sessions invalidated"
     );
 
-    // TODO: Send email notification that password has been reset (don't include password)
+    // Send password reset confirmation email
+    try {
+      // Get user email for confirmation
+      const [user] = await db
+        .select({ email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.id, tokenRecord.userId));
+      
+      if (user) {
+        await emailService.sendPasswordResetConfirmation(user.email);
+      }
+    } catch (error) {
+      // Log error but don't fail the request - password has been reset
+      logger.error({ error, userId: tokenRecord.userId }, "Failed to send password reset confirmation email");
+    }
 
     return {
       success: true,

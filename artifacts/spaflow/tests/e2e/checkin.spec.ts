@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { CheckInPage } from './pages/CheckInPage';
 
-const BASE_URL = 'http://localhost:5173';
-
 test.describe('Check-in Flow', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);

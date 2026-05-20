@@ -26,6 +26,7 @@ vi.mock('@workspace/api-client-react', () => ({
   useLogout: () => ({ mutateAsync: vi.fn() }),
   useGetDashboard: () => ({ data: null, isLoading: false }),
   useCreateClient: () => ({ mutate: vi.fn(), isPending: false }),
+  useListClients: () => ({ data: { clients: [], total: 0 }, isLoading: false }),
   getGetMeQueryKey: () => ['me'],
   getGetDashboardQueryKey: () => ['dashboard'],
   getGetLockersOccupancyQueryKey: () => ['lockers'],
@@ -37,5 +38,5 @@ vi.mock('@workspace/api-client-react', () => ({
 vi.mock('wouter', () => ({
   useLocation: () => ['/', vi.fn()],
   Redirect: () => null,
-  Link: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode; [key: string]: any }) => <a href={href} {...props}>{children}</a>,
 }));

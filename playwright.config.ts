@@ -5,17 +5,20 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? '50%' : undefined,
+  timeout: 30000,
   reporter: [
     ['html'],
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['list']
   ],
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || process.env.VITE_API_URL?.replace(/:\d+$/, ':5173') || 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    actionTimeout: 10000,
+    navigationTimeout: 15000,
   },
   // Visual testing configuration
   expect: {
@@ -42,7 +45,7 @@ export default defineConfig({
   ],
   webServer: process.env.CI ? undefined : {
     command: 'cd artifacts/spaflow && pnpm run dev',
-    url: 'http://localhost:5173',
+    url: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

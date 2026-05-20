@@ -1,6 +1,7 @@
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
 import { seedTestData } from './seed';
+import { resetEnv } from '../lib/env';
 
 // Load test environment variables
 process.env.NODE_ENV = 'test';
@@ -17,6 +18,9 @@ export async function setupTestDatabase() {
 }
 
 export async function cleanDatabase() {
+  // Reset cached environment for test isolation
+  resetEnv();
+
   // Delete in order of dependencies to avoid foreign key violations
   // Uses transactions for isolation when running in parallel
   await db.transaction(async (tx) => {

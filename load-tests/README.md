@@ -25,8 +25,8 @@ choco install k6
 
 ### Run all tests
 ```bash
-# Set API base URL (default: http://localhost:3000/api)
-export API_BASE_URL=http://localhost:3000/api
+# Set API base URL (default: http://localhost:5000/api)
+export API_BASE_URL=http://localhost:5000/api
 
 # Run health check test
 k6 run load-tests/health-check.ts
@@ -54,7 +54,7 @@ pnpm run test:load:all
 
 ### Run with custom API base URL
 ```bash
-API_BASE_URL=http://localhost:3000/api k6 run load-tests/health-check.js
+API_BASE_URL=http://localhost:5000/api k6 run load-tests/health-check.js
 ```
 
 ### Run smoke test locally
@@ -63,9 +63,32 @@ API_BASE_URL=http://localhost:3000/api k6 run load-tests/health-check.js
 cd artifacts/api-server
 pnpm run dev
 
-# In another terminal, run smoke test
-API_BASE_URL=http://localhost:3000/api pnpm run test:load:smoke
+# In another terminal, wait for server to be healthy
+./scripts/wait-for-server.sh http://localhost:5000/health
+
+# Then run smoke test
+API_BASE_URL=http://localhost:5000/api pnpm run test:load:smoke
 ```
+
+### Health Check Script
+The repository includes a health check script at `scripts/wait-for-server.sh` that uses exponential backoff to wait for the server to be healthy before running load tests. This is preferred over hardcoded sleep delays.
+
+**Usage:**
+```bash
+./scripts/wait-for-server.sh <URL> [MAX_RETRIES] [INITIAL_DELAY]
+```
+
+**Example:**
+```bash
+./scripts/wait-for-server.sh http://localhost:5000/health 12 5
+```
+
+**Parameters:**
+- `URL`: Health endpoint to check (default: http://localhost:5000/health)
+- `MAX_RETRIES`: Maximum number of retry attempts (default: 12)
+- `INITIAL_DELAY`: Initial delay in seconds before first retry (default: 5)
+
+The script uses exponential backoff, doubling the delay between retries (max 60s) to avoid overwhelming the server while waiting for it to start.
 
 ## Performance Baselines
 
