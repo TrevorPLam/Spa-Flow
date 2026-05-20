@@ -6,6 +6,11 @@ export class DashboardPage extends BasePage {
   readonly roomOccupancyCard: Locator;
   readonly todayRevenueCard: Locator;
   readonly activeClientsCard: Locator;
+  readonly navigationMenu: Locator;
+  readonly clientsNavLink: Locator;
+  readonly checkinNavLink: Locator;
+  readonly lockersNavLink: Locator;
+  readonly roomsNavLink: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -13,6 +18,11 @@ export class DashboardPage extends BasePage {
     this.roomOccupancyCard = page.getByTestId('card-room-occupancy');
     this.todayRevenueCard = page.getByTestId('card-today-revenue');
     this.activeClientsCard = page.getByTestId('card-active-clients');
+    this.navigationMenu = page.getByTestId('navigation-menu');
+    this.clientsNavLink = page.getByRole('link', { name: /clients/i });
+    this.checkinNavLink = page.getByRole('link', { name: /check.?in/i });
+    this.lockersNavLink = page.getByRole('link', { name: /lockers/i });
+    this.roomsNavLink = page.getByRole('link', { name: /rooms/i });
   }
 
   async goto() {
@@ -31,5 +41,25 @@ export class DashboardPage extends BasePage {
 
   async isDashboardLoaded(): Promise<boolean> {
     return await this.isVisible(this.lockerOccupancyCard);
+  }
+
+  async navigateToClients() {
+    await this.clickElement(this.clientsNavLink);
+  }
+
+  async navigateToCheckIn() {
+    await this.clickElement(this.checkinNavLink);
+  }
+
+  async navigateToLockers() {
+    await this.clickElement(this.lockersNavLink);
+  }
+
+  async navigateToRooms() {
+    await this.clickElement(this.roomsNavLink);
+  }
+
+  async isNavigationMenuVisible(): Promise<boolean> {
+    return await this.isVisible(this.navigationMenu);
   }
 }

@@ -13,6 +13,8 @@
     "test:coverage": "vitest --coverage",
     "test:mutation": "stryker run",
     "test:mutation:ci": "stryker run --concurrency 2",
+    "test:seed": "tsx src/test/seed.ts",
+    "test:seed:cleanup": "tsx -e \"import('./src/test/seed.js').then(m => m.cleanupTestData()).then(() => process.exit(0))\"",
     "sentry:upload-sourcemaps": "sentry-cli sourcemaps inject ./dist && sentry-cli sourcemaps upload ./dist"
   },
   "dependencies": {

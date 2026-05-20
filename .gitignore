@@ -54,3 +54,24 @@ Thumbs.db
 .env.staging
 .env.production
 .env.test
+
+# Replit artifacts
+.replit-artifact/
+.stryker-tmp/
+
+# Editor swap files
+*.swp
+*.swo
+*.swn
+
+# Neon database
+.neon
+
+# Test results
+test-results/
+
+# Temporary attachments
+attached_assets/
+
+# Replit configuration
+.replit

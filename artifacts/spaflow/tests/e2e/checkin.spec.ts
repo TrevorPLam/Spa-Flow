@@ -2,11 +2,13 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { CheckInPage } from './pages/CheckInPage';
 
+const BASE_URL = 'http://localhost:5173';
+
 test.describe('Check-in Flow', () => {
   test.beforeEach(async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
-    await loginPage.login('admin@spaflow.com', 'password123');
+    await loginPage.login('admin@spaflow.com', 'SpaFlow2024!');
     await loginPage.waitForLoginSuccess();
   });
 
@@ -45,6 +47,43 @@ test.describe('Check-in Flow', () => {
       // Test room selection
       await checkInPage.selectResourceType('room');
       await page.waitForTimeout(300);
+    }
+  });
+
+  test('should complete full check-in flow', async ({ page }) => {
+    const checkInPage = new CheckInPage(page);
+
+    await checkInPage.goto();
+    await expect(checkInPage.isCheckInPageLoaded()).resolves.toBe(true);
+
+    // Step 1: Search and select client
+    await checkInPage.searchClient('John');
+    await page.waitForTimeout(500);
+
+    if (await checkInPage.clientList.count() > 0) {
+      await checkInPage.selectClient('John Doe');
+      await page.waitForTimeout(500);
+
+      // Step 2: Select resource type
+      await checkInPage.selectResourceType('locker');
+      await page.waitForTimeout(300);
+
+      // Step 3: Select products
+      await checkInPage.selectProduct('Day Pass');
+      await page.waitForTimeout(300);
+
+      // Step 4: Complete payment
+      await checkInPage.completePayment();
+      await page.waitForTimeout(1000);
+
+      // Step 5: Verify success message
+      await expect(checkInPage.isSuccessMessageVisible()).resolves.toBe(true);
+      const successMessage = await checkInPage.getSuccessMessageText();
+      expect(successMessage).toContain('Check-in');
+
+      // Verify we're still on check-in page or redirected appropriately
+      const url = page.url();
+      expect(url).toContain('/checkin');
     }
   });
 

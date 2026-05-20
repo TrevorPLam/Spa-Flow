@@ -2,6 +2,7 @@ import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { db } from '@workspace/db';
 import { sql } from 'drizzle-orm';
 import * as schema from '@workspace/db/schema';
+import { seedTestData, cleanupTestData } from './seed';
 
 // Load test environment variables
 process.env.NODE_ENV = 'test';
@@ -10,6 +11,11 @@ process.env.NODE_ENV = 'test';
 export async function setupTestDatabase() {
   // Clean all tables before tests
   await cleanDatabase();
+
+  // Seed test data if TEST_SEED environment variable is set
+  if (process.env.TEST_SEED === 'true') {
+    await seedTestData();
+  }
 }
 
 export async function cleanDatabase() {
