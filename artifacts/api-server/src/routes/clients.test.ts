@@ -233,6 +233,82 @@ describe('Clients API', { tags: ['@smoke', '@critical'] }, () => {
     });
   });
 
+  describe('GET /api/clients/:id/pii', () => {
+    it('should return decrypted PII for authenticated manager', async () => {
+      const authHeaders = await createAuthenticatedRequest('MANAGER');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        dobEncrypted: 'encrypted-dob-data',
+        dobDek: 'encrypted-dek',
+        addressEncrypted: 'encrypted-address-data',
+        addressDek: 'encrypted-dek',
+        documentNumberEncrypted: 'encrypted-doc-data',
+        documentNumberDek: 'encrypted-dek',
+      });
+
+      const response = await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id', client.id);
+      expect(response.body).toHaveProperty('name', 'John Doe');
+      expect(response.body).toHaveProperty('dob');
+      expect(response.body).toHaveProperty('address');
+      expect(response.body).toHaveProperty('documentNumber');
+    });
+
+    it('should return 403 when staff tries to access PII endpoint', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        dobEncrypted: 'encrypted-dob-data',
+        dobDek: 'encrypted-dek',
+      });
+
+      const response = await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should return 401 for unauthenticated request', async () => {
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      const response = await api.get(`/api/clients/${client.id}/pii`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 404 for non-existent client', async () => {
+      const authHeaders = await createAuthenticatedRequest('MANAGER');
+
+      const response = await api.get('/api/clients/99999/pii').set(authHeaders);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should create audit log entry for PII access', async () => {
+      const authHeaders = await createAuthenticatedRequest('MANAGER');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        dobEncrypted: 'encrypted-dob-data',
+        dobDek: 'encrypted-dek',
+      });
+
+      await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+
+      // Verify audit log entry was created
+      const auditLogs = await db.select().from(require('@workspace/db/schema').auditLogsTable)
+        .where(eq(require('@workspace/db/schema').auditLogsTable.action, 'VIEW_PII'));
+      
+      expect(auditLogs.length).toBeGreaterThan(0);
+      expect(auditLogs[0]).toHaveProperty('resourceType', 'client');
+      expect(auditLogs[0]).toHaveProperty('resourceId', client.id);
+    });
+  });
+
   describe('Contract Validation', () => {
     it('should validate GET /api/clients response against OpenAPI spec', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
@@ -298,6 +374,26 @@ describe('Clients API', { tags: ['@smoke', '@critical'] }, () => {
       expect(response.status).toBe(200);
       
       const validation = await validateResponse('/api/clients/:id', 'get', 200, response.body);
+      expect(validation.valid).toBe(true);
+      if (!validation.valid) {
+        console.error('Contract validation errors:', validation.errors);
+      }
+    });
+
+    it('should validate GET /api/clients/:id/pii response against OpenAPI spec', async () => {
+      const authHeaders = await createAuthenticatedRequest('MANAGER');
+      const client = await createTestClientInDb({ 
+        name: 'John Doe', 
+        email: 'john@example.com',
+        dobEncrypted: 'encrypted-dob-data',
+        dobDek: 'encrypted-dek',
+      });
+
+      const response = await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+
+      expect(response.status).toBe(200);
+      
+      const validation = await validateResponse('/api/clients/:id/pii', 'get', 200, response.body);
       expect(validation.valid).toBe(true);
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);

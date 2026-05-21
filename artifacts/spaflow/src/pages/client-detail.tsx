@@ -23,7 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, Eye, EyeOff, Pencil } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +49,9 @@ export default function ClientDetailPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showEdit, setShowEdit] = useState(false);
+  const [showPiiModal, setShowPiiModal] = useState(false);
+  const [piiData, setPiiData] = useState<{ dob: string | null; address: string | null; documentNumber: string | null } | null>(null);
+  const [loadingPii, setLoadingPii] = useState(false);
 
   const { data: client, isLoading } = useGetClient(id, {
     query: { enabled: !!id, queryKey: getGetClientQueryKey(id) },
@@ -66,6 +69,28 @@ export default function ClientDetailPage() {
     resolver: zodResolver(editSchema),
     defaultValues: { name: "", email: "", phone: "", notes: "" },
   });
+
+  async function fetchPii() {
+    if (!client || !isManager) return;
+    setLoadingPii(true);
+    try {
+      const response = await fetch(`/api/v1/clients/${id}/pii`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('spaflow_token')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch PII');
+      }
+      const data = await response.json();
+      setPiiData({ dob: data.dob, address: data.address, documentNumber: data.documentNumber });
+      setShowPiiModal(true);
+    } catch (error) {
+      toast({ title: "Failed to load PII", variant: "destructive" });
+    } finally {
+      setLoadingPii(false);
+    }
+  }
 
   function openEdit() {
     if (!client) return;
@@ -169,6 +194,18 @@ export default function ClientDetailPage() {
                 <span className="text-muted-foreground">Document #:</span>{" "}
                 {client.documentNumber === "[encrypted]" ? <span className="text-muted-foreground italic">Encrypted</span> : (client.documentNumber || "—")}
               </div>
+              {isManager && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchPii}
+                  disabled={loadingPii}
+                  className="mt-2 w-full"
+                  data-testid="button-view-pii"
+                >
+                  {loadingPii ? "Loading..." : "View Identification"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -276,6 +313,40 @@ export default function ClientDetailPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPiiModal} onOpenChange={setShowPiiModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle size={20} className="text-yellow-600" />
+              Client Identification
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800">
+              <p className="font-medium">Security Notice</p>
+              <p>This contains sensitive personally identifiable information. Access is logged and audited.</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Date of Birth:</span>
+                <p className="text-sm">{piiData?.dob || "—"}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Address:</span>
+                <p className="text-sm">{piiData?.address || "—"}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Document Number:</span>
+                <p className="text-sm">{piiData?.documentNumber || "—"}</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPiiModal(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Layout>

@@ -17,7 +17,7 @@ import {
   GetClientTransactionsParams,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
-import { apiLimiter } from "../middleware/rateLimit";
+import { apiLimiter, piiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDel, cacheDelPattern } from "../lib/cache";
 import { logTransactionError } from "../lib/logger";
 import { DEFAULT_PAGE_SIZE } from "../lib/constants";
@@ -467,6 +467,56 @@ router.get("/clients/:id/transactions", requireAuth, apiLimiter, async (req, res
     description: t.description,
     createdAt: t.createdAt,
   })));
+});
+
+/**
+ * GET /clients/:id/pii
+ * Manager-only endpoint to decrypt and return client PII
+ * Requires MANAGER role and applies strict rate limiting
+ * Logs all PII access for audit trail
+ */
+router.get("/clients/:id/pii", requireAuth, piiLimiter, async (req, res): Promise<void> => {
+  const params = GetClientParams.safeParse(req.params);
+  if (!params.success) {
+    sendValidationError(res, params.error.message);
+    return;
+  }
+
+  const actingUser = (req as AuthRequest).user!;
+
+  // Require MANAGER role for PII access
+  if (actingUser.role !== "MANAGER") {
+    res.status(403).json({ error: "PII access requires manager role" });
+    return;
+  }
+
+  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
+  if (!client) {
+    sendNotFoundError(res, "Client not found");
+    return;
+  }
+
+  // Decrypt PII fields
+  const dob = maybeDecrypt(client.dobEncrypted, client.dobDek);
+  const address = maybeDecrypt(client.addressEncrypted, client.addressDek);
+  const documentNumber = maybeDecrypt(client.documentNumberEncrypted, client.documentNumberDek);
+
+  // Log PII access for audit trail
+  await writeAuditLog({
+    userId: parseInt(actingUser.sub),
+    action: "VIEW_PII",
+    resourceType: "client",
+    resourceId: client.id,
+    description: `Manager viewed PII for client ${client.name} (DOB, address, document number)`,
+  });
+
+  res.json({
+    id: client.id,
+    name: client.name,
+    dob,
+    address,
+    documentNumber,
+  });
 });
 
 export default router;

@@ -26,6 +26,7 @@ export * from './clientInput';
 export * from './clientInputMembershipStatus';
 export * from './clientList';
 export * from './clientMembershipStatus';
+export * from './clientPii';
 export * from './clientUpdate';
 export * from './clientUpdateMembershipStatus';
 export * from './dashboard';

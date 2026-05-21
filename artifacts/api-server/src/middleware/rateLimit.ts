@@ -130,3 +130,36 @@ export const healthLimiter = rateLimit({
     });
   },
 });
+
+/**
+ * PII access rate limiter: 10 requests per minute per user
+ * Applied to PII access endpoints to prevent data scraping and abuse
+ * Uses user ID from JWT token for user-based limiting with strict limits
+ */
+export const piiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute (strict limit for sensitive data)
+  message: {
+    error: "PII access rate limit exceeded",
+    retryAfter: "1 minute",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    // Extract user ID from JWT token for user-based limiting
+    const user = (req as AuthRequest).user;
+    return user?.sub || req.ip || 'unknown'; // Fallback to IP if no user, then 'unknown'
+  },
+  handler: (req, res) => {
+    logger.warn({
+      msg: "Rate limit exceeded for PII access endpoint",
+      ip: req.ip,
+      path: req.path,
+      userId: (req as AuthRequest).user?.sub,
+    });
+    res.status(429).json({
+      error: "PII access rate limit exceeded",
+      retryAfter: "1 minute",
+    });
+  },
+});

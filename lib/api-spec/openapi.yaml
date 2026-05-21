@@ -516,6 +516,39 @@ paths:
                 items:
                   $ref: "#/components/schemas/Transaction"
 
+  /clients/{id}/pii:
+    get:
+      operationId: getClientPii
+      tags: [clients]
+      summary: Get client PII (manager only)
+      description: Retrieves decrypted PII (DOB, address, document number) for a client. Requires MANAGER role.
+      x-rateLimit:
+        limit: 10
+        window: 1min
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client PII
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientPii"
+        "403":
+          description: Forbidden - manager only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: Not found
+
   # Lockers
   /lockers:
     get:
@@ -1640,6 +1673,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RentalSession"
+
+    ClientPii:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        dob:
+          type: ["string", "null"]
+          description: Decrypted date of birth
+        address:
+          type: ["string", "null"]
+          description: Decrypted address
+        documentNumber:
+          type: ["string", "null"]
+          description: Decrypted document number (ID, license, etc.)
 
     ClientInput:
       type: object

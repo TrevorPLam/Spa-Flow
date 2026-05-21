@@ -320,6 +320,26 @@ export interface Client {
   activeSessions?: RentalSession[];
 }
 
+export interface ClientPii {
+  id: number;
+  name: string;
+  /**
+     * Decrypted date of birth
+     * @nullable
+     */
+  dob?: string | null;
+  /**
+     * Decrypted address
+     * @nullable
+     */
+  address?: string | null;
+  /**
+     * Decrypted document number (ID, license, etc.)
+     * @nullable
+     */
+  documentNumber?: string | null;
+}
+
 export type ClientInputMembershipStatus = typeof ClientInputMembershipStatus[keyof typeof ClientInputMembershipStatus];
 
 

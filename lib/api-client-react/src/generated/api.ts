@@ -30,6 +30,7 @@ import type {
   Client,
   ClientInput,
   ClientList,
+  ClientPii,
   ClientUpdate,
   Dashboard,
   GetLockerUtilizationParams,
@@ -1488,6 +1489,84 @@ export function useGetClientTransactions<TData = Awaited<ReturnType<typeof getCl
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetClientTransactionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetClientPiiUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/clients/${id}/pii`
+}
+
+/**
+ * Retrieves decrypted PII (DOB, address, document number) for a client. Requires MANAGER role.
+ * @summary Get client PII (manager only)
+ */
+export const getClientPii = async (id: number, options?: RequestInit): Promise<ClientPii> => {
+
+  return customFetch<ClientPii>(getGetClientPiiUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientPiiQueryKey = (id: number,) => {
+    return [
+    `/api/v1/clients/${id}/pii`
+    ] as const;
+    }
+
+
+export const getGetClientPiiQueryOptions = <TData = Awaited<ReturnType<typeof getClientPii>>, TError = ErrorType<AuthError | void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientPii>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientPiiQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientPii>>> = ({ signal }) => getClientPii(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientPii>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientPiiQueryResult = NonNullable<Awaited<ReturnType<typeof getClientPii>>>
+export type GetClientPiiQueryError = ErrorType<AuthError | void>
+
+
+/**
+ * @summary Get client PII (manager only)
+ */
+
+export function useGetClientPii<TData = Awaited<ReturnType<typeof getClientPii>>, TError = ErrorType<AuthError | void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientPii>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientPiiQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

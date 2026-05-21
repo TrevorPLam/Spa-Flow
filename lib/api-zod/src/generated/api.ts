@@ -399,6 +399,23 @@ export const GetClientTransactionsResponse = zod.array(GetClientTransactionsResp
 
 
 /**
+ * Retrieves decrypted PII (DOB, address, document number) for a client. Requires MANAGER role.
+ * @summary Get client PII (manager only)
+ */
+export const GetClientPiiParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClientPiiResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "dob": zod.string().nullish().describe('Decrypted date of birth'),
+  "address": zod.string().nullish().describe('Decrypted address'),
+  "documentNumber": zod.string().nullish().describe('Decrypted document number (ID, license, etc.)')
+})
+
+
+/**
  * @summary List all lockers
  */
 export const ListLockersQueryParams = zod.object({
