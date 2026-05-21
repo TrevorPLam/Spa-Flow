@@ -7,6 +7,7 @@
  */
 import type { CheckInInputMembershipType } from './checkInInputMembershipType';
 import type { CheckInInputResourceType } from './checkInInputResourceType';
+import type { CheckInInputRoomTier } from './checkInInputRoomTier';
 
 export interface CheckInInput {
   clientId: number;
@@ -17,4 +18,6 @@ export interface CheckInInput {
   /** @nullable */
   membershipType?: CheckInInputMembershipType;
   productIds?: number[];
+  /** @nullable */
+  roomTier?: CheckInInputRoomTier;
 }

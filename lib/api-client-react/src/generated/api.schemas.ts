@@ -527,6 +527,18 @@ export const CheckInInputMembershipType = {
   six_month: 'six_month',
 } as const;
 
+/**
+ * @nullable
+ */
+export type CheckInInputRoomTier = typeof CheckInInputRoomTier[keyof typeof CheckInInputRoomTier] | null;
+
+
+export const CheckInInputRoomTier = {
+  standard: 'standard',
+  premium: 'premium',
+  deluxe: 'deluxe',
+} as const;
+
 export interface CheckInInput {
   clientId: number;
   resourceType: CheckInInputResourceType;
@@ -536,6 +548,8 @@ export interface CheckInInput {
   /** @nullable */
   membershipType?: CheckInInputMembershipType;
   productIds?: number[];
+  /** @nullable */
+  roomTier?: CheckInInputRoomTier;
 }
 
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];

@@ -36,9 +36,10 @@ export default function CheckInPage() {
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<{ id: number; name: string; membershipStatus: string } | null>(null);
   const [resourceType, setResourceType] = useState<"locker" | "room">("locker");
-  const [selectedResource, setSelectedResource] = useState<{ id: number; name: string } | null>(null);
+  const [selectedResource, setSelectedResource] = useState<{ id: number; name: string; qualityTier?: string } | null>(null);
   const [membershipType, setMembershipType] = useState<"none" | "one_time" | "six_month">("none");
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
+  const [selectedRoomTier, setSelectedRoomTier] = useState<"standard" | "premium" | "deluxe" | null>(null);
   const [lastResult, setLastResult] = useState<{ session: { resourceName: string }; transaction: { total?: number } } | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [taxRate, setTaxRate] = useState<number | null>(null);
@@ -114,8 +115,13 @@ export default function CheckInPage() {
     setStep("resource");
   }
 
-  function handleSelectResource(resource: { id: number; name: string }) {
+  function handleSelectResource(resource: { id: number; name: string; qualityTier?: string }) {
     setSelectedResource(resource);
+    if (resourceType === "room" && resource.qualityTier) {
+      setSelectedRoomTier(resource.qualityTier as "standard" | "premium" | "deluxe");
+    } else {
+      setSelectedRoomTier(null);
+    }
     setValidationErrors(prev => ({ ...prev, resource: "" }));
     setStep("products");
   }
@@ -184,6 +190,7 @@ export default function CheckInPage() {
         idempotencyKey: `checkin-${selectedClient.id}-${selectedResource.id}-${Date.now()}`,
         membershipType: (!hasExistingMembership && membershipType !== "none") ? membershipType : null,
         productIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
+        roomTier: resourceType === "room" ? selectedRoomTier : undefined,
       },
     }, {
       onSuccess: (result) => {
@@ -227,6 +234,7 @@ export default function CheckInPage() {
     setSearch("");
     setSelectedClient(null);
     setSelectedResource(null);
+    setSelectedRoomTier(null);
     setMembershipType("none");
     setSelectedProductIds([]);
     setPriceResult(null);
@@ -365,16 +373,24 @@ export default function CheckInPage() {
                   <p className="text-sm text-muted-foreground">No available {resourceType === "locker" ? "lockers" : "rooms"}</p>
                 ) : (
                   <div className="grid grid-cols-6 gap-1.5 max-h-48 overflow-y-auto">
-                    {resources.slice(0, 48).map(r => (
-                      <button
-                        key={r.id}
-                        data-testid={`button-resource-${r.id}`}
-                        onClick={() => handleSelectResource({ id: r.id, name: r.name })}
-                        className="h-10 text-xs font-medium bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-800"
-                      >
-                        {r.name}
-                      </button>
-                    ))}
+                    {resources.slice(0, 48).map(r => {
+                      const qualityTier = resourceType === "room" && "qualityTier" in r ? (r.qualityTier as string) : undefined;
+                      return (
+                        <button
+                          key={r.id}
+                          data-testid={`button-resource-${r.id}`}
+                          onClick={() => handleSelectResource({ id: r.id, name: r.name, qualityTier })}
+                          className="h-10 text-xs font-medium bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-800 relative"
+                        >
+                          {r.name}
+                          {resourceType === "room" && qualityTier && (
+                            <Badge variant="outline" className="absolute -top-1 -right-1 text-[10px] px-1 h-4">
+                              {qualityTier.charAt(0).toUpperCase()}
+                            </Badge>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 {validationErrors.resource && (

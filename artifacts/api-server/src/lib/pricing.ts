@@ -15,6 +15,43 @@ export type CustomerType = "MEMBER" | "NON_MEMBER";
 export type ProductType = "LOCKER" | "ROOM";
 
 /**
+ * Room quality tier for tier-based pricing
+ * standard: Basic room with standard pricing
+ * premium: Enhanced room with premium pricing
+ * deluxe: Luxury room with highest pricing
+ */
+export type RoomQualityTier = "standard" | "premium" | "deluxe";
+
+/**
+ * Tier pricing ranges for rooms (in dollars)
+ */
+export const TIER_PRICING = {
+  weekday: {
+    standard: { min: 25, max: 28 },
+    premium: { min: 29, max: 32 },
+    deluxe: { min: 33, max: 34 },
+  },
+  weekend: {
+    standard: { min: 28, max: 31 },
+    premium: { min: 32, max: 35 },
+    deluxe: { min: 36, max: 37 },
+  },
+} as const;
+
+/**
+ * Gets the base price for a room tier at a given time
+ * Returns the minimum price in the tier range
+ *
+ * @param tier - Room quality tier
+ * @param isWeekend - Whether the rental is during weekend pricing period
+ * @returns Base price for the tier
+ */
+export function getTierPrice(tier: RoomQualityTier, isWeekend: boolean): number {
+  const pricing = isWeekend ? TIER_PRICING.weekend[tier] : TIER_PRICING.weekday[tier];
+  return pricing.min;
+}
+
+/**
  * Input parameters for pricing calculation
  */
 export interface PricingInput {
@@ -28,6 +65,8 @@ export interface PricingInput {
   clientAge: number;
   /** Whether today is the client's birthday (for birthday special) */
   hasBirthdayToday: boolean;
+  /** Room quality tier (only applicable for ROOM product type) */
+  roomTier?: RoomQualityTier;
 }
 
 /**
@@ -133,13 +172,11 @@ export function calculatePrice(input: PricingInput): PricingResult {
   }
 
   if (productType === "ROOM") {
-    if (weekend) {
-      appliedRules.push("Weekend room rate");
-      return { subtotal: 32, appliedRules };
-    } else {
-      appliedRules.push("Weekday room rate");
-      return { subtotal: 30, appliedRules };
-    }
+    const tier = input.roomTier ?? "standard";
+    const tierPrice = getTierPrice(tier, weekend);
+    const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+    appliedRules.push(`${tierName} room rate (${weekend ? "weekend" : "weekday"})`);
+    return { subtotal: tierPrice, appliedRules };
   }
 
   return { subtotal: 0, appliedRules: ["Unknown product type"] };

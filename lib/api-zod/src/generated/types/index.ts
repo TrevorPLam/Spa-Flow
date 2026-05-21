@@ -19,6 +19,7 @@ export * from './authUserRole';
 export * from './checkInInput';
 export * from './checkInInputMembershipType';
 export * from './checkInInputResourceType';
+export * from './checkInInputRoomTier';
 export * from './checkInResult';
 export * from './client';
 export * from './clientInput';

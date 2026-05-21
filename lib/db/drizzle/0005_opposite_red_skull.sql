@@ -1,0 +1,2 @@
+CREATE TYPE "public"."room_quality_tier" AS ENUM('standard', 'premium', 'deluxe');--> statement-breakpoint
+ALTER TABLE "rooms" ADD COLUMN "quality_tier" "room_quality_tier" DEFAULT 'standard' NOT NULL;

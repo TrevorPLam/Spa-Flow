@@ -1,14 +1,17 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { clientsTable } from "./clients";
 import { resourceStatusEnum } from "./lockers";
 import { rentalSessionsTable } from "./rental_sessions";
 
+export const roomQualityTierEnum = pgEnum("room_quality_tier", ["standard", "premium", "deluxe"]);
+
 export const roomsTable = pgTable("rooms", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   status: resourceStatusEnum("status").notNull().default("available"),
+  qualityTier: roomQualityTierEnum("quality_tier").notNull().default("standard"),
   // ON DELETE RESTRICT: Prevents client deletion if they have an active room assignment
   clientId: integer("client_id").references(() => clientsTable.id, { onDelete: "restrict" }),
   // ON DELETE RESTRICT: Prevents session deletion if a room references it

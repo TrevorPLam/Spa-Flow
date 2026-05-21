@@ -697,7 +697,8 @@ export const CheckInBody = zod.object({
   "paymentToken": zod.string(),
   "idempotencyKey": zod.string(),
   "membershipType": zod.union([zod.literal('one_time'),zod.literal('six_month'),zod.literal(null)]).nullish(),
-  "productIds": zod.array(zod.number()).optional()
+  "productIds": zod.array(zod.number()).optional(),
+  "roomTier": zod.enum(['standard', 'premium', 'deluxe']).nullish()
 })
 
 export const CheckInResponse = zod.object({

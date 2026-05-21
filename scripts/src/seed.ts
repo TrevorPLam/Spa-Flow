@@ -32,16 +32,28 @@ async function seed() {
   }
   logger.info("Lockers seeded (L1-L167)");
 
-  // Seed rooms R1-R38
-  const roomValues = Array.from({ length: 38 }, (_, i) => ({
-    name: `R${i + 1}`,
-    status: "available" as const,
-  }));
+  // Seed rooms R1-R38 with quality tiers
+  // Distribute tiers: 24 standard, 8 premium, 6 deluxe
+  const roomValues = Array.from({ length: 38 }, (_, i) => {
+    let tier: "standard" | "premium" | "deluxe" = "standard";
+    if (i < 24) {
+      tier = "standard";
+    } else if (i < 32) {
+      tier = "premium";
+    } else {
+      tier = "deluxe";
+    }
+    return {
+      name: `R${i + 1}`,
+      status: "available" as const,
+      qualityTier: tier,
+    };
+  });
 
   for (const room of roomValues) {
     await db.insert(roomsTable).values(room).onConflictDoNothing();
   }
-  logger.info("Rooms seeded (R1-R38)");
+  logger.info("Rooms seeded (R1-R38) with quality tiers");
 
   // Seed default admin user
   const adminHash = await bcrypt.hash(adminPassword, 12);

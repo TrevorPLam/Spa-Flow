@@ -4,7 +4,7 @@ import { eq, sql, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { processSquarePayment } from "../lib/square";
-import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType, type ProductType } from "../lib/pricing";
+import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType, type ProductType, type RoomQualityTier } from "../lib/pricing";
 import { maybeDecrypt } from "../lib/encryption";
 import { CheckInBody } from "@workspace/api-zod";
 import { checkinLimiter } from "../middleware/rateLimit";
@@ -21,7 +21,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     return;
   }
 
-  const { clientId, resourceType, resourceId, paymentToken, idempotencyKey, membershipType, productIds } = parsed.data;
+  const { clientId, resourceType, resourceId, paymentToken, idempotencyKey, membershipType, productIds, roomTier } = parsed.data;
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
   if (!client) {
@@ -61,6 +61,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   // Rationale: FOR UPDATE is a PostgreSQL-specific feature for row-level locking that prevents race conditions
   // This raw SQL is necessary because Drizzle ORM does not support SELECT FOR UPDATE syntax
   let resourceName = "";
+  let actualRoomTier: RoomQualityTier | null = null;
   if (resourceType === "locker") {
     const rows = await db.execute(sql`SELECT id, name, status, client_id, session_id, start_time, expires_at FROM lockers WHERE id = ${resourceId} FOR UPDATE`);
     // Type guard: safely extract locker from SQL result with null check
@@ -69,12 +70,19 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     if (locker.status !== "available") { sendConflictError(res, "Locker is not available"); return; }
     resourceName = locker.name;
   } else {
-    const rows = await db.execute(sql`SELECT id, name, status, client_id, session_id, start_time, expires_at FROM rooms WHERE id = ${resourceId} FOR UPDATE`);
+    const rows = await db.execute(sql`SELECT id, name, status, client_id, session_id, start_time, expires_at, quality_tier FROM rooms WHERE id = ${resourceId} FOR UPDATE`);
     // Type guard: safely extract room from SQL result with null check
-    const room = rows.rows[0] ? rows.rows[0] as { id: number; name: string; status: string } : undefined;
+    const room = rows.rows[0] ? rows.rows[0] as { id: number; name: string; status: string; quality_tier: string } : undefined;
     if (!room) { sendNotFoundError(res, "Room not found"); return; }
     if (room.status !== "available") { sendConflictError(res, "Room is not available"); return; }
     resourceName = room.name;
+    actualRoomTier = room.quality_tier as RoomQualityTier;
+    
+    // Validate roomTier matches actual room tier if provided
+    if (roomTier && roomTier !== actualRoomTier) {
+      sendValidationError(res, `Room tier mismatch: requested ${roomTier}, room is ${actualRoomTier}`);
+      return;
+    }
   }
 
   // Handle membership purchase
@@ -99,6 +107,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     startTime: new Date(),
     clientAge,
     hasBirthdayToday,
+    roomTier: actualRoomTier ?? undefined,
   });
 
   const totalSubtotal = rentalSubtotal + membershipCost + productTotal;
