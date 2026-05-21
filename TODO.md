@@ -238,8 +238,8 @@
 
 ---
 
-## [ ] TASK-034-FIX-006: Fix Typecheck Errors in health.ts (Missing Exports and Types)
-**Status:** Pending
+## [x] TASK-034-FIX-006: Fix Typecheck Errors in health.ts (Missing Exports and Types)
+**Status:** Complete
 **Priority:** Medium
 
 ### Related File Paths
@@ -247,9 +247,9 @@
 - `lib/api-zod/src/index.ts`
 
 ### Definition of Done
-- All 10 typecheck errors in health.ts resolved
-- Missing exports from api-zod added or imports fixed
-- Missing types (HealthCheckStatus, LivenessResponse, ReadinessResponse) resolved
+- ✅ All 10 typecheck errors in health.ts resolved
+- ✅ Missing exports from api-zod added or imports fixed
+- ✅ Missing types (HealthCheckStatus, LivenessResponse, ReadinessResponse) resolved
 
 ### Out of Scope
 - Changing health check logic
@@ -274,10 +274,11 @@
 - Full typecheck workflow
 
 ### Implementation Notes
-- Pre-existing issue: 10 typecheck errors in health.ts
-- Errors include: missing exports (healthCheckStatus, LivenessProbeResponse, ReadinessProbeResponse) from api-zod
-- Missing types: HealthCheckStatus, LivenessResponse, ReadinessResponse
-- Discovered during TASK-034-FIX-004 typecheck verification
+- **Root Cause**: health.ts was importing Zod schemas (LivenessProbeResponse, ReadinessProbeResponse) from @workspace/api-zod but needed TypeScript types (LivenessResponse, ReadinessResponse, HealthCheckStatus)
+- **Fix 1**: Updated lib/api-zod/src/index.ts to export health-related types from generated/types (HealthCheckStatus, LivenessResponse, ReadinessResponse) using selective exports to avoid duplicate export conflicts with generated/api
+- **Fix 2**: Updated health.ts imports to use type-only imports of the correct TypeScript types from @workspace/api-zod
+- **Result**: api-server typecheck now passes with 0 errors in health.ts
+- **Note**: Pre-existing typecheck errors in spaflow remain (DateRangePicker imports, factory type mismatches) but are unrelated to this task
 
 ---
 
