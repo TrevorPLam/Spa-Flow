@@ -59,7 +59,14 @@ This workflow systematically executes the first incomplete task from TODO.md wit
    - Mark all subtasks as complete with ✅
    - Add any lessons learned or observations
 
-8. **Commit and Push**
+8. **Verify Issues in TODO.md**
+   - Review any issues discovered during the workflow (e.g., pre-existing test failures, typecheck errors, infrastructure problems)
+   - Check if these issues exist as open tasks in TODO.md
+   - If issues do not exist in TODO.md, add them following the current task format
+   - Include appropriate status (Pending, Blocked, etc.), priority, and related file paths
+   - Document the issue clearly with context for future resolution
+
+9. **Commit and Push**
    - Stage all changes: `git add .`
    - Create a conventional commit message following the task context (e.g., `feat:`, `fix:`, `refactor:`)
    - Include task ID in commit message (e.g., `fix: TASK-021 fix frontend type assertions`)

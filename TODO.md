@@ -58,19 +58,21 @@
 
 ---
 
-## [ ] TASK-034-FIX-002: Fix Typecheck Errors in lib/api-client-react and lib/api-zod
-**Status:** Pending
+## [x] TASK-034-FIX-002: Fix Typecheck Errors in lib/api-client-react and lib/api-zod
+**Status:** Complete
 **Priority:** Medium
 
 ### Related File Paths
 - `lib/api-client-react/src/custom-fetch.test.ts`
+- `lib/api-client-react/src/vitest.d.ts` (created)
+- `lib/api-client-react/tsconfig.json` (modified)
 - `lib/api-zod/src/index.ts`
 
 ### Definition of Done
-- All typecheck errors in lib/api-client-react resolved
-- All typecheck errors in lib/api-zod resolved
-- `pnpm run typecheck:libs` passes without errors
-- Codegen-generated types do not have duplicate exports
+- ✅ All typecheck errors in lib/api-client-react resolved
+- ✅ All typecheck errors in lib/api-zod resolved
+- ✅ `pnpm run typecheck:libs` passes without errors
+- ✅ Codegen-generated types do not have duplicate exports
 
 ### Out of Scope
 - Changing the API spec (openapi.yaml)
@@ -95,10 +97,12 @@
 - Full typecheck workflow (blocks `pnpm run typecheck`)
 
 ### Implementation Notes
-- Pre-existing issue: 'global' not found errors in custom-fetch.test.ts
-- Pre-existing issue: duplicate export conflicts in api-zod/src/index.ts
-- First observed during TASK-009, persisted through multiple tasks
-- Codegen regenerates files but typecheck errors persist
+- **Root Cause 1**: 'global' not found errors in custom-fetch.test.ts due to missing vitest types
+- **Fix 1**: Added `"types": ["vitest/globals"]` to lib/api-client-react/tsconfig.json
+- **Fix 2**: Created lib/api-client-react/src/vitest.d.ts with global type declaration
+- **Root Cause 2**: duplicate export conflicts in api-zod/src/index.ts - both ./generated/api and ./generated/types export same types (LoginResponse, RefreshTokenResponse, RevokeAllSessionsBody, RevokeSessionBody)
+- **Fix 3**: Removed `export * from './generated/types'` from api-zod/src/index.ts, keeping only zod schemas from ./generated/api
+- **Result**: typecheck:libs now passes with 0 errors
 
 ---
 
