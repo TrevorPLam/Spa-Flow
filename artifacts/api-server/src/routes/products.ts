@@ -7,7 +7,7 @@ import { CreateProductBody, UpdateProductParams, UpdateProductBody, DeleteProduc
 import { apiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDelPattern } from "../lib/cache";
 import { z } from "zod";
-import { sendValidationError } from "../lib/response-formatters";
+import { sendValidationError, sendNotFoundError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -131,9 +131,16 @@ router.delete("/products/:id", requireManager, apiLimiter, async (req, res): Pro
   const params = DeleteProductParams.safeParse(req.params);
   if (!params.success) { sendValidationError(res, params.error.message); return; }
 
+  // Check if product exists
+  const [product] = await db.select().from(productsTable).where(eq(productsTable.id, params.data.id));
+  if (!product) {
+    sendNotFoundError(res, "Product not found");
+    return;
+  }
+
   await db.delete(productsTable).where(eq(productsTable.id, params.data.id));
   const actingUser = (req as AuthRequest).user!;
-  await writeAuditLog({ userId: parseInt(actingUser.sub), action: "DELETE_PRODUCT", resourceType: "product", resourceId: params.data.id, description: `Deleted product ${params.data.id}` });
+  await writeAuditLog({ userId: parseInt(actingUser.sub), action: "DELETE_PRODUCT", resourceType: "product", resourceId: params.data.id, description: `Deleted product ${product.name}` });
   
   // Invalidate products cache
   await cacheDelPattern("products:list:*");

@@ -8,6 +8,7 @@ import { CreateUserBody, UpdateUserBody, UpdateUserParams, DeleteUserParams } fr
 import { apiLimiter } from "../middleware/rateLimit";
 import { BCRYPT_ROUNDS } from "../lib/constants";
 import { accountLockoutService } from "../services/accountLockout";
+import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get("/users", requireManager, apiLimiter, async (req, res): Promise<void>
 router.post("/users", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const parsed = CreateUserBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -60,13 +61,13 @@ router.post("/users", requireManager, apiLimiter, async (req, res): Promise<void
 router.patch("/users/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = UpdateUserParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const parsed = UpdateUserBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    sendValidationError(res, parsed.error.message);
     return;
   }
 
@@ -89,7 +90,7 @@ router.patch("/users/:id", requireManager, apiLimiter, async (req, res): Promise
     });
 
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    sendNotFoundError(res, "User not found");
     return;
   }
 
@@ -108,25 +109,42 @@ router.patch("/users/:id", requireManager, apiLimiter, async (req, res): Promise
 router.delete("/users/:id", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteUserParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const actingUser = (req as AuthRequest).user!;
   if (params.data.id === parseInt(actingUser.sub)) {
-    res.status(400).json({ error: "Cannot delete your own account" });
+    sendValidationError(res, "Cannot delete your own account");
     return;
   }
 
-  await db.delete(usersTable).where(eq(usersTable.id, params.data.id));
+  // Check if user exists
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, params.data.id));
+  if (!user) {
+    sendNotFoundError(res, "User not found");
+    return;
+  }
 
+  // Write audit log before deletion
   await writeAuditLog({
     userId: parseInt(actingUser.sub),
     action: "DELETE_USER",
     resourceType: "user",
     resourceId: params.data.id,
-    description: `Deleted user id ${params.data.id}`,
+    description: `Deleted user ${user.email}`,
   });
+
+  try {
+    await db.delete(usersTable).where(eq(usersTable.id, params.data.id));
+  } catch (error: any) {
+    // Check for foreign key constraint violation
+    if (error.code === '23503') {
+      sendConflictError(res, "Cannot delete user with associated audit logs");
+      return;
+    }
+    throw error;
+  }
 
   res.sendStatus(204);
 });
@@ -134,13 +152,13 @@ router.delete("/users/:id", requireManager, apiLimiter, async (req, res): Promis
 router.post("/users/:id/unlock", requireManager, apiLimiter, async (req, res): Promise<void> => {
   const params = DeleteUserParams.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    sendValidationError(res, params.error.message);
     return;
   }
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, params.data.id));
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    sendNotFoundError(res, "User not found");
     return;
   }
 

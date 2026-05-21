@@ -5,7 +5,7 @@ import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { AddToWaitlistBody, RemoveFromWaitlistParams, ConfirmWaitlistAssignmentParams } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
-import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
+import { sendValidationError, sendNotFoundError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -134,6 +134,13 @@ router.delete("/waitlist/:id", requireAuth, apiLimiter, async (req, res): Promis
   const parsed = RemoveFromWaitlistParams.safeParse(req.params);
   if (!parsed.success) {
     sendValidationError(res, parsed.error.message);
+    return;
+  }
+
+  // Check if waitlist entry exists
+  const [entry] = await db.select().from(waitlistTable).where(eq(waitlistTable.id, parsed.data.id));
+  if (!entry) {
+    sendNotFoundError(res, "Waitlist entry not found");
     return;
   }
 
