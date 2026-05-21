@@ -1,1 +1,3 @@
-console.log("Hello from @workspace/scripts");
+import { logger } from './lib/logger';
+
+logger.info("Hello from @workspace/scripts");

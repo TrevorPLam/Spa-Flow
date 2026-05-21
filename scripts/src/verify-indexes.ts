@@ -1,8 +1,9 @@
 import { db } from '@workspace/db';
 import { sql } from 'drizzle-orm';
+import { logger } from './lib/logger';
 
 async function verifyIndexes() {
-  console.log('Verifying database indexes...\n');
+  logger.info('Verifying database indexes...\n');
 
   // Query to get all indexes in the database
   const result = await db.execute(sql`
@@ -44,23 +45,23 @@ async function verifyIndexes() {
   const foundIndexes = indexes.map(i => i.indexname);
   const missingIndexes = expectedIndexes.filter(idx => !foundIndexes.includes(idx));
 
-  console.log('Expected indexes:');
+  logger.info('Expected indexes:');
   expectedIndexes.forEach(idx => {
     const found = foundIndexes.includes(idx);
-    console.log(`  ${found ? '✓' : '✗'} ${idx}`);
+    logger.info(`  ${found ? '✓' : '✗'} ${idx}`);
   });
 
-  console.log('\nAll indexes in database:');
+  logger.info('\nAll indexes in database:');
   indexes.forEach(idx => {
-    console.log(`  ${idx.tablename}.${idx.indexname}`);
+    logger.info(`  ${idx.tablename}.${idx.indexname}`);
   });
 
   if (missingIndexes.length > 0) {
-    console.log('\n❌ Missing indexes:', missingIndexes);
+    logger.error('\nMissing indexes:', missingIndexes);
     process.exit(1);
   } else {
-    console.log('\n✅ All expected indexes are present!');
+    logger.success('\nAll expected indexes are present!');
   }
 }
 
-verifyIndexes().catch(console.error);
+verifyIndexes().catch(err => logger.error('Verify indexes failed:', err));
