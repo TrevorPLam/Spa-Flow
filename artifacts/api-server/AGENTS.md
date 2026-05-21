@@ -1,0 +1,22 @@
+# artifacts/api-server — Backend
+
+- **Routes:** thin, delegate to `services/` or `lib/`. Document in spec first, then codegen.
+- **Pricing:** all amounts via `lib/pricing.ts`; never hardcode. Special rules exist (birthday, age 18–24, peak/off‑peak, weekend) — read the full file before modifying (see root Architecture Intent).
+- **Constants:** capacity, duration, and membership cost values live in `lib/constants.ts` — never hardcode `167`, `38`, `6h`, etc.
+- **Mutations:** audit log + cache invalidation via `lib/cache.ts` (graceful failure — catch, log, never block).
+- **Check‑in:** `routes/checkin.ts` is a single atomic DB transaction across 6 steps — do not split or call steps independently.
+- **Square:** idempotency key required for every payment; mock mode active if `SQUARE_ACCESS_TOKEN` absent.
+- **Twilio:** fire‑and‑forget, never `await`; SMS skipped gracefully if credentials absent.
+- **Email:** Resend via `services/email.ts` (`sendPasswordResetEmail`); requires `RESEND_API_KEY` (optional — password reset silently disabled if absent).
+- **Env:** see root N7/D4 — use typed helpers (`getDatabaseConfig()`, `getTwilioCredentials()`); never `process.env`.
+- **Middleware order:** 18 layers, execution order is fixed. Insert new middleware **after** layer 14 (CSRF block), **before** layer 17 (Router). `/healthz/*` and login endpoints are CSRF‑exempt.
+- **Request tracing:** `requestId` (per‑request unique ID) and `correlationId` (distributed tracing propagation) are separate middlewares with different purposes — do not conflate or remove either.
+- **Sentry:** global error capture via middleware; do not add manual Sentry calls (creates duplicate events). 10% sample rate in production, 100% in dev.
+- **Password policy:** NIST SP 800‑63B Rev 4 — min 15 chars, max 64, no composition rules. Enforce in any UI or validation logic.
+- **`memberId`:** auto‑generated as `SPF‑{nanoid(8)}` in `clients.ts` — never set manually or accept from client input.
+- **Build:** custom esbuild (`build.mjs`) → `dist/index.mjs`.
+- **Cron:** keep changes compatible with 5‑min jobs; update jobs if statuses change (see root N9).
+- **Graceful shutdown:** SIGTERM/SIGINT handler in `src/index.ts` closes HTTP server, DB pool, and Redis with a 10‑second forced‑exit timeout. Any new service requiring connection cleanup **must** register in this handler.
+- **Ops:** timeout 30s (504). Health endpoints: `/healthz/live`, `/healthz/ready` (checks DB, Square, Twilio, Redis, JWT secret, encryption key).
+- **Tax rate:** configurable via `TAX_RATE` env (default 8.875% NYC); accessed through `env.ts`; never hardcode.
+- **Lockout defaults:** `LOCKOUT_THRESHOLD=5`, `LOCKOUT_DURATION_MS=900000` (15min) — env‑configurable; do not hardcode in new auth logic.

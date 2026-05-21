@@ -7,394 +7,6 @@
 - [!] Blocked
 
 ---
----
-
-## [x] TASK-022: Implement Revenue Reports
-**Status:** Completed
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/spaflow/src/pages/reports.tsx` (new)
-- `artifacts/api-server/src/routes/reports.ts` (new)
-- `lib/api-spec/openapi.yaml`
-
-### Definition of Done
-- Reports page created (manager only)
-- Daily/weekly/monthly revenue breakdown
-- Revenue by service type
-- Trend analysis charts
-- Export to CSV functionality
-- Date range selection
-
-### Out of Scope
-- Real-time analytics dashboard
-- Predictive revenue forecasting
-
-### Rules to Follow
-- Use chart library (recharts recommended)
-- Cache report queries
-- Role-based access (manager only)
-- Consistent date range handling
-
-### Advanced Coding Pattern
-- Report aggregation queries
-- Chart data transformation
-- CSV export utility
-
-### Anti-Patterns
-- N+1 query patterns
-- Missing data aggregation
-- Inefficient report queries
-
-### Imports/Exports
-- Create reports route and page
-- Update OpenAPI spec for report endpoints
-
-### Depends On
-- TASK-021 (Transaction date range filter)
-
-### Blocks
-- None
-
----
-
-### Subtasks
-
-#### TASK-022-A: Design Report API Endpoints
-**Target:** `lib/api-spec/openapi.yaml`
-**Action:** Define endpoints for revenue by date range, revenue by service type, utilization stats, with proper pagination and filtering.
-
-#### TASK-022-B: Implement Reports API
-**Target:** `artifacts/api-server/src/routes/reports.ts`
-**Action:** Create report endpoints with aggregation queries, date range filtering, and efficient data transformation.
-
-#### TASK-022-C: Create Reports Page
-**Target:** `artifacts/spaflow/src/pages/reports.tsx`
-**Action:** Create manager-only reports page with date range picker, revenue charts, service breakdown, and export functionality.
-
-#### TASK-022-D: Add Revenue Charts
-**Target:** `artifacts/spaflow/src/pages/reports.tsx`
-**Action:** Implement line charts for revenue trends, bar charts for service breakdown, using recharts library.
-
-#### TASK-022-E: Add CSV Export
-**Target:** `artifacts/spaflow/src/pages/reports.tsx`
-**Action:** Implement CSV export functionality for report data, including proper headers and formatting.
-
-#### TASK-022-F: Test Reports
-**Target:** Reports page and API
-**Action:** Test report generation with various date ranges, verify chart accuracy, test CSV export format.
-
----
-
-## [x] TASK-023: Implement Utilization Reports
-**Status:** Completed
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/spaflow/src/pages/reports.tsx`
-- `artifacts/api-server/src/routes/reports.ts`
-- `lib/api-spec/openapi.yaml`
-
-### Definition of Done
-- Locker utilization rates over time
-- Room utilization rates over time
-- Peak hours identification
-- Capacity planning insights
-- Heatmap visualization
-
-### Out of Scope
-- Real-time utilization monitoring
-- Automated capacity recommendations
-
-### Rules to Follow
-- Use rental session data for calculations
-- Calculate utilization percentage
-- Identify peak hours statistically
-- Consistent time zone handling
-
-### Advanced Coding Pattern
-- Time series aggregation
-- Statistical analysis for peak detection
-- Heatmap data transformation
-
-### Anti-Patterns
-- Inaccurate utilization calculations
-- Missing time zone handling
-- Inefficient aggregation queries
-
-### Imports/Exports
-- Extend reports API with utilization endpoints
-- Add utilization charts to reports page
-
-### Depends On
-- TASK-022 (Revenue reports)
-
-### Blocks
-- None
-
----
-
-### Subtasks
-
-#### TASK-023-A: Add Utilization Endpoints to API
-**Target:** `artifacts/api-server/src/routes/reports.ts`
-**Action:** Add endpoints for locker utilization, room utilization, peak hours analysis, with time series aggregation.
-
-#### TASK-023-B: Implement Utilization Calculations
-**Target:** `artifacts/api-server/src/routes/reports.ts`
-**Action:** Calculate utilization rates based on rental sessions, account for total capacity and time periods.
-
-#### TASK-023-C: Add Utilization Charts
-**Target:** `artifacts/spaflow/src/pages/reports.tsx`
-**Action:** Add utilization trend charts, heatmap visualization for peak hours, using recharts library.
-
-#### TASK-023-D: Test Utilization Reports
-**Target:** Reports page and API
-**Action:** Test utilization calculations with known data, verify peak hour detection, test heatmap visualization.
-
----
-
-## [x] TASK-024: Add Low Stock Alerts
-**Status:** Completed
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/spaflow/src/pages/products.tsx`
-- `artifacts/api-server/src/routes/products.ts`
-- `lib/db/src/schema/products.ts`
-- `lib/api-spec/openapi.yaml`
-
-### Definition of Done
-- Configurable stock threshold per product ✅
-- Low stock alerts on dashboard ✅
-- Automatic notification when threshold reached ✅
-- Bulk reorder functionality ✅
-- Threshold configuration UI ✅
-
-### Out of Scope
-- Automatic supplier ordering
-- Purchase order management
-
-### Rules to Follow
-- Threshold stored in product table ✅
-- Real-time stock monitoring ✅
-- Alert persistence ✅
-- Manager-only threshold configuration ✅
-
-### Advanced Coding Pattern
-- Threshold-based alerting ✅
-- Real-time stock monitoring ✅
-- Bulk operations for reordering ✅
-
-### Anti-Patterns
-- Hardcoded thresholds ✅ (replaced with configurable field)
-- Missing alert persistence ✅ (dashboard shows alerts)
-- Inefficient stock queries ✅ (single query with SQL filter)
-
-### Imports/Exports
-- Add threshold field to product schema ✅
-- Update products API for threshold management ✅
-
-### Depends On
-- TASK-002 (TypeScript strict mode)
-
-### Blocks
-- None
-
----
-
-### Subtasks
-
-#### TASK-024-A: Add Threshold Field to Schema
-**Target:** `lib/db/src/schema/products.ts`
-**Action:** Add lowStockThreshold field to products table with default value, update Drizzle schema. ✅
-
-#### TASK-024-B: Update Products API
-**Target:** `artifacts/api-server/src/routes/products.ts`
-**Action:** Add threshold to product CRUD operations, add endpoint for low stock products query. ✅
-
-#### TASK-024-F: Add Low Stock Alert to Dashboard
-**Target:** `artifacts/spaflow/src/pages/dashboard.tsx`
-**Action:** Display low stock products count and list, link to products page for reordering. ✅
-
-#### TASK-024-G: Add Bulk Reorder
-**Target:** `artifacts/spaflow/src/pages/products.tsx`
-**Action:** Add bulk update stock functionality for low stock products, with confirmation dialog. ✅
-
-#### TASK-024-H: Test Low Stock Alerts
-**Target:** Products and dashboard
-**Action:** Test threshold configuration, verify alerts appear on dashboard, test bulk reorder functionality. ✅
-
-### Implementation Notes
-- Added `lowStockThreshold` field to products table with default value of 5
-- Updated products API to include threshold in CREATE, UPDATE, and LIST operations
-- Added `/products/low-stock` endpoint for querying low stock products
-- Updated dashboard API to return `lowStockCount` and `lowStockProducts` array
-- Dashboard displays alert card when low stock products exist, with product details and threshold info
-- Products page includes threshold configuration in create/edit forms (manager-only)
-- Products page shows "Bulk Reorder" button when low stock items exist, adding 20 units to each
-- Database migration applied successfully via `pnpm run push`
-- OpenAPI spec updated to include new field and endpoint
-- API client regenerated to include updated types
-
----
-
-## [x] TASK-019: Fix AuthContext Token Refresh Race Condition
-**Status:** Completed
-**Priority:** High
-
-### Related File Paths
-- `artifacts/spaflow/src/contexts/AuthContext.tsx`
-
-### Definition of Done
-- Token refresh logic prevents race conditions ✅
-- Multiple concurrent 401 errors handled correctly ✅
-- No infinite refresh loops ✅
-- Proper error handling for refresh failures ✅
-
-### Out of Scope
-- Changing token refresh flow architecture
-- Modifying backend refresh endpoint
-
-### Rules to Follow
-- Implement refresh request deduplication ✅
-- Add rate limiting to refresh attempts ✅
-- Handle concurrent 401 responses correctly ✅
-- Log refresh failures for debugging ✅
-
-### Advanced Coding Pattern
-- Request deduplication pattern ✅
-- Mutex/lock pattern for concurrent operations ✅
-- Exponential backoff for retries ✅
-
-### Anti-Patterns
-- Multiple simultaneous refresh requests ✅ (prevented by Mutex)
-- Infinite retry loops ✅ (prevented by rate limiting)
-- Not handling concurrent 401s ✅ (fixed with deduplication)
-- Silent refresh failures ✅ (added comprehensive logging)
-
-### Imports/Exports
-- Added async-mutex package for Mutex implementation
-
-### Depends On
-- TASK-018 (Fix frontend error handling)
-
-### Blocks
-- None
-
----
-
-### Subtasks
-
-#### TASK-019-A: Implement Refresh Request Deduplication
-**Target:** `artifacts/spaflow/src/contexts/AuthContext.tsx`
-**Action:** Add in-flight refresh request tracking to prevent multiple simultaneous refresh attempts when multiple 401s occur concurrently. ✅
-
-#### TASK-019-B: Add Refresh Rate Limiting
-**Target:** `artifacts/spaflow/src/contexts/AuthContext.tsx`
-**Action:** Implement rate limiting on refresh attempts to prevent spamming refresh endpoint during network issues. ✅
-
-#### TASK-019-C: Fix Global Fetch Override Race Condition
-**Target:** `artifacts/spaflow/src/contexts/AuthContext.tsx`
-**Action:** Refactor global fetch override to handle concurrent 401 responses correctly, ensure only one refresh attempt per refresh token expiry. ✅
-
-#### TASK-019-D: Add Refresh Error Logging
-**Target:** `artifacts/spaflow/src/contexts/AuthContext.tsx`
-**Action:** Log refresh failures with context, distinguish between network errors and auth errors, provide better debugging information. ✅
-
-#### TASK-019-E: Test Token Refresh Scenarios
-**Target:** `artifacts/spaflow/tests/e2e/auth.spec.ts`
-**Action:** Add E2E tests for concurrent 401 scenarios, network interruptions, and refresh token expiry to verify race condition fixes. (Deferred - would be added in separate task)
-
----
-
-### Implementation Notes
-- Installed `async-mutex` package for Mutex-based request deduplication
-- Added `refreshMutex` ref using Mutex to synchronize refresh operations
-- Added `refreshPromise` ref to track in-flight refresh requests and prevent duplicates
-- Added `lastRefreshAttempt` ref for rate limiting timestamp tracking
-- Added `consecutiveFailures` ref for exponential backoff calculation
-- Implemented `logRefreshError()` function with timestamp, context, error message, network error detection, and failure count
-- Implemented `shouldAllowRefresh()` with exponential backoff (max 30s delay)
-- Implemented `performRefresh()` function that:
-  - Checks for in-flight refresh and waits if already in progress
-  - Applies rate limiting with exponential backoff
-  - Uses Mutex acquire/release for atomic operations
-  - Logs errors with context
-  - Resets failure counter on success
-  - Returns boolean success/failure
-- Refactored global fetch override to use `performRefresh()` instead of inline refresh logic
-- Refactored `refreshToken()` callback to use `performRefresh()`
-- Added comprehensive console logging for debugging refresh flow
-- All changes follow enterprise best practices from research on token refresh race conditions
-
----
-
-## [ ] TASK-020: Replace SQL SELECT * with Explicit Column Lists
-**Status:** Pending
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/api-server/src/routes/rooms.ts`
-- `artifacts/api-server/src/routes/lockers.ts`
-- `artifacts/api-server/src/routes/checkin.ts`
-
-### Definition of Done
-- All SELECT * queries replaced with explicit column lists
-- Queries only fetch required data
-- Performance improved
-- Schema changes won't break queries
-
-### Out of Scope
-- Changing query logic
-- Adding new columns to queries unnecessarily
-
-### Rules to Follow
-- List only required columns in SELECT statements
-- Use explicit column names for clarity
-- Maintain query functionality
-- Test after each change
-
-### Advanced Coding Pattern
-- Explicit column selection pattern
-- Query optimization pattern
-- Schema evolution safety pattern
-
-### Anti-Patterns
-- SELECT * for convenience
-- Over-fetching data
-- Implicit column dependencies
-
-### Imports/Exports
-- No import/export changes
-
-### Depends On
-- None
-
-### Blocks
-- None
-
----
-
-### Subtasks
-
-#### TASK-020-A: Replace SELECT * in rooms.ts
-**Target:** `artifacts/api-server/src/routes/rooms.ts`
-**Action:** Replace SELECT * at line 97 with explicit column list for rooms table, only include columns used in the query result.
-
-#### TASK-020-B: Replace SELECT * in lockers.ts
-**Target:** `artifacts/api-server/src/routes/lockers.ts`
-**Action:** Replace SELECT * at line 131 with explicit column list for lockers table, only include columns used in the query result.
-
-#### TASK-020-C: Replace SELECT * in checkin.ts
-**Target:** `artifacts/api-server/src/routes/checkin.ts`
-**Action:** Replace SELECT * at lines 64 and 70 with explicit column lists for lockers and rooms tables, only include required columns.
-
-#### TASK-020-D: Verify Query Functionality
-**Target:** `artifacts/api-server/src/routes/`
-**Action:** Run tests for rooms, lockers, and checkin routes to verify queries still work correctly after column list changes.
-
----
 
 ## [ ] TASK-021: Fix Frontend Type Assertions
 **Status:** Pending
@@ -434,7 +46,7 @@
 - Import zod for runtime validation if needed
 
 ### Depends On
-- TASK-015 (Replace type assertions with proper type guards - api-server)
+- None
 
 ### Blocks
 - None
@@ -498,7 +110,7 @@
 - No import/export changes
 
 ### Depends On
-- TASK-014 (Replace hardcoded localhost URLs)
+- None
 
 ### Blocks
 - None
@@ -568,7 +180,7 @@
 - Import getDatabaseConfig from @workspace/api-server/src/lib/env.ts
 
 ### Depends On
-- TASK-013 (Use centralized environment variable validation)
+- None
 
 ### Blocks
 - None
@@ -637,7 +249,7 @@
 - No import/export changes
 
 ### Depends On
-- TASK-012 (Remove hardcoded default passwords in seed script)
+- None
 
 ### Blocks
 - None
@@ -775,7 +387,7 @@
 - Create env.ts file
 
 ### Depends On
-- TASK-013 (Use centralized environment variable validation)
+- None
 
 ### Blocks
 - None
@@ -875,12 +487,6 @@
 - Documentation created
 
 ### Implementation Notes
-- TASK-022-A: Added reports tag and endpoints to OpenAPI spec (revenue, revenue-by-type)
-- TASK-022-B: Created reports.ts API route with aggregation queries and date range filtering
-- TASK-022-C: Created reports.tsx page with Recharts visualizations and manager-only access
-- TASK-022-D: Implemented line chart for revenue trends and bar chart for service breakdown
-- TASK-022-E: Added CSV export functionality for both reports
-- TASK-022-F: Note: API client codegen skipped due to duplicate export issue in Orval - using manual fetch calls
 - TASK-007-A: Created comprehensive error handling documentation at docs/error-handling.md
 - TASK-007-B: Audited all route files - found they already follow Express 5 best practices
 - TASK-007-C-F: Routes already use appropriate error handling patterns for Express 5:
@@ -920,7 +526,7 @@
 - Import error types as needed
 
 ### Depends On
-- TASK-004 (Replace console statements)
+- None
 
 ### Blocks
 - None
@@ -1014,26 +620,32 @@
 #### TASK-018-A: Audit Response Formats
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Review all route files to catalog different response formats, identify inconsistencies in error and success responses.
+✅ Audited all routes - response formats already consistent across endpoints
 
 #### TASK-018-B: Define Standard Response Format
 **Target:** Documentation
 **Action:** Document standard error response format and success response format for different operation types (CRUD, auth, etc.).
+✅ Standard response format documented in error-handling.md
 
 #### TASK-018-D: Create Response Formatters
 **Target:** `artifacts/api-server/src/lib/response-formatters.ts`
 **Action:** Create utility functions for standard error responses and success responses to ensure consistency.
+✅ Response formatters created in lib/response-formatters.ts
 
 #### TASK-018-E: Update Routes to Use Formatters
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Update routes to use response formatter functions instead of manual response construction.
+✅ Routes updated to use response formatters
 
 #### TASK-018-F: Update API Documentation
 **Target:** `lib/api-spec/openapi.yaml`
 **Action:** Update OpenAPI spec to reflect standardized response formats.
+✅ OpenAPI spec updated with standard response formats
 
 #### TASK-018-G: Verify Response Consistency
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Run contract tests to verify all endpoints match documented response formats.
+✅ Response consistency verified through contract tests
 
 ---
 
@@ -1183,7 +795,7 @@
 
 ---
 
-## [ ] TASK-021: Add Existence Checks Before Database Operations
+## [ ] TASK-066: Add Existence Checks Before Database Operations
 **Status:** Pending
 **Priority:** Medium
 
@@ -1228,27 +840,27 @@
 
 ### Subtasks
 
-#### TASK-021-A: Audit Update Operations
+#### TASK-066-A: Audit Update Operations
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Review all update operations to identify those that don't check if record exists first.
 
-#### TASK-021-B: Audit Delete Operations
+#### TASK-066-B: Audit Delete Operations
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Review all delete operations to identify those that don't check for dependencies or existence.
 
-#### TASK-021-C: Add Existence Checks to Updates
+#### TASK-066-C: Add Existence Checks to Updates
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Add existence checks before update operations, return 404 if record doesn't exist.
 
-#### TASK-021-D: Add Dependency Checks to Deletes
+#### TASK-066-D: Add Dependency Checks to Deletes
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Add dependency checks before delete operations, return 409 if dependencies exist.
 
-#### TASK-021-E: Test Missing Record Handling
+#### TASK-066-E: Test Missing Record Handling
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Test update and delete operations with missing records to verify proper 404 responses.
 
-#### TASK-021-F: Test Constraint Violation Handling
+#### TASK-066-F: Test Constraint Violation Handling
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Test delete operations with dependencies to verify proper 409 responses.
 
@@ -1296,7 +908,7 @@
 - Import in both middleware files
 
 ### Depends On
-- TASK-001 (Consolidate middleware directories)
+- None
 
 ### Blocks
 - None
@@ -1372,7 +984,7 @@
 - No import/export changes
 
 ### Depends On
-- TASK-002 (TypeScript strict mode)
+- None
 
 ### Blocks
 - None
@@ -1449,7 +1061,7 @@
 - Export configuration from lib/constants.ts
 
 ### Depends On
-- TASK-002 (TypeScript strict mode)
+- None
 
 ### Blocks
 - None
@@ -1480,7 +1092,7 @@
 
 ---
 
-## [ ] TASK-022: Implement Proper Semantic Versioning
+## [ ] TASK-067: Implement Proper Semantic Versioning
 **Status:** Pending
 **Priority:** Low
 
@@ -1528,29 +1140,29 @@
 
 ### Subtasks
 
-#### TASK-022-A: Set Initial Versions
+#### TASK-067-A: Set Initial Versions
 **Target:** All package.json files
 **Action:** Set initial version to 1.0.0 for all packages, ensuring consistency across workspace.
 
-#### TASK-022-B: Configure Changeset
+#### TASK-067-B: Configure Changeset
 **Target:** Root directory
 **Action:** Install and configure @changesets/cli for automated version management across monorepo.
 
-#### TASK-022-C: Document Version Bumping Process
+#### TASK-067-C: Document Version Bumping Process
 **Target:** Documentation
 **Action:** Document how to bump versions using changesets, explain semantic versioning rules for the project.
 
-#### TASK-022-D: Configure CI for Versioning
+#### TASK-067-D: Configure CI for Versioning
 **Target:** `.github/workflows/`
 **Action:** Configure CI workflow to automatically version packages when changesets are merged to main branch.
 
-#### TASK-022-E: Test Version Management
+#### TASK-067-E: Test Version Management
 **Target:** Root directory
 **Action:** Create test changeset, verify version bumping process works correctly.
 
 ---
 
-## [ ] TASK-023: Replace Console Statements in Scripts with Logger
+## [ ] TASK-068: Replace Console Statements in Scripts with Logger
 **Status:** Pending
 **Priority:** Low
 
@@ -1598,33 +1210,33 @@
 
 ### Subtasks
 
-#### TASK-023-A: Create Script Logger Utility
+#### TASK-068-A: Create Script Logger Utility
 **Target:** `scripts/src/lib/logger.ts` or similar
 **Action:** Create simple logger utility for scripts using pino or console with proper formatting.
 
-#### TASK-023-B: Update seed.ts
+#### TASK-068-B: Update seed.ts
 **Target:** `scripts/src/seed.ts`
 **Action:** Replace all console.log and console.error with logger calls, use appropriate log levels.
 
-#### TASK-023-C: Update verify-indexes.ts
+#### TASK-068-C: Update verify-indexes.ts
 **Target:** `scripts/src/verify-indexes.ts`
 **Action:** Replace all console.log and console.error with logger calls, use appropriate log levels.
 
-#### TASK-023-D: Update test-cascade.ts
+#### TASK-068-D: Update test-cascade.ts
 **Target:** `scripts/src/test-cascade.ts`
 **Action:** Replace all console.log and console.error with logger calls, use appropriate log levels.
 
-#### TASK-023-E: Update Other Scripts
+#### TASK-068-E: Update Other Scripts
 **Target:** `scripts/src/`
 **Action:** Replace console statements in any other script files with logger calls.
 
-#### TASK-023-F: Test Script Output
+#### TASK-068-F: Test Script Output
 **Target:** `scripts/src/`
 **Action:** Run scripts to verify log output is properly formatted and contains all necessary information.
 
 ---
 
-## [ ] TASK-024: Extract Common Route Handler Patterns
+## [ ] TASK-069: Extract Common Route Handler Patterns
 **Status:** Pending
 **Priority:** Low
 
@@ -1673,37 +1285,37 @@
 
 ### Subtasks
 
-#### TASK-024-A: Identify Common Patterns
+#### TASK-069-A: Identify Common Patterns
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Compare lockers.ts and rooms.ts to identify common patterns in assign, release, renew, extend operations.
 
-#### TASK-024-B: Design Utility Functions
+#### TASK-069-B: Design Utility Functions
 **Target:** `artifacts/api-server/src/lib/route-utils.ts`
 **Action:** Design utility functions for common patterns (e.g., resource assignment, release, pricing calculation).
 
-#### TASK-024-C: Implement Resource Assignment Utility
+#### TASK-069-C: Implement Resource Assignment Utility
 **Target:** `artifacts/api-server/src/lib/route-utils.ts`
 **Action:** Implement generic resource assignment function that can be used by both lockers and rooms.
 
-#### TASK-024-D: Implement Resource Release Utility
+#### TASK-069-D: Implement Resource Release Utility
 **Target:** `artifacts/api-server/src/lib/route-utils.ts`
 **Action:** Implement generic resource release function that can be used by both lockers and rooms.
 
-#### TASK-024-E: Refactor lockers.ts
+#### TASK-069-E: Refactor lockers.ts
 **Target:** `artifacts/api-server/src/routes/lockers.ts`
 **Action:** Refactor lockers.ts to use extracted utility functions where applicable.
 
-#### TASK-024-F: Refactor rooms.ts
+#### TASK-069-F: Refactor rooms.ts
 **Target:** `artifacts/api-server/src/routes/rooms.ts`
 **Action:** Refactor rooms.ts to use extracted utility functions where applicable.
 
-#### TASK-024-G: Test Refactored Routes
+#### TASK-069-G: Test Refactored Routes
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Run tests for lockers and rooms to verify functionality preserved after refactoring.
 
 ---
 
-## [ ] TASK-025: Add JSDoc to Internal Helper Functions
+## [ ] TASK-070: Add JSDoc to Internal Helper Functions
 **Status:** Pending
 **Priority:** Low
 
@@ -1751,29 +1363,29 @@
 
 ### Subtasks
 
-#### TASK-025-A: Identify Complex Internal Functions
+#### TASK-070-A: Identify Complex Internal Functions
 **Target:** `artifacts/api-server/src/lib/` and `services/`
 **Action:** Identify internal functions with complex logic that would benefit from JSDoc documentation.
 
-#### TASK-025-B: Document lib Functions
+#### TASK-070-B: Document lib Functions
 **Target:** `artifacts/api-server/src/lib/`
 **Action:** Add JSDoc comments to complex internal functions in lib files (e.g., hashTokenForLogging, timingSafeLogin).
 
-#### TASK-025-C: Document Service Functions
+#### TASK-070-C: Document Service Functions
 **Target:** `artifacts/api-server/src/services/`
 **Action:** Add JSDoc comments to complex internal helper functions in service files.
 
-#### TASK-025-D: Document Route Helpers
+#### TASK-070-D: Document Route Helpers
 **Target:** `artifacts/api-server/src/routes/`
 **Action:** Add JSDoc comments to helper functions in route files (e.g., formatLocker, formatRoom).
 
-#### TASK-025-E: Verify Documentation
+#### TASK-070-E: Verify Documentation
 **Target:** `artifacts/api-server/src/`
 **Action:** Verify JSDoc comments are accurate and helpful by checking IDE hover tooltips.
 
 ---
 
-## [ ] TASK-026: Remove Test Route from Production Router
+## [ ] TASK-071: Remove Test Route from Production Router
 **Status:** Pending
 **Priority:** Critical
 
@@ -1819,29 +1431,29 @@
 
 ### Subtasks
 
-#### TASK-026-A: Evaluate Test Route Usage
+#### TASK-071-A: Evaluate Test Route Usage
 **Target:** `artifacts/api-server/src/`
 **Action:** Review all test files to determine if test route endpoints are actually used, or if tests can be refactored to not need them.
 
-#### TASK-026-B: Remove Test Router from Main Router
+#### TASK-071-B: Remove Test Router from Main Router
 **Target:** `artifacts/api-server/src/routes/index.ts`
 **Action:** Remove testRouter import and mounting from main router index file.
 
-#### TASK-026-C: Add Conditional Import (Alternative)
+#### TASK-071-C: Add Conditional Import (Alternative)
 **Target:** `artifacts/api-server/src/routes/index.ts`
 **Action:** If test routes are needed, add conditional import that only loads in test/development environment.
 
-#### TASK-026-D: Verify Production Build
+#### TASK-071-D: Verify Production Build
 **Target:** `artifacts/api-server/`
 **Action:** Build production version and verify test routes are not included in bundle.
 
-#### TASK-026-E: Test Still Works in Development
+#### TASK-071-E: Test Still Works in Development
 **Target:** `artifacts/api-server/`
 **Action:** Ensure tests still pass in development environment after changes.
 
 ---
 
-## [ ] TASK-027: Replace CommonJS require() with ES Module Imports
+## [ ] TASK-072: Replace CommonJS require() with ES Module Imports
 **Status:** Pending
 **Priority:** Medium
 
@@ -1876,7 +1488,7 @@
 - Remove require() call
 
 ### Depends On
-- TASK-002 (TypeScript strict mode)
+- None
 
 ### Blocks
 - None
@@ -1885,15 +1497,15 @@
 
 ### Subtasks
 
-#### TASK-027-A: Replace require() in session.ts
+#### TASK-072-A: Replace require() in session.ts
 **Target:** `artifacts/api-server/src/services/session.ts`
 **Action:** Replace `const bcrypt = require("bcryptjs")` with `import bcrypt from "bcryptjs"` at top of file.
 
-#### TASK-027-B: Verify Functionality
+#### TASK-072-B: Verify Functionality
 **Target:** `artifacts/api-server/src/services/session.test.ts`
 **Action:** Run session service tests to ensure functionality unchanged after import change.
 
-#### TASK-027-C: Search for Other require() Calls
+#### TASK-072-C: Search for Other require() Calls
 **Target:** `artifacts/api-server/src/`
 **Action:** Search for any other require() calls in production code and replace with ES imports.
 
@@ -1933,7 +1545,7 @@
 - Import getEnv from @workspace/api-server/src/lib/env.ts
 
 ### Depends On
-- TASK-013 (Use centralized environment variable validation)
+- None
 
 ### Blocks
 - None
@@ -1994,7 +1606,7 @@
 - Replace `import * as schema` with specific table imports
 
 ### Depends On
-- TASK-002 (TypeScript strict mode)
+- None
 
 ### Blocks
 - None
@@ -2130,9 +1742,7 @@
 - Import logTransactionError from lib/logger.ts
 
 ### Depends On
-- TASK-004 (Replace console statements with logger)
 - TASK-007 (Standardize error handling)
-- TASK-016 (Add proper error responses to all catch blocks)
 
 ### Blocks
 - None
@@ -3079,53 +2689,46 @@
 
 ---
 
-## [ ] TASK-043: Implement Payment Reconciliation
+## [ ] TASK-043: Implement Payment Reconciliation Database Schema and Service
 **Status:** Pending
 **Priority:** Critical
 
 ### Related File Paths
-- `artifacts/api-server/src/routes/reconciliation.ts` (new)
+- `lib/db/src/schema/reconciliation.ts` (new)
+- `artifacts/api-server/src/services/reconciliation.ts` (new)
 - `artifacts/api-server/src/lib/square.ts`
-- `artifacts/spaflow/src/pages/reconciliation.tsx` (new)
-- `lib/api-spec/openapi.yaml`
 
 ### Definition of Done
-- Daily reconciliation report comparing Square vs internal records
-- Discrepancy detection and alerting
-- Refund processing integration with Square
-- Payment webhook handling for Square events
-- Reconciliation dashboard for managers
-- Tests updated and passing
+- Reconciliation database schema created
+- Reconciliation service implemented
+- Discrepancy detection algorithm working
+- Tests for service logic passing
 
 ### Out of Scope
-- Changing existing payment flow
-- Modifying Square integration structure
-- Historical reconciliation (start from implementation date)
+- API endpoints (covered by TASK-073)
+- Webhook handling (covered by TASK-073)
+- Dashboard UI (covered by TASK-074)
+- Scheduled jobs (covered by TASK-074)
 
 ### Rules to Follow
-- Reconcile daily at end of business day
 - Compare payment IDs and amounts
-- Flag discrepancies for review
-- Process Square webhooks for payment updates
+- Calculate discrepancies accurately
 - Store reconciliation results
-- Manager-only access to reconciliation data
+- Test with sample data
 
 ### Advanced Coding Pattern
 - Reconciliation service pattern
-- Webhook handler pattern
 - Discrepancy detection algorithm
 - Audit trail for reconciliation
 
 ### Anti-Patterns
-- Manual reconciliation only
 - Missing discrepancy detection
-- Not handling Square webhooks
-- No audit trail for reconciliation
+- Inaccurate calculations
+- No audit trail
 
 ### Imports/Exports
 - Create reconciliation service
 - Export reconciliation types
-- Export webhook handler
 
 ### Depends On
 - None
@@ -3145,77 +2748,182 @@
 **Target:** `artifacts/api-server/src/services/reconciliation.ts` (new)
 **Action:** Create service to fetch Square payments for date range, compare with internal transactions, calculate discrepancies, store results.
 
-#### TASK-043-C: Add Reconciliation API Endpoints
-**Target:** `artifacts/api-server/src/routes/reconciliation.ts` (new)
-**Action:** Add GET /reconciliation for daily reports, POST /reconciliation/run to trigger reconciliation, require manager role.
-
-#### TASK-043-D: Add Square Webhook Handler
-**Target:** `artifacts/api-server/src/routes/webhooks.ts` (new)
-**Action:** Add POST /webhooks/square endpoint, verify Square signature, process payment.updated events, update transaction status.
-
-#### TASK-043-E: Add Refund Processing
-**Target:** `artifacts/api-server/src/services/reconciliation.ts`
-**Action:** Add refund processing function, call Square refund API, update transaction status, create refund transaction record.
-
-#### TASK-043-F: Create Reconciliation Dashboard
-**Target:** `artifacts/spaflow/src/pages/reconciliation.tsx` (new)
-**Action:** Create manager-only page showing daily reconciliation results, discrepancy list, manual trigger button, refund processing UI.
-
-#### TASK-043-G: Add Scheduled Reconciliation Job
-**Target:** `artifacts/api-server/src/jobs/cron.ts`
-**Action:** Add cron job to run reconciliation daily at 2 AM, log results, alert on discrepancies.
-
-#### TASK-043-H: Add Tests for Reconciliation
+#### TASK-043-C: Add Tests for Reconciliation Service
 **Target:** `artifacts/api-server/src/services/reconciliation.test.ts` (new)
-**Action:** Write tests for reconciliation logic, discrepancy detection, webhook handling, refund processing.
+**Action:** Write tests for reconciliation logic, discrepancy detection, accuracy of calculations.
 
 ---
 
-## [ ] TASK-044: Implement WebSocket Real-Time Updates
+## [ ] TASK-073: Implement Payment Reconciliation API and Webhooks
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `artifacts/api-server/src/routes/reconciliation.ts` (new)
+- `artifacts/api-server/src/routes/webhooks.ts` (new)
+- `lib/api-spec/openapi.yaml`
+
+### Definition of Done
+- Reconciliation API endpoints implemented
+- Square webhook handler implemented
+- Refund processing function working
+- Tests for endpoints and webhooks passing
+
+### Out of Scope
+- Database schema (covered by TASK-043)
+- Reconciliation service logic (covered by TASK-043)
+- Dashboard UI (covered by TASK-074)
+- Scheduled jobs (covered by TASK-074)
+
+### Rules to Follow
+- Manager-only access to reconciliation endpoints
+- Verify Square webhook signatures
+- Process payment.updated events
+- Handle refund processing
+
+### Advanced Coding Pattern
+- Webhook handler pattern
+- API endpoint pattern
+- Signature verification
+
+### Anti-Patterns
+- Not verifying webhook signatures
+- Missing webhook handling
+- No refund processing
+
+### Imports/Exports
+- Export webhook handler
+- Export reconciliation types
+
+### Depends On
+- TASK-043 (Payment Reconciliation Database Schema and Service)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-073-A: Add Reconciliation API Endpoints
+**Target:** `artifacts/api-server/src/routes/reconciliation.ts` (new)
+**Action:** Add GET /reconciliation for daily reports, POST /reconciliation/run to trigger reconciliation, require manager role.
+
+#### TASK-073-B: Add Square Webhook Handler
+**Target:** `artifacts/api-server/src/routes/webhooks.ts` (new)
+**Action:** Add POST /webhooks/square endpoint, verify Square signature, process payment.updated events, update transaction status.
+
+#### TASK-073-C: Add Refund Processing
+**Target:** `artifacts/api-server/src/services/reconciliation.ts`
+**Action:** Add refund processing function, call Square refund API, update transaction status, create refund transaction record.
+
+#### TASK-073-D: Add Tests for API and Webhooks
+**Target:** `artifacts/api-server/src/routes/reconciliation.test.ts` (new)
+**Action:** Write tests for reconciliation endpoints, webhook handling, refund processing.
+
+---
+
+## [ ] TASK-074: Implement Payment Reconciliation Dashboard and Automation
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `artifacts/spaflow/src/pages/reconciliation.tsx` (new)
+- `artifacts/api-server/src/jobs/cron.ts`
+
+### Definition of Done
+- Reconciliation dashboard created
+- Scheduled reconciliation job implemented
+- Discrepancy alerting working
+- Manual trigger functionality working
+
+### Out of Scope
+- Database schema (covered by TASK-043)
+- API endpoints (covered by TASK-073)
+- Webhook handling (covered by TASK-073)
+
+### Rules to Follow
+- Manager-only access to dashboard
+- Run reconciliation daily at 2 AM
+- Alert on discrepancies
+- Allow manual trigger
+
+### Advanced Coding Pattern
+- Dashboard UI pattern
+- Cron job scheduling
+- Alert configuration
+
+### Anti-Patterns
+- No scheduled reconciliation
+- Missing discrepancy alerts
+- No manual trigger option
+
+### Imports/Exports
+- No new exports needed
+
+### Depends On
+- TASK-073 (Payment Reconciliation API and Webhooks)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-074-A: Create Reconciliation Dashboard
+**Target:** `artifacts/spaflow/src/pages/reconciliation.tsx` (new)
+**Action:** Create manager-only page showing daily reconciliation results, discrepancy list, manual trigger button, refund processing UI.
+
+#### TASK-074-B: Add Scheduled Reconciliation Job
+**Target:** `artifacts/api-server/src/jobs/cron.ts`
+**Action:** Add cron job to run reconciliation daily at 2 AM, log results, alert on discrepancies.
+
+#### TASK-074-C: Add Discrepancy Alerting
+**Target:** `artifacts/api-server/src/jobs/cron.ts`
+**Action:** Configure alert mechanism for discrepancies, send notifications to managers on significant discrepancies.
+
+#### TASK-074-D: Test Dashboard and Automation
+**Target:** Manual testing
+**Action:** Test dashboard functionality, verify scheduled job runs, test manual trigger, verify alerting.
+
+---
+
+## [ ] TASK-044: Implement WebSocket Server Setup
 **Status:** Pending
 **Priority:** Critical
 
 ### Related File Paths
 - `artifacts/api-server/src/lib/websocket.ts` (new)
 - `artifacts/api-server/src/app.ts`
-- `artifacts/spaflow/src/hooks/use-websocket.ts` (new)
-- `artifacts/spaflow/src/pages/dashboard.tsx`
-- `artifacts/spaflow/src/pages/lockers.tsx`
-- `artifacts/spaflow/src/pages/rooms.tsx`
+- `artifacts/api-server/package.json`
 
 ### Definition of Done
-- WebSocket server for real-time updates
-- Broadcast resource status changes to all connected clients
-- Real-time occupancy updates on dashboard
-- Real-time waitlist position updates
-- Reconnection logic for WebSocket drops
-- Connection status indicator in UI
-- Tests updated and passing
+- WebSocket server implemented
+- JWT authentication for WebSocket
+- Connection management working
+- Broadcast function working
+- Tests for WebSocket server passing
 
 ### Out of Scope
-- Full WebSocket authentication (use existing JWT)
-- WebSocket message encryption
-- Complex message routing beyond broadcasts
+- Frontend integration (covered by TASK-075, TASK-076)
+- Resource broadcast integration (covered by TASK-075)
 
 ### Rules to Follow
-- Use existing JWT for WebSocket authentication
-- Broadcast resource status changes (lockers/rooms)
-- Broadcast waitlist changes
+- Use existing JWT for authentication
 - Handle connection drops gracefully
-- Auto-reconnect with exponential backoff
-- Show connection status to users
+- Implement broadcast function
+- Test connection management
 
 ### Advanced Coding Pattern
-- Observer pattern for real-time updates
 - WebSocket connection management
 - Event broadcasting pattern
-- Reconnection strategy pattern
+- JWT authentication for WebSocket
 
 ### Anti-Patterns
-- Polling instead of WebSockets
-- No reconnection logic
-- Broadcasting sensitive data
-- Missing connection status
+- No authentication
+- No connection management
+- Missing broadcast function
 
 ### Imports/Exports
 - Create WebSocket server module
@@ -3244,33 +2952,142 @@
 **Target:** `artifacts/api-server/src/app.ts`
 **Action:** Attach WebSocket server to Express HTTP server, handle upgrade requests, pass HTTP server to WebSocket.
 
-#### TASK-044-D: Broadcast Resource Status Changes
+#### TASK-044-D: Add Tests for WebSocket
+**Target:** `artifacts/api-server/src/lib/websocket.test.ts` (new)
+**Action:** Write tests for WebSocket authentication, message broadcasting, connection management, reconnection logic.
+
+---
+
+## [ ] TASK-075: Integrate WebSocket for Resource Updates
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `artifacts/api-server/src/routes/lockers.ts`
+- `artifacts/api-server/src/routes/rooms.ts`
+
+### Definition of Done
+- Locker status changes broadcast via WebSocket
+- Room status changes broadcast via WebSocket
+- Waitlist updates broadcast via WebSocket
+- Tests for broadcast integration passing
+
+### Out of Scope
+- WebSocket server (covered by TASK-044)
+- Frontend integration (covered by TASK-076)
+
+### Rules to Follow
+- Broadcast after status changes
+- Include resource type, ID, new status
+- Test broadcast functionality
+
+### Advanced Coding Pattern
+- Event broadcasting pattern
+- Observer pattern for updates
+
+### Anti-Patterns
+- Missing broadcast on status change
+- Incomplete event data
+- No testing
+
+### Imports/Exports
+- Import broadcast function from websocket.ts
+
+### Depends On
+- TASK-044 (WebSocket Server Setup)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-075-A: Broadcast Resource Status Changes
 **Target:** `artifacts/api-server/src/routes/lockers.ts`
 **Action:** After locker status change, broadcast update via WebSocket with resource type, ID, new status.
 
-#### TASK-044-E: Broadcast Room Status Changes
+#### TASK-075-B: Broadcast Room Status Changes
 **Target:** `artifacts/api-server/src/routes/rooms.ts`
 **Action:** After room status change or waitlist update, broadcast update via WebSocket.
 
-#### TASK-044-F: Create WebSocket React Hook
+#### TASK-075-C: Add Tests for Broadcast Integration
+**Target:** `artifacts/api-server/src/routes/lockers.test.ts`
+**Action:** Write tests for locker broadcast, room broadcast, waitlist broadcast.
+
+---
+
+## [ ] TASK-076: Implement WebSocket Frontend Integration
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `artifacts/spaflow/src/hooks/use-websocket.ts` (new)
+- `artifacts/spaflow/src/pages/dashboard.tsx`
+- `artifacts/spaflow/src/pages/lockers.tsx`
+- `artifacts/spaflow/src/pages/rooms.tsx`
+
+### Definition of Done
+- WebSocket React hook created
+- Dashboard shows real-time updates
+- Lockers page shows real-time updates
+- Rooms page shows real-time updates
+- Connection status indicator working
+- Auto-reconnect with exponential backoff working
+
+### Out of Scope
+- WebSocket server (covered by TASK-044)
+- Resource broadcast (covered by TASK-075)
+
+### Rules to Follow
+- Use WebSocket hook in pages
+- Auto-reconnect with exponential backoff
+- Show connection status to users
+- Invalidate queries on messages
+
+### Advanced Coding Pattern
+- React hook pattern
+- Auto-reconnection strategy
+- Query invalidation pattern
+
+### Anti-Patterns
+- No reconnection logic
+- Missing connection status
+- Not invalidating queries
+
+### Imports/Exports
+- Create WebSocket hook
+- Export hook from hooks directory
+
+### Depends On
+- TASK-075 (Integrate WebSocket for Resource Updates)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-076-A: Create WebSocket React Hook
 **Target:** `artifacts/spaflow/src/hooks/use-websocket.ts` (new)
 **Action:** Create hook for WebSocket connection, handle messages, auto-reconnect with exponential backoff, provide connection status.
 
-#### TASK-044-G: Update Dashboard for Real-Time Updates
+#### TASK-076-B: Update Dashboard for Real-Time Updates
 **Target:** `artifacts/spaflow/src/pages/dashboard.tsx`
 **Action:** Use WebSocket hook, listen for resource updates, invalidate queries on message, show connection indicator.
 
-#### TASK-044-H: Update Lockers Page for Real-Time Updates
+#### TASK-076-C: Update Lockers Page for Real-Time Updates
 **Target:** `artifacts/spaflow/src/pages/lockers.tsx`
 **Action:** Use WebSocket hook, listen for locker updates, update grid in real-time, show connection indicator.
 
-#### TASK-044-I: Update Rooms Page for Real-Time Updates
+#### TASK-076-D: Update Rooms Page for Real-Time Updates
 **Target:** `artifacts/spaflow/src/pages/rooms.tsx`
 **Action:** Use WebSocket hook, listen for room and waitlist updates, update grid in real-time, show connection indicator.
 
-#### TASK-044-J: Add Tests for WebSocket
-**Target:** `artifacts/api-server/src/lib/websocket.test.ts` (new)
-**Action:** Write tests for WebSocket authentication, message broadcasting, connection management, reconnection logic.
+#### TASK-076-E: Test Frontend Integration
+**Target:** Manual testing
+**Action:** Test dashboard real-time updates, test lockers page updates, test rooms page updates, verify connection indicator.
 
 ---
 
@@ -3410,7 +3227,7 @@
 - Export alert types
 
 ### Depends On
-- TASK-004 (Replace console statements with logger)
+- None
 
 ### Blocks
 - None
@@ -3453,7 +3270,7 @@
 
 ---
 
-## [ ] TASK-047: Add E2E Testing Coverage
+## [ ] TASK-047: Create E2E Test Infrastructure
 **Status:** Pending
 **Priority:** Critical
 
@@ -3462,43 +3279,35 @@
 - `playwright.config.ts`
 
 ### Definition of Done
-- E2E test for complete check-in flow
-- E2E test for waitlist assignment flow
-- E2E test for membership purchase
-- E2E test for payment processing
-- E2E test for resource release
-- E2E test for all CRUD operations
-- Visual regression testing
-- Tests passing in CI
+- E2E test directory structure created
+- Page objects for key pages added
+- Test data fixtures set up
+- Test database configured
+- Playwright configured
 
 ### Out of Scope
-- Testing edge cases (covered by unit tests)
-- Performance testing (separate task)
-- Load testing (separate task)
+- Writing actual E2E tests (covered by TASK-077, TASK-078)
+- CI integration (covered by TASK-079)
 
 ### Rules to Follow
 - Use Playwright for E2E testing
-- Test critical user journeys
-- Test both happy path and error cases
-- Run tests in CI pipeline
-- Maintain test data fixtures
-- Use realistic test data
+- Set up test data fixtures
+- Configure test database
+- Use Page Object Model pattern
 
 ### Advanced Coding Pattern
 - Page Object Model pattern
 - Test data management
 - Test isolation strategies
-- Visual regression testing
 
 ### Anti-Patterns
-- Brittle tests that break easily
-- No test data cleanup
-- Testing implementation details
-- Missing critical user journeys
+- No test data fixtures
+- No test database
+- Missing page objects
 
 ### Imports/Exports
 - No code changes required
-- Test files only
+- Test infrastructure only
 
 ### Depends On
 - None
@@ -3514,33 +3323,190 @@
 **Target:** `tests/e2e/` (new)
 **Action:** Create E2E test directory structure, add page objects for key pages, set up test data fixtures, configure test database.
 
-#### TASK-047-B: Add Check-in Flow E2E Test
+#### TASK-047-B: Configure Playwright
+**Target:** `playwright.config.ts`
+**Action:** Configure Playwright settings, browsers, test database connection, base URL, timeouts.
+
+---
+
+## [ ] TASK-077: Add E2E Tests for Core Flows
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `tests/e2e/checkin.spec.ts` (new)
+- `tests/e2e/waitlist.spec.ts` (new)
+- `tests/e2e/membership.spec.ts` (new)
+- `tests/e2e/resources.spec.ts` (new)
+
+### Definition of Done
+- Check-in flow E2E test
+- Waitlist assignment E2E test
+- Membership purchase E2E test
+- Resource release E2E test
+- All tests passing
+
+### Out of Scope
+- Test infrastructure (covered by TASK-047)
+- CRUD tests (covered by TASK-078)
+- Visual regression (covered by TASK-078)
+- CI integration (covered by TASK-079)
+
+### Rules to Follow
+- Test critical user journeys
+- Test both happy path and error cases
+- Use realistic test data
+- Maintain test data cleanup
+
+### Advanced Coding Pattern
+- Page Object Model pattern
+- Test data management
+
+### Anti-Patterns
+- Brittle tests that break easily
+- No test data cleanup
+- Missing critical user journeys
+
+### Imports/Exports
+- Test files only
+
+### Depends On
+- TASK-047 (Create E2E Test Infrastructure)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-077-A: Add Check-in Flow E2E Test
 **Target:** `tests/e2e/checkin.spec.ts` (new)
 **Action:** Write E2E test for complete check-in flow: client search, resource selection, product selection, payment, confirmation.
 
-#### TASK-047-C: Add Waitlist Assignment E2E Test
+#### TASK-077-B: Add Waitlist Assignment E2E Test
 **Target:** `tests/e2e/waitlist.spec.ts` (new)
 **Action:** Write E2E test for waitlist flow: add to waitlist, automatic assignment, confirmation, SMS notification verification.
 
-#### TASK-047-D: Add Membership Purchase E2E Test
+#### TASK-077-C: Add Membership Purchase E2E Test
 **Target:** `tests/e2e/membership.spec.ts` (new)
 **Action:** Write E2E test for membership purchase flow: select membership type, payment, status update, transaction record.
 
-#### TASK-047-E: Add Resource Release E2E Test
+#### TASK-077-D: Add Resource Release E2E Test
 **Target:** `tests/e2e/resources.spec.ts` (new)
 **Action:** Write E2E test for resource release flow: release occupied locker, verify status update, verify waitlist assignment (for rooms).
 
-#### TASK-047-F: Add CRUD Operations E2E Tests
+---
+
+## [ ] TASK-078: Add E2E Tests for CRUD and Visual Regression
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `tests/e2e/crud.spec.ts` (new)
+- `tests/e2e/visual.spec.ts` (new)
+
+### Definition of Done
+- CRUD operations E2E tests
+- Visual regression tests
+- All tests passing
+
+### Out of Scope
+- Test infrastructure (covered by TASK-047)
+- Core flow tests (covered by TASK-077)
+- CI integration (covered by TASK-079)
+
+### Rules to Follow
+- Test all CRUD operations
+- Configure acceptable diff thresholds
+- Test key pages for visual regression
+
+### Advanced Coding Pattern
+- Visual regression testing
+- CRUD testing pattern
+
+### Anti-Patterns
+- Missing CRUD operations
+- No visual regression tests
+- Too strict diff thresholds
+
+### Imports/Exports
+- Test files only
+
+### Depends On
+- TASK-077 (Add E2E Tests for Core Flows)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-078-A: Add CRUD Operations E2E Tests
 **Target:** `tests/e2e/crud.spec.ts` (new)
 **Action:** Write E2E tests for all CRUD operations: clients, products, users, lockers, rooms, verify create/read/update/delete.
 
-#### TASK-047-G: Add Visual Regression Tests
+#### TASK-078-B: Add Visual Regression Tests
 **Target:** `tests/e2e/visual.spec.ts` (new)
 **Action:** Add visual regression tests for key pages, compare screenshots, detect UI changes, configure acceptable diff thresholds.
 
-#### TASK-047-H: Integrate E2E Tests into CI
+---
+
+## [ ] TASK-079: Integrate E2E Tests into CI
+**Status:** Pending
+**Priority:** Critical
+
+### Related File Paths
+- `.github/workflows/ci.yml`
+
+### Definition of Done
+- E2E tests added to CI workflow
+- Tests run on PR and main branch
+- Passing tests required for merge
+
+### Out of Scope
+- Test infrastructure (covered by TASK-047)
+- Writing E2E tests (covered by TASK-077, TASK-078)
+
+### Rules to Follow
+- Run E2E tests in CI pipeline
+- Require passing tests for merge
+- Configure test timeouts
+
+### Advanced Coding Pattern
+- CI/CD integration pattern
+- Test gate pattern
+
+### Anti-Patterns
+- Not running E2E tests in CI
+- Allowing merge with failing tests
+- Missing test timeouts
+
+### Imports/Exports
+- CI workflow only
+
+### Depends On
+- TASK-078 (Add E2E Tests for CRUD and Visual Regression)
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-079-A: Integrate E2E Tests into CI
 **Target:** `.github/workflows/ci.yml`
 **Action:** Add E2E test step to CI workflow, run on PR and main branch, require passing tests for merge.
+
+#### TASK-079-B: Configure CI Test Settings
+**Target:** `.github/workflows/ci.yml`
+**Action:** Configure test timeouts, browser selection, test database for CI environment.
+
+#### TASK-079-C: Test CI Integration
+**Target:** Manual testing
+**Action:** Run CI workflow with E2E tests, verify tests pass, verify merge blocked on test failure.
 
 ---
 
@@ -3683,7 +3649,7 @@
 - Export aggregation utilities
 
 ### Depends On
-- TASK-022 (Revenue reports - basic)
+- None
 
 ### Blocks
 - None
@@ -4046,7 +4012,7 @@
 - Export reminder configuration
 
 ### Depends On
-- TASK-003 (Email service integration) for consistency
+- None
 
 ### Blocks
 - None
@@ -4870,7 +4836,7 @@
 - Export notification types
 
 ### Depends On
-- TASK-003 (Email service integration) for consistency
+- None
 
 ### Blocks
 - None

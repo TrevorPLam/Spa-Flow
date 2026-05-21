@@ -1,12 +1,28 @@
 # Spa-Flow
 
-A comprehensive spa management system with client tracking, resource booking (lockers and rooms), membership management, payment processing, and staff administration.
+A spa management system with client tracking, resource booking (lockers and rooms), membership management, payment processing, and staff administration.
 
-## Coverage
+## Badges
 
-[![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen)](https://github.com/TrevorPLam/Spa-Flow/actions/workflows/ci.yml)
+[![CI Build](https://github.com/TrevorPLam/Spa-Flow/actions/workflows/ci.yml/badge.svg)](https://github.com/TrevorPLam/Spa-Flow/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Coverage reports are generated on each CI run and can be downloaded as artifacts from the workflow runs.
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Key Features](#key-features)
+- [Database Schema](#database-schema)
+- [API Endpoints](#api-endpoints)
+- [Frontend Pages](#frontend-pages)
+- [Installation](#installation)
+- [Development](#development)
+- [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Security](#security)
+- [Environment Variables](#environment-variables)
+- [Documentation](#documentation)
+- [License](#license)
 
 ## Architecture
 
@@ -14,11 +30,14 @@ This is a monorepo using pnpm workspaces with the following packages:
 
 - `artifacts/api-server` - Backend API server (Express.js with TypeScript)
 - `artifacts/spaflow` - Frontend React application (React 19 with Vite)
+- `artifacts/mockup-sandbox` - Isolated mockup and component sandbox
 - `lib/api-client-react` - React API client generated from OpenAPI spec
 - `lib/api-spec` - OpenAPI 3.1.0 specification
 - `lib/api-zod` - Zod validation schemas
 - `lib/db` - Database schema and utilities (Drizzle ORM with PostgreSQL)
-- `scripts` - Utility scripts (database seeding, index verification)
+- `lib/test-utils` - Shared testing utilities
+- `scripts` - Utility scripts (database seeding, index verification, flakiness tooling)
+- `load-tests` - k6 performance and smoke-test scenarios
 
 ## Technology Stack
 
@@ -34,7 +53,7 @@ This is a monorepo using pnpm workspaces with the following packages:
 - **Email**: Resend
 - **Logging**: Pino 9.14.0
 - **Error Tracking**: Sentry 10.53.1
-- **Security**: Helmet 8.1.0, CORS, CSRF protection, rate limiting
+- **Security**: Helmet 8.1.0, CORS 2.8.6, CSRF 3.1.0, express-rate-limit 8.5.2
 
 ### Frontend
 - **Framework**: React 19.1.0 with React DOM 19.1.0
@@ -58,63 +77,16 @@ This is a monorepo using pnpm workspaces with the following packages:
 
 ## Key Features
 
-### Authentication & Authorization
-- JWT-based authentication with short-lived access tokens (15 minutes)
-- Refresh token rotation with automatic invalidation on each use
-- Timing-safe login to prevent user enumeration
-- Account lockout after configurable failed login attempts (default: 5)
-- Password reset flow via email with single-use tokens
-- Session management with device/browser identification
-- Role-based access control (STAFF, MANAGER)
-- CSRF protection with double-submit cookie pattern
-- Audit logging for all authentication events
-
-### Client Management
-- Client profile creation and management
-- Search clients by name, email, phone, or member ID
-- Membership tracking (none, one_time, six_month)
-- Encrypted PII fields (date of birth, address, document number) using envelope encryption
-- Client rental history
-- Transaction history per client
-
-### Resource Management
-- **Lockers**: Assign, release, renew (6 hours), and extend (2 hours)
-- **Rooms**: Assign, release, renew (6 hours), and extend (2 hours)
-- Real-time occupancy tracking (available, occupied, reserved)
-- Dynamic pricing engine based on resource type and duration
-- Automatic session expiration via cron jobs (every 5 minutes)
-
-### Waitlist System
-- Automatic waitlist when rooms are fully occupied
-- Position-based queue management
-- 15-minute confirmation window for room assignments
-- Automatic reassignment if confirmation expires
-- SMS notifications for waitlist updates (via Twilio)
-
-### Product Inventory
-- Product catalog with categories
-- Stock tracking
-- Price management
-- Product sales integration with transactions
-
-### Payment Processing
-- Square Web Payments SDK integration
-- Support for locker rentals, room rentals, memberships, and products
-- Idempotency keys for preventing duplicate charges
-- Tax calculation (configurable rate, default 8.875%)
-- Transaction history with Square payment IDs
-
-### Staff Administration
-- Staff user management (MANAGER role only)
-- User creation, update, and deletion
-- Role assignment (STAFF, MANAGER)
-- Audit log viewing (MANAGER role only)
-- Session management and revocation
-
-### Background Jobs
-- Rental session expiration (every 5 minutes)
-- Waitlist assignment expiration (every 5 minutes)
-- Cache statistics logging (every hour)
+| Category | Features |
+|----------|----------|
+| **Authentication & Authorization** | JWT-based authentication with 15-minute access tokens, refresh token rotation, timing-safe login, account lockout (5 attempts), password reset via email, session management with device identification, role-based access control (STAFF, MANAGER), CSRF protection, audit logging |
+| **Client Management** | Client profile creation and management, search by name/email/phone/member ID, membership tracking (none, one_time, six_month), encrypted PII fields (DOB, address, document number) with envelope encryption, rental history, transaction history |
+| **Resource Management** | Lockers: assign, release, renew (6 hours), extend (2 hours); Rooms: assign, release, renew (6 hours), extend (2 hours); real-time occupancy tracking (available, occupied, reserved); dynamic pricing engine; automatic session expiration (every 5 minutes) |
+| **Waitlist System** | Automatic waitlist when rooms are fully occupied, position-based queue management, 15-minute confirmation window for room assignments, automatic reassignment on expiration, SMS notifications via Twilio |
+| **Product Inventory** | Product catalog with categories, stock tracking, price management, product sales integration with transactions |
+| **Payment Processing** | Square Web Payments SDK integration, support for locker rentals, room rentals, memberships, and products, idempotency keys for duplicate charge prevention, tax calculation (configurable, default 8.875%), transaction history with Square payment IDs |
+| **Staff Administration** | Staff user management (MANAGER role only), user creation/update/deletion, role assignment (STAFF, MANAGER), audit log viewing (MANAGER role only), session management and revocation |
+| **Background Jobs** | Rental session expiration (every 5 minutes), waitlist assignment expiration (every 5 minutes), cache statistics logging (every hour) |
 
 ## Database Schema
 
@@ -140,7 +112,7 @@ This is a monorepo using pnpm workspaces with the following packages:
 
 ## API Endpoints
 
-All API endpoints are prefixed with `/api/v1` (API version 1.0.0).
+All API endpoints are mounted under `/api/v1`.
 
 ### Health
 - `GET /healthz/live` - Liveness probe
@@ -200,6 +172,7 @@ All API endpoints are prefixed with `/api/v1` (API version 1.0.0).
 - `POST /products` - Create product
 - `PATCH /products/:id` - Update product
 - `DELETE /products/:id` - Delete product
+- `GET /products/low-stock` - List products with low stock
 
 ### Transactions
 - `GET /transactions` - List transactions with client filter and pagination
@@ -207,11 +180,19 @@ All API endpoints are prefixed with `/api/v1` (API version 1.0.0).
 ### Dashboard
 - `GET /dashboard` - Get dashboard summary
 
+### Reports (MANAGER only)
+- `GET /reports/revenue` - Get revenue report by date range with time granularity
+- `GET /reports/revenue-by-type` - Get revenue breakdown by service type
+- `GET /reports/utilization/lockers` - Get locker utilization rates over time
+- `GET /reports/utilization/rooms` - Get room utilization rates over time
+- `GET /reports/utilization/peak-hours` - Get peak hours analysis for rentals
+
 ### Users (MANAGER only)
 - `GET /users` - List staff users
 - `POST /users` - Create staff user
 - `PATCH /users/:id` - Update staff user
 - `DELETE /users/:id` - Delete staff user
+- `POST /users/:id/unlock` - Unlock locked user account
 
 ### Audit Logs (MANAGER only)
 - `GET /audit-logs` - List audit logs with action, user, and pagination filters
@@ -221,6 +202,7 @@ All API endpoints are prefixed with `/api/v1` (API version 1.0.0).
 
 ## Frontend Pages
 
+- `/` - Redirects to `/dashboard`
 - `/login` - Staff login
 - `/dashboard` - Dashboard with summary statistics
 - `/checkin` - Check-in flow for clients
@@ -232,19 +214,45 @@ All API endpoints are prefixed with `/api/v1` (API version 1.0.0).
 - `/waitlist` - Waitlist management
 - `/products` - Product inventory
 - `/transactions` - Transaction history
+- `/reports` - Reports and analytics
 - `/users` - Staff user management (MANAGER only)
 - `/audit-logs` - Audit log viewing (MANAGER only)
 - `/sessions` - Session management
 
 ## Installation
 
-### Prerequisites
-- Node.js 20
-- pnpm 9
-- PostgreSQL database
-- Redis server
+### Quick Start
 
-### Setup
+Get up and running (requires Node.js 22, pnpm 9, PostgreSQL, Redis):
+
+```bash
+# Install dependencies
+pnpm install
+
+# Configure environment (copy .env.example to .env and fill in required values)
+cp .env.example .env
+
+# Run database migrations and seed
+cd lib/db && pnpm run push
+cd ../../scripts && pnpm run seed
+
+# Start API server (port 5000)
+cd ../artifacts/api-server && pnpm run dev
+
+# In another terminal, start frontend (port 5173)
+cd ../spaflow && pnpm run dev
+```
+
+Visit http://localhost:5173 to access the application.
+
+### Prerequisites
+- Node.js (see catalog in pnpm-workspace.yaml)
+- pnpm (see packageManager in package.json)
+- PostgreSQL database
+- Redis server (optional, for caching)
+
+### Detailed Setup
+
 ```bash
 # Install dependencies
 pnpm install
@@ -254,15 +262,15 @@ cp .env.example .env
 
 # Configure environment variables (see .env.example for full list)
 # Required: DATABASE_URL, JWT_SECRET, ENCRYPTION_KEY, CSRF_SECRET
-# Payment: SQUARE_ACCESS_TOKEN, SQUARE_APPLICATION_ID, SQUARE_LOCATION_ID
-# Optional: REDIS_URL, TWILIO_*, RESEND_API_KEY, SENTRY_*
+# Optional (for payment processing): SQUARE_ACCESS_TOKEN, SQUARE_LOCATION_ID, VITE_SQUARE_APPLICATION_ID, VITE_SQUARE_LOCATION_ID
+# Optional (for additional features): REDIS_URL (caching), TWILIO_* (SMS), RESEND_API_KEY (email), SENTRY_* (error tracking)
 
 # Run database migrations
 cd lib/db
 pnpm run push
 
 # Seed database with initial data (admin and staff users)
-cd ../scripts
+cd ../../scripts
 pnpm run seed
 ```
 
@@ -273,14 +281,14 @@ pnpm run seed
 cd artifacts/api-server
 pnpm run dev
 ```
-Server runs on port 5000 (configurable via PORT env var)
+Server runs on port 5000 (configurable via PORT env var). The dev script builds the project first, then starts the built server.
 
 ### Start Frontend
 ```bash
 cd artifacts/spaflow
 pnpm run dev
 ```
-Frontend runs on port 5173 (configurable via VITE_PORT env var)
+Frontend runs on port 5173 (configured via `PORT` in the dev script); the Vite proxy targets `VITE_API_URL`.
 
 ### Regenerate API Client
 After modifying the OpenAPI spec:
@@ -293,8 +301,8 @@ pnpm run codegen
 
 ### Run All Tests
 ```bash
-# Run all tests in workspace
-pnpm -r run test
+# Run all tests in workspace (only packages with test scripts)
+pnpm -r --if-present run test
 
 # Run tests for specific package
 cd artifacts/api-server && pnpm run test
@@ -303,8 +311,8 @@ cd artifacts/spaflow && pnpm run test
 
 ### Run Tests with Coverage
 ```bash
-# Run coverage for all packages
-pnpm -r run test:coverage
+# Run coverage for all packages (only packages with test:coverage scripts)
+pnpm -r --if-present run test:coverage
 
 # Run coverage for specific package
 cd artifacts/api-server && pnpm run test:coverage
@@ -352,7 +360,6 @@ pnpm run test:mutation
 The CI pipeline runs on:
 - Every push to main branch
 - Every pull request to main branch
-- Weekly schedule (Sundays at 2 AM UTC for mutation tests)
 - Manual workflow dispatch
 
 ### Pipeline Stages
@@ -361,12 +368,16 @@ The CI pipeline runs on:
 3. **Type Check** - TypeScript compilation check
 4. **Build** - Build all packages
 5. **Smoke Tests** - Quick validation of critical paths
-6. **Contract Tests** - API contract validation (filtered by api-server changes)
-7. **Component Tests** - Frontend component tests (filtered by spaflow changes)
-8. **Coverage Report** - Code coverage measurement (80% threshold)
-9. **E2E Tests** - End-to-end tests with visual regression (filtered by spaflow changes)
-10. **Load Tests** - Performance testing with k6
-11. **Mutation Tests** - Weekly mutation testing with Stryker
+6. **Contract Tests** - API contract validation (filtered by changed packages)
+7. **Component Tests** - Component tests (filtered by changed packages)
+8. **Performance Tests** - API and frontend performance benchmarks
+9. **Coverage Report** - Code coverage measurement (filtered by changed packages)
+10. **E2E Tests** - End-to-end tests with visual regression (filtered by spaflow changes)
+11. **E2E Report Merge** - Merge sharded E2E test reports
+12. **Smoke Load Tests** - Quick load validation with k6
+13. **Load Tests** - Performance testing with k6
+14. **Mutation Tests** - Mutation testing with Stryker
+15. **Flakiness Detection** - Detect flaky tests across test suites
 
 ### Caching Strategy
 - pnpm store cache for dependencies
@@ -409,14 +420,16 @@ The CI pipeline runs on:
 
 ## Environment Variables
 
-See `.env.example` for the complete list of environment variables. Key categories:
+See `.env.example` for the complete list of environment variables. The authoritative runtime schema is defined in `artifacts/api-server/src/lib/env.ts`, and the frontend also consumes `VITE_*` values from `.env.example`.
 
 ### Database
 - `DATABASE_URL` - PostgreSQL connection string
 - `DB_POOL_MAX` - Maximum connections (default: 20)
 - `DB_POOL_IDLE_TIMEOUT_MS` - Idle connection timeout (default: 30000)
+- `DB_POOL_CONNECTION_TIMEOUT_MS` - Connection acquisition timeout (default: 5000)
 - `DB_STATEMENT_TIMEOUT_MS` - Statement timeout (default: 30000)
 - `DB_LOCK_TIMEOUT_MS` - Lock timeout (default: 5000)
+- `DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` - Idle in-transaction timeout (default: 60000)
 
 ### Security
 - `JWT_SECRET` - JWT signing secret (minimum 32 characters)
@@ -436,14 +449,14 @@ See `.env.example` for the complete list of environment variables. Key categorie
 ### API
 - `API_BASE_URL` - API base URL for backend
 - `VITE_API_URL` - API base URL for frontend
-- `REQUEST_TIMEOUT` - Request timeout (default: 30s)
 
 ### Square Payment
-- `SQUARE_ACCESS_TOKEN` - Square access token
-- `SQUARE_APPLICATION_ID` - Square application ID
-- `SQUARE_LOCATION_ID` - Square location ID
+- `SQUARE_ACCESS_TOKEN` - Square access token used by the backend
+- `SQUARE_LOCATION_ID` - Square location ID used by the backend
 - `SQUARE_ENVIRONMENT` - sandbox or production
 - `SQUARE_API_VERSION` - API version (default: 2025-08-20)
+- `VITE_SQUARE_APPLICATION_ID` - Square application ID used by the frontend
+- `VITE_SQUARE_LOCATION_ID` - Square location ID used by the frontend
 
 ### Third-Party Services
 - `REDIS_URL` - Redis connection URL
@@ -460,6 +473,9 @@ Detailed documentation is available in the `docs/` directory:
 
 - `auth-architecture.md` - Authentication architecture and security decisions
 - `testing-strategy.md` - Testing strategy and incremental testing approach
+- `monorepo-testing.md` - Monorepo testing approach
+- `test-ownership.md` - Test ownership guidelines
+- `test-tags.md` - Test tagging strategy
 - `api-changelog.md` - API version history and breaking changes
 - `security.md` - Security scanning and vulnerability remediation process
 - `contract-testing.md` - Contract testing approach
@@ -467,9 +483,14 @@ Detailed documentation is available in the `docs/` directory:
 - `test-data.md` - Test data management strategy
 - `visual-testing.md` - Visual regression testing with Playwright
 - `migrations.md` - Database migration strategy
+- `error-handling.md` - Error handling strategy
 - `ai-testing-research.md` - AI-assisted testing research
 - `ai-testing-evaluation.md` - AI testing tool evaluation
 - `ui-ux-analysis.md` - UI/UX analysis and improvements
+
+## Contributing
+
+We welcome contributions. Please follow the repository guidance in `AGENTS.md`, keep `README.md` and `ANALYSIS.md` accurate when behavior changes, and update any affected docs alongside code changes.
 
 ## License
 

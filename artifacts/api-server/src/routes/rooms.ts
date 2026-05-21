@@ -97,7 +97,7 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
   // Rationale: FOR UPDATE is a PostgreSQL-specific feature for row-level locking that prevents race conditions
   // This raw SQL is necessary because Drizzle ORM does not support SELECT FOR UPDATE syntax
   const roomRows = await db.execute(
-    sql`SELECT * FROM rooms WHERE id = ${params.data.id} FOR UPDATE`
+    sql`SELECT id, name, status, client_id, session_id, start_time, expires_at FROM rooms WHERE id = ${params.data.id} FOR UPDATE`
   );
   // Type guard: safely extract room from SQL result with null check
   const room = roomRows.rows[0] ? roomRows.rows[0] as typeof roomsTable.$inferSelect : undefined;

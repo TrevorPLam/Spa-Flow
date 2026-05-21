@@ -131,7 +131,7 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
     session = await db.transaction(async (tx) => {
       // Use SELECT FOR UPDATE for atomic assignment
       const lockerRows = await tx.execute(
-        sql`SELECT * FROM lockers WHERE id = ${params.data.id} FOR UPDATE`
+        sql`SELECT id, name, status, client_id, session_id, start_time, expires_at FROM lockers WHERE id = ${params.data.id} FOR UPDATE`
       );
       // Type guard: safely extract locker from SQL result with null check
       const locker = lockerRows.rows[0] ? lockerRows.rows[0] as typeof lockersTable.$inferSelect : undefined;

@@ -62,14 +62,14 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   // This raw SQL is necessary because Drizzle ORM does not support SELECT FOR UPDATE syntax
   let resourceName = "";
   if (resourceType === "locker") {
-    const rows = await db.execute(sql`SELECT * FROM lockers WHERE id = ${resourceId} FOR UPDATE`);
+    const rows = await db.execute(sql`SELECT id, name, status, client_id, session_id, start_time, expires_at FROM lockers WHERE id = ${resourceId} FOR UPDATE`);
     // Type guard: safely extract locker from SQL result with null check
     const locker = rows.rows[0] ? rows.rows[0] as typeof lockersTable.$inferSelect : undefined;
     if (!locker) { sendNotFoundError(res, "Locker not found"); return; }
     if (locker.status !== "available") { sendConflictError(res, "Locker is not available"); return; }
     resourceName = locker.name;
   } else {
-    const rows = await db.execute(sql`SELECT * FROM rooms WHERE id = ${resourceId} FOR UPDATE`);
+    const rows = await db.execute(sql`SELECT id, name, status, client_id, session_id, start_time, expires_at FROM rooms WHERE id = ${resourceId} FOR UPDATE`);
     // Type guard: safely extract room from SQL result with null check
     const room = rows.rows[0] ? rows.rows[0] as { id: number; name: string; status: string } : undefined;
     if (!room) { sendNotFoundError(res, "Room not found"); return; }
