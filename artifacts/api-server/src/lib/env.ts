@@ -68,6 +68,33 @@ const envSchema = z.object({
   // REFRESH_TOKEN_EXPIRY_DAYS: Number of days refresh tokens are valid
   // Recommended: 7-14 days per security best practices
   REFRESH_TOKEN_EXPIRY_DAYS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(30)).default(7),
+
+  // Session Configuration
+  // SESSION_DURATION_HOURS: Default session duration in hours
+  // Recommended: 6 hours for typical spa sessions
+  SESSION_DURATION_HOURS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(24)).default(6),
+  // EXTENSION_DURATION_HOURS: Extension duration in hours
+  // Recommended: 2 hours for session extensions
+  EXTENSION_DURATION_HOURS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(12)).default(2),
+  // WAITLIST_CONFIRM_MINUTES: Waitlist confirmation window in minutes
+  // Recommended: 15 minutes for users to confirm waitlist assignment
+  WAITLIST_CONFIRM_MINUTES: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(5).max(60)).default(15),
+
+  // Pricing Configuration
+  // MEMBERSHIP_ONE_TIME_COST: Cost of one-time membership in dollars
+  // Recommended: 13 dollars for single-use membership
+  MEMBERSHIP_ONE_TIME_COST: z.string().transform((val) => parseFloat(val)).pipe(z.number().min(0)).default(13),
+  // MEMBERSHIP_SIX_MONTH_COST: Cost of six-month membership in dollars
+  // Recommended: 42 dollars for six-month membership
+  MEMBERSHIP_SIX_MONTH_COST: z.string().transform((val) => parseFloat(val)).pipe(z.number().min(0)).default(42),
+  // EXTENSION_SURCHARGE_DIVISOR: Divisor for extension surcharge calculation
+  // Recommended: 3 (surcharge is 1/3 of base rate)
+  EXTENSION_SURCHARGE_DIVISOR: z.string().transform((val) => parseFloat(val)).pipe(z.number().min(1)).default(3),
+
+  // Pagination Configuration
+  // DEFAULT_PAGE_SIZE: Default number of items per page for paginated endpoints
+  // Recommended: 20 items for optimal performance and UX
+  DEFAULT_PAGE_SIZE: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(100)).default(20),
 });
 
 export type Env = z.infer<typeof envSchema>;

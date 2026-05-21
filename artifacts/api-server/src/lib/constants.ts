@@ -3,8 +3,10 @@
  * Centralized configuration values to avoid magic numbers in codebase
  */
 
+import { getEnv } from './env.js';
+
 // ============================================================================
-// Resource Counts
+// Resource Counts (Physical Capacity - Not Configurable)
 // ============================================================================
 /** Total number of lockers available in the facility */
 export const LOCKER_TOTAL = 167;
@@ -14,16 +16,16 @@ export const ROOM_TOTAL = 38;
 // ============================================================================
 // Time Durations (in milliseconds)
 // ============================================================================
-/** Default session duration in hours */
-export const SESSION_DURATION_HOURS = 6;
+/** Default session duration in hours (configurable via SESSION_DURATION_HOURS env var) */
+export const SESSION_DURATION_HOURS = getEnv().SESSION_DURATION_HOURS;
 /** Default session duration in milliseconds */
 export const SESSION_DURATION_MS = SESSION_DURATION_HOURS * 60 * 60 * 1000;
-/** Extension duration in hours */
-export const EXTENSION_DURATION_HOURS = 2;
+/** Extension duration in hours (configurable via EXTENSION_DURATION_HOURS env var) */
+export const EXTENSION_DURATION_HOURS = getEnv().EXTENSION_DURATION_HOURS;
 /** Extension duration in milliseconds */
 export const EXTENSION_DURATION_MS = EXTENSION_DURATION_HOURS * 60 * 60 * 1000;
-/** Waitlist confirmation window in minutes */
-export const WAITLIST_CONFIRM_MINUTES = 15;
+/** Waitlist confirmation window in minutes (configurable via WAITLIST_CONFIRM_MINUTES env var) */
+export const WAITLIST_CONFIRM_MINUTES = getEnv().WAITLIST_CONFIRM_MINUTES;
 /** Waitlist confirmation window in milliseconds */
 export const WAITLIST_CONFIRM_MS = WAITLIST_CONFIRM_MINUTES * 60 * 1000;
 
@@ -42,20 +44,20 @@ export const HSTS_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000; // 1 year
 export const TIMING_SAFE_LOGIN_DELAY_MAX_MS = 100; // 0-100ms random delay
 
 // ============================================================================
-// Pricing (in dollars)
+// Pricing (in dollars) - Configurable via Environment Variables
 // ============================================================================
-/** Cost of one-time membership purchase in dollars */
-export const MEMBERSHIP_ONE_TIME_COST = 13;
-/** Cost of six-month membership purchase in dollars */
-export const MEMBERSHIP_SIX_MONTH_COST = 42;
-/** Divisor for extension surcharge calculation */
-export const EXTENSION_SURCHARGE_DIVISOR = 3;
+/** Cost of one-time membership purchase in dollars (configurable via MEMBERSHIP_ONE_TIME_COST env var) */
+export const MEMBERSHIP_ONE_TIME_COST = getEnv().MEMBERSHIP_ONE_TIME_COST;
+/** Cost of six-month membership purchase in dollars (configurable via MEMBERSHIP_SIX_MONTH_COST env var) */
+export const MEMBERSHIP_SIX_MONTH_COST = getEnv().MEMBERSHIP_SIX_MONTH_COST;
+/** Divisor for extension surcharge calculation (configurable via EXTENSION_SURCHARGE_DIVISOR env var) */
+export const EXTENSION_SURCHARGE_DIVISOR = getEnv().EXTENSION_SURCHARGE_DIVISOR;
 
 // ============================================================================
-// Pagination
+// Pagination - Configurable via Environment Variables
 // ============================================================================
-/** Default number of items per page for paginated endpoints */
-export const DEFAULT_PAGE_SIZE = 20;
+/** Default number of items per page for paginated endpoints (configurable via DEFAULT_PAGE_SIZE env var) */
+export const DEFAULT_PAGE_SIZE = getEnv().DEFAULT_PAGE_SIZE;
 
 // ============================================================================
 // Security
