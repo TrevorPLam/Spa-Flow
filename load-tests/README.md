@@ -25,8 +25,8 @@ choco install k6
 
 ### Run all tests
 ```bash
-# Set API base URL (default: http://localhost:5000/api)
-export API_BASE_URL=http://localhost:5000/api
+# Set API base URL (default: http://localhost:5000/api/v1)
+export API_BASE_URL=http://localhost:5000/api/v1
 
 # Run health check test
 k6 run load-tests/health-check.ts
@@ -54,7 +54,7 @@ pnpm run test:load:all
 
 ### Run with custom API base URL
 ```bash
-API_BASE_URL=http://localhost:5000/api k6 run load-tests/health-check.js
+API_BASE_URL=http://localhost:5000/api/v1 k6 run load-tests/health-check.js
 ```
 
 ### Run smoke test locally
@@ -67,7 +67,7 @@ pnpm run dev
 ./scripts/wait-for-server.sh http://localhost:5000/health
 
 # Then run smoke test
-API_BASE_URL=http://localhost:5000/api pnpm run test:load:smoke
+API_BASE_URL=http://localhost:5000/api/v1 pnpm run test:load:smoke
 ```
 
 ### Health Check Script
@@ -98,10 +98,10 @@ Expected performance targets based on thresholds configured in test scripts:
 
 | Endpoint | p95 Response Time | Error Rate | Notes |
 |----------|-------------------|------------|-------|
-| /health (smoke) | < 200ms | < 1% | Smoke test - critical health check |
-| /api/health (smoke) | < 200ms | < 1% | Smoke test - API health check |
-| /api/clients (smoke) | < 200ms | < 1% | Smoke test - critical endpoint |
-| /health | < 100ms | < 1% | Health check should be very fast |
+| /healthz/live (smoke) | < 200ms | < 1% | Smoke test - critical health check |
+| /healthz/ready (smoke) | < 200ms | < 1% | Smoke test - readiness check |
+| /clients (smoke) | < 200ms | < 1% | Smoke test - critical endpoint |
+| /healthz/live | < 100ms | < 1% | Health check should be very fast |
 | /clients (search) | < 300ms | < 1% | Client search with pagination |
 | /dashboard | < 500ms | < 1% | Dashboard aggregates data |
 | Check-in flow | < 1000ms | < 5% | Complex multi-step flow |
@@ -111,7 +111,7 @@ Expected performance targets based on thresholds configured in test scripts:
 Smoke tests run on every PR to catch performance regressions early:
 - **Load**: 5 VUs for 30 seconds
 - **Duration**: ~30 seconds total
-- **Endpoints tested**: /health, /api/health, /api/clients (limit=10)
+- **Endpoints tested**: /healthz/live, /healthz/ready, /clients (limit=10)
 - **Thresholds**: p95 < 200ms, error rate < 1%
 - **Purpose**: Quick validation that critical endpoints respond under minimal load
 
@@ -121,7 +121,7 @@ Smoke tests run on every PR to catch performance regressions early:
 - **Purpose**: Quick validation of critical endpoints under minimal load
 - **Load**: 5 VUs for 30 seconds
 - **Thresholds**: p95 < 200ms, error rate < 1%
-- **Endpoints**: /health, /api/health, /api/clients (limit=10)
+- **Endpoints**: /healthz/live, /healthz/ready, /clients (limit=10)
 - **Runs on**: Every PR (fast feedback)
 
 ### Health Check Test

@@ -17,21 +17,21 @@ export const options = {
 
 export default function () {
   // Simulate check-in flow: get pricing, get available lockers, get available rooms
-  const pricingRes = http.get(`${BASE_URL}/pricing`);
+  const pricingRes = http.get(`${BASE_URL}/pricing/calculate`);
   check(pricingRes, {
     'pricing endpoint returns 200': (r) => r.status === 200,
   });
 
   sleep(0.5);
 
-  const lockersRes = http.get(`${BASE_URL}/lockers/available`);
+  const lockersRes = http.get(`${BASE_URL}/lockers`);
   check(lockersRes, {
     'lockers available returns 200': (r) => r.status === 200,
   });
 
   sleep(0.5);
 
-  const roomsRes = http.get(`${BASE_URL}/rooms/available`);
+  const roomsRes = http.get(`${BASE_URL}/rooms`);
   check(roomsRes, {
     'rooms available returns 200': (r) => r.status === 200,
   });

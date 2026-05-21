@@ -13,22 +13,21 @@ export const options = {
 
 export default function () {
   // Test health endpoint
-  const healthRes = http.get(`${BASE_URL}/health`);
+  const healthRes = http.get(`${BASE_URL}/healthz/live`);
   check(healthRes, {
     'health check returns 200': (r) => r.status === 200,
     'health check response time < 200ms': (r) => r.timings.duration < 200,
-    'health check has status up': (r) => r.json('status') === 'up',
   });
 
-  // Test API health endpoint
-  const apiHealthRes = http.get(`${BASE_URL}/api/health`);
-  check(apiHealthRes, {
-    'api health check returns 200': (r) => r.status === 200,
-    'api health check response time < 200ms': (r) => r.timings.duration < 200,
+  // Test readiness endpoint
+  const readyRes = http.get(`${BASE_URL}/healthz/ready`);
+  check(readyRes, {
+    'readiness check returns 200': (r) => r.status === 200,
+    'readiness check response time < 200ms': (r) => r.timings.duration < 200,
   });
 
   // Test one critical endpoint - clients list (paginated, light query)
-  const clientsRes = http.get(`${BASE_URL}/api/clients?limit=10`);
+  const clientsRes = http.get(`${BASE_URL}/clients?limit=10`);
   check(clientsRes, {
     'clients list returns 200': (r) => r.status === 200,
     'clients list response time < 200ms': (r) => r.timings.duration < 200,

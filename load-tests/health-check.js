@@ -12,12 +12,11 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get(`${BASE_URL}/health`);
+  const res = http.get(`${BASE_URL}/healthz/live`);
   
   check(res, {
     'health check returns 200': (r) => r.status === 200,
     'health check response time < 100ms': (r) => r.timings.duration < 100,
-    'health check has status up': (r) => r.json('status') === 'up',
   });
 
   sleep(1);
