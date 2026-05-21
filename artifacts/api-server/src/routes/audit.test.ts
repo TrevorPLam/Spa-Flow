@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestUserInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { auditLogsTable } from '@workspace/db/schema';
 
 describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const user = await createTestUserInDb({ email: 'user@example.com', name: 'Test User' });
       
-      await db.insert(schema.auditLogsTable).values({
+      await db.insert(auditLogsTable).values({
         userId: user.id,
         action: 'CREATE_USER',
         resourceType: 'user',
@@ -48,7 +48,7 @@ describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const user = await createTestUserInDb({ email: 'user@example.com', name: 'Test User' });
       
-      await db.insert(schema.auditLogsTable).values({
+      await db.insert(auditLogsTable).values({
         userId: user.id,
         action: 'CREATE_USER',
         resourceType: 'user',
@@ -66,7 +66,7 @@ describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const user = await createTestUserInDb({ email: 'user@example.com', name: 'Test User' });
       
-      await db.insert(schema.auditLogsTable).values([
+      await db.insert(auditLogsTable).values([
         { userId: user.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 1, description: 'Created user' },
         { userId: user.id, action: 'DELETE_USER', resourceType: 'user', resourceId: 2, description: 'Deleted user' },
         { userId: user.id, action: 'UPDATE_USER', resourceType: 'user', resourceId: 1, description: 'Updated user' },
@@ -84,7 +84,7 @@ describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
       const user1 = await createTestUserInDb({ email: 'user1@example.com', name: 'User One' });
       const user2 = await createTestUserInDb({ email: 'user2@example.com', name: 'User Two' });
       
-      await db.insert(schema.auditLogsTable).values([
+      await db.insert(auditLogsTable).values([
         { userId: user1.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 1, description: 'User 1 action' },
         { userId: user2.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 2, description: 'User 2 action' },
       ]);
@@ -108,7 +108,7 @@ describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
         resourceId: i,
         description: `Test action ${i}`,
       }));
-      await db.insert(schema.auditLogsTable).values(logs);
+      await db.insert(auditLogsTable).values(logs);
 
       const response = await api.get('/api/audit-logs?page=1&limit=10').set(authHeaders);
 
@@ -158,7 +158,7 @@ describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
       const user1 = await createTestUserInDb({ email: 'user1@example.com', name: 'User One' });
       const user2 = await createTestUserInDb({ email: 'user2@example.com', name: 'User Two' });
       
-      await db.insert(schema.auditLogsTable).values([
+      await db.insert(auditLogsTable).values([
         { userId: user1.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 1, description: 'User 1 create' },
         { userId: user1.id, action: 'DELETE_USER', resourceType: 'user', resourceId: 2, description: 'User 1 delete' },
         { userId: user2.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 3, description: 'User 2 create' },

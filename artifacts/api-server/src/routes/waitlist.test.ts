@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { waitlistTable } from '@workspace/db/schema';
 
 describe('Waitlist API', { tags: ['@regression'] }, () => {
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      await db.insert(schema.waitlistTable).values({
+      await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'waiting',
@@ -38,7 +38,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      await db.insert(schema.waitlistTable).values([
+      await db.insert(waitlistTable).values([
         { clientId: client.id, position: 1, status: 'waiting' },
         { clientId: client.id, position: 2, status: 'confirmed' },
         { clientId: client.id, position: 3, status: 'expired' },
@@ -94,7 +94,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      await db.insert(schema.waitlistTable).values({
+      await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'waiting',
@@ -136,7 +136,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      const [entry] = await db.insert(schema.waitlistTable).values({
+      const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'waiting',
@@ -150,7 +150,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      const [entry] = await db.insert(schema.waitlistTable).values({
+      const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'waiting',
@@ -176,7 +176,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       const room = await createTestRoomInDb({ name: 'R101', status: 'available' });
       
-      const [entry] = await db.insert(schema.waitlistTable).values({
+      const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'assigned',
@@ -202,7 +202,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      const [entry] = await db.insert(schema.waitlistTable).values({
+      const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'waiting',
@@ -217,7 +217,7 @@ describe('Waitlist API', { tags: ['@regression'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      const [entry] = await db.insert(schema.waitlistTable).values({
+      const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
         position: 1,
         status: 'assigned',

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { transactionsTable } from '@workspace/db/schema';
 
 describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      await db.insert(schema.transactionsTable).values({
+      await db.insert(transactionsTable).values({
         clientId: client.id,
         amount: '100.00',
         tax: '8.88',
@@ -49,7 +49,7 @@ describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
       const client1 = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       const client2 = await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
       
-      await db.insert(schema.transactionsTable).values([
+      await db.insert(transactionsTable).values([
         { clientId: client1.id, amount: '100.00', tax: '8.88', total: '108.88', type: 'locker_rental', squarePaymentId: 'sq-1', description: 'Locker rental' },
         { clientId: client2.id, amount: '50.00', tax: '4.44', total: '54.44', type: 'product', squarePaymentId: 'sq-2', description: 'Product purchase' },
       ]);
@@ -75,7 +75,7 @@ describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
         squarePaymentId: `sq-${i}`,
         description: `Transaction ${i}`,
       }));
-      await db.insert(schema.transactionsTable).values(transactions);
+      await db.insert(transactionsTable).values(transactions);
 
       const response = await api.get('/api/transactions?page=1&limit=10').set(authHeaders);
 
@@ -116,7 +116,7 @@ describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      await db.insert(schema.transactionsTable).values({
+      await db.insert(transactionsTable).values({
         clientId: client.id,
         amount: '100.00',
         tax: '8.88',

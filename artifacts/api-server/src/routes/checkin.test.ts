@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
-import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
+import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { productsTable } from '@workspace/db/schema';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
 // Mock Square and Twilio
@@ -159,12 +159,12 @@ describe('Check-in API', { tags: ['@regression'] }, () => {
       const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
 
       // Create test products
-      await db.insert(schema.productsTable).values([
+      await db.insert(productsTable).values([
         { name: 'Water Bottle', price: '5.00', stock: 10 },
         { name: 'Towel', price: '10.00', stock: 5 },
       ]);
 
-      const products = await db.select().from(schema.productsTable);
+      const products = await db.select().from(productsTable);
 
       const checkinData = {
         clientId: client.id,
@@ -188,7 +188,7 @@ describe('Check-in API', { tags: ['@regression'] }, () => {
       const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
 
       // Create out of stock product
-      const [product] = await db.insert(schema.productsTable).values([
+      const [product] = await db.insert(productsTable).values([
         { name: 'Water Bottle', price: '5.00', stock: 0 },
       ]).returning();
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { clientsTable, membershipsTable } from '@workspace/db/schema';
 import { eq } from 'drizzle-orm';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
@@ -185,7 +185,7 @@ describe('Clients API', { tags: ['@smoke', '@critical'] }, () => {
       expect(response.status).toBe(200);
       
       // Verify client is deleted
-      const deletedClient = await db.select().from(schema.clientsTable).where(eq(schema.clientsTable.id, client.id));
+      const deletedClient = await db.select().from(clientsTable).where(eq(clientsTable.id, client.id));
       expect(deletedClient).toHaveLength(0);
     });
 
@@ -212,7 +212,7 @@ describe('Clients API', { tags: ['@smoke', '@critical'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       
-      await db.insert(schema.membershipsTable).values({
+      await db.insert(membershipsTable).values({
         clientId: client.id,
         type: 'six_month',
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),

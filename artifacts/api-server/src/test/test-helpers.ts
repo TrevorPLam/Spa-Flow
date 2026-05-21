@@ -2,7 +2,7 @@ import request from 'supertest';
 import app from '../app';
 import { signToken } from '../lib/auth';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { clientsTable, lockersTable, roomsTable, usersTable } from '@workspace/db/schema';
 
 export { cleanDatabase } from '../../../../lib/test-utils/src';
 
@@ -22,8 +22,8 @@ export async function createAuthenticatedRequest(role: 'STAFF' | 'MANAGER' = 'ST
   };
 }
 
-export async function createTestClientInDb(clientData?: Partial<typeof schema.clientsTable.$inferInsert>) {
-  const client: typeof schema.clientsTable.$inferInsert = {
+export async function createTestClientInDb(clientData?: Partial<typeof clientsTable.$inferInsert>) {
+  const client: typeof clientsTable.$inferInsert = {
     email: clientData?.email || `test-${Date.now()}@example.com`,
     phone: clientData?.phone || '555-0100',
     memberId: clientData?.memberId || `MEM${Date.now()}`,
@@ -33,23 +33,23 @@ export async function createTestClientInDb(clientData?: Partial<typeof schema.cl
     addressEncrypted: clientData?.addressEncrypted ?? null,
   };
   
-  const [result] = await db.insert(schema.clientsTable).values(client).returning();
+  const [result] = await db.insert(clientsTable).values(client).returning();
   return result;
 }
 
-export async function createTestLockerInDb(lockerData?: Partial<typeof schema.lockersTable.$inferInsert>) {
+export async function createTestLockerInDb(lockerData?: Partial<typeof lockersTable.$inferInsert>) {
   const locker = {
     name: `L${Date.now()}`,
     status: 'available' as const,
     ...lockerData,
   };
   
-  const [result] = await db.insert(schema.lockersTable).values(locker).returning();
+  const [result] = await db.insert(lockersTable).values(locker).returning();
   return result;
 }
 
-export async function createTestRoomInDb(roomData?: Partial<typeof schema.roomsTable.$inferInsert>) {
-  const room: typeof schema.roomsTable.$inferInsert = {
+export async function createTestRoomInDb(roomData?: Partial<typeof roomsTable.$inferInsert>) {
+  const room: typeof roomsTable.$inferInsert = {
     name: roomData?.name || `R${Date.now()}`,
     status: roomData?.status || 'available',
     clientId: roomData?.clientId ?? null,
@@ -58,19 +58,19 @@ export async function createTestRoomInDb(roomData?: Partial<typeof schema.roomsT
     expiresAt: roomData?.expiresAt ?? null,
   };
   
-  const [result] = await db.insert(schema.roomsTable).values(room).returning();
+  const [result] = await db.insert(roomsTable).values(room).returning();
   return result;
 }
 
-export async function createTestUserInDb(userData?: Partial<typeof schema.usersTable.$inferInsert>) {
-  const user: typeof schema.usersTable.$inferInsert = {
+export async function createTestUserInDb(userData?: Partial<typeof usersTable.$inferInsert>) {
+  const user: typeof usersTable.$inferInsert = {
     email: userData?.email || `user-${Date.now()}@example.com`,
     passwordHash: userData?.passwordHash || '$2a$10$test',
     role: userData?.role || 'STAFF',
     name: userData?.name || 'Test User',
   };
   
-  const [result] = await db.insert(schema.usersTable).values(user).returning();
+  const [result] = await db.insert(usersTable).values(user).returning();
   return result;
 }
 

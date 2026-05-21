@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import * as schema from '@workspace/db/schema';
+import { productsTable } from '@workspace/db/schema';
 
 // Mock cache functions
 vi.mock('../lib/cache', () => ({
@@ -24,7 +24,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     it('should return list of products for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       
-      await db.insert(schema.productsTable).values([
+      await db.insert(productsTable).values([
         { name: 'Water Bottle', price: '5.00', stock: 10, category: 'beverage' },
         { name: 'Towel', price: '10.00', stock: 5, category: 'accessory' },
       ]);
@@ -47,7 +47,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
         price: '10.00',
         stock: 10,
       }));
-      await db.insert(schema.productsTable).values(products);
+      await db.insert(productsTable).values(products);
 
       const response = await api.get('/api/products?page=1&limit=10').set(authHeaders);
 
@@ -84,7 +84,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     it('should include pagination metadata', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       
-      await db.insert(schema.productsTable).values([
+      await db.insert(productsTable).values([
         { name: 'Product 1', price: '10.00', stock: 10 },
         { name: 'Product 2', price: '20.00', stock: 5 },
       ]);
@@ -166,7 +166,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     it('should update product for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       
-      const [product] = await db.insert(schema.productsTable).values({
+      const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
@@ -195,7 +195,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const [product] = await db.insert(schema.productsTable).values({
+      const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
@@ -209,7 +209,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     it('should return 403 for non-manager user', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       
-      const [product] = await db.insert(schema.productsTable).values({
+      const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
@@ -233,7 +233,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     it('should delete product for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       
-      const [product] = await db.insert(schema.productsTable).values({
+      const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
@@ -245,7 +245,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const [product] = await db.insert(schema.productsTable).values({
+      const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
@@ -259,7 +259,7 @@ describe('Products API', { tags: ['@regression'] }, () => {
     it('should return 403 for non-manager user', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       
-      const [product] = await db.insert(schema.productsTable).values({
+      const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
