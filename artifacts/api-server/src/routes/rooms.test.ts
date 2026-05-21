@@ -11,6 +11,78 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     await cleanDatabase();
   });
 
+  describe('POST /api/rooms/bulk-release', () => {
+    it('should release all expired rooms', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      // Create an expired room (expiresAt in the past)
+      await createTestRoomInDb({ name: 'R101', status: 'occupied', clientId: client.id });
+
+      // Create a non-expired room
+      await createTestRoomInDb({ name: 'R102', status: 'available' });
+
+      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({
+        operation: 'all_expired',
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('totalRequested');
+      expect(response.body).toHaveProperty('totalReleased');
+      expect(response.body).toHaveProperty('failed');
+      expect(response.body.totalReleased).toBeGreaterThan(0);
+    });
+
+    it('should release rooms by status', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      
+      await createTestRoomInDb({ name: 'R101', status: 'occupied', clientId: client.id });
+      await createTestRoomInDb({ name: 'R102', status: 'occupied', clientId: client.id });
+      await createTestRoomInDb({ name: 'R103', status: 'available' });
+
+      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({
+        operation: 'by_status',
+        status: 'occupied',
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.totalReleased).toBe(2);
+    });
+
+    it('should release rooms by IDs', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      
+      const room1 = await createTestRoomInDb({ name: 'R101', status: 'occupied', clientId: client.id });
+      const room2 = await createTestRoomInDb({ name: 'R102', status: 'occupied', clientId: client.id });
+      await createTestRoomInDb({ name: 'R103', status: 'available' });
+
+      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({
+        operation: 'by_ids',
+        resourceIds: [room1.id, room2.id],
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.totalReleased).toBe(2);
+    });
+
+    it('should return 401 for unauthenticated request', async () => {
+      const response = await api.post('/api/rooms/bulk-release').send({
+        operation: 'all_expired',
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should validate required operation field', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({});
+
+      expect(response.status).toBe(400);
+    });
+  });
+
   describe('GET /api/rooms', () => {
     it('should return list of rooms for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');

@@ -712,6 +712,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/RentalSession"
 
+  /lockers/bulk-release:
+    post:
+      operationId: bulkReleaseLockers
+      tags: [lockers]
+      summary: Bulk release lockers by operation type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkReleaseBody"
+      responses:
+        "200":
+          description: Bulk release completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkReleaseResult"
+
   # Rooms
   /rooms:
     get:
@@ -840,6 +859,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RentalSession"
+
+  /rooms/bulk-release:
+    post:
+      operationId: bulkReleaseRooms
+      tags: [rooms]
+      summary: Bulk release rooms by operation type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkReleaseBody"
+      responses:
+        "200":
+          description: Bulk release completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkReleaseResult"
 
   # Pricing
   /pricing/calculate:
@@ -1875,6 +1913,45 @@ components:
         expiresAt:
           type: ["string", "null"]
           format: date-time
+
+    BulkReleaseBody:
+      type: object
+      required: [operation]
+      properties:
+        operation:
+          type: string
+          enum: [all_expired, by_status, by_ids]
+          description: Type of bulk release operation
+        status:
+          type: string
+          enum: [occupied, reserved]
+          description: Status filter (required when operation is by_status)
+        resourceIds:
+          type: array
+          items:
+            type: integer
+          description: Array of resource IDs to release (required when operation is by_ids)
+
+    BulkReleaseResult:
+      type: object
+      required: [totalRequested, totalReleased, failed]
+      properties:
+        totalRequested:
+          type: integer
+          description: Number of resources requested for release
+        totalReleased:
+          type: integer
+          description: Number of resources successfully released
+        failed:
+          type: array
+          items:
+            type: object
+            properties:
+              resourceId:
+                type: integer
+              reason:
+                type: string
+          description: List of resources that failed to release with reasons
 
     OccupancySummary:
       type: object

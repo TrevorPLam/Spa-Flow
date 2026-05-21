@@ -16,6 +16,7 @@ import {
   RenewRoomBody,
   ExtendRoomParams,
   ExtendRoomBody,
+  BulkReleaseRoomsBody,
 } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError, logger } from "../lib/logger";
@@ -371,6 +372,101 @@ router.post("/rooms/:id/extend", requireAuth, apiLimiter, async (req, res): Prom
 
   const [session] = room.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, room.sessionId)) : [null];
   res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "room", resourceId: room.id, resourceName: room.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
+});
+
+router.post("/rooms/bulk-release", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const parsed = BulkReleaseRoomsBody.safeParse(req.body);
+  if (!parsed.success) {
+    sendValidationError(res, parsed.error.message);
+    return;
+  }
+
+  const { operation, status, resourceIds } = parsed.data;
+  const actingUser = (req as AuthRequest).user!;
+
+  // Determine which rooms to release based on operation type
+  let roomsToRelease: typeof roomsTable.$inferSelect[] = [];
+
+  if (operation === "all_expired") {
+    // Release all rooms where expiresAt is in the past
+    roomsToRelease = await db.select().from(roomsTable).where(
+      sql`${roomsTable.status} = 'occupied' AND ${roomsTable.expiresAt} < NOW()`
+    );
+  } else if (operation === "by_status") {
+    if (!status) {
+      sendValidationError(res, "Status is required for by_status operation");
+      return;
+    }
+    roomsToRelease = await db.select().from(roomsTable).where(eq(roomsTable.status, status as "occupied" | "reserved"));
+  } else if (operation === "by_ids") {
+    if (!resourceIds || resourceIds.length === 0) {
+      sendValidationError(res, "Resource IDs are required for by_ids operation");
+      return;
+    }
+    roomsToRelease = await db.select().from(roomsTable).where(
+      sql`${roomsTable.id} = ANY(${resourceIds})`
+    );
+  }
+
+  const totalRequested = roomsToRelease.length;
+  const failed: Array<{ resourceId: number; reason: string }> = [];
+  const endTime = new Date();
+
+  // Process each room release in a transaction
+  for (const room of roomsToRelease) {
+    try {
+      await db.transaction(async (tx) => {
+        if (room.sessionId) {
+          await tx.update(rentalSessionsTable).set({ status: "completed", endTime })
+            .where(eq(rentalSessionsTable.id, room.sessionId));
+        }
+
+        await tx.update(roomsTable).set({
+          status: "available",
+          clientId: null,
+          sessionId: null,
+          startTime: null,
+          expiresAt: null,
+        }).where(eq(roomsTable.id, room.id));
+
+        // Atomically assign next waitlist entry
+        try {
+          await assignNextWaitlistEntry(room.id);
+        } catch (err) {
+          // Log waitlist assignment failure but don't fail release operation
+          logger.error({
+            err: err instanceof Error ? {
+              name: err.name,
+              message: err.message,
+              stack: err.stack,
+            } : String(err),
+            roomId: room.id,
+          }, 'Failed to assign waitlist entry during bulk room release');
+        }
+      });
+
+      // Audit log for each individual release
+      await writeAuditLog({
+        userId: parseInt(actingUser.sub),
+        action: "BULK_RELEASE_ROOM",
+        resourceType: "room",
+        resourceId: room.id,
+        description: `Bulk released room ${room.name} (operation: ${operation})`,
+      });
+    } catch (error) {
+      failed.push({ resourceId: room.id, reason: error instanceof Error ? error.message : "Unknown error" });
+      logTransactionError("bulk room release", error, { roomId: room.id, operation });
+    }
+  }
+
+  const totalReleased = totalRequested - failed.length;
+  const result = {
+    totalRequested,
+    totalReleased,
+    failed,
+  };
+
+  res.json(result);
 });
 
 // Atomically assign room to next waitlist entry

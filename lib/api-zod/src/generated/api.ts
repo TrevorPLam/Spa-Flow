@@ -575,6 +575,25 @@ export const ExtendLockerResponse = zod.object({
 
 
 /**
+ * @summary Bulk release lockers by operation type
+ */
+export const BulkReleaseLockersBody = zod.object({
+  "operation": zod.enum(['all_expired', 'by_status', 'by_ids']).describe('Type of bulk release operation'),
+  "status": zod.enum(['occupied', 'reserved']).optional().describe('Status filter (required when operation is by_status)'),
+  "resourceIds": zod.array(zod.number()).optional().describe('Array of resource IDs to release (required when operation is by_ids)')
+})
+
+export const BulkReleaseLockersResponse = zod.object({
+  "totalRequested": zod.number().describe('Number of resources requested for release'),
+  "totalReleased": zod.number().describe('Number of resources successfully released'),
+  "failed": zod.array(zod.object({
+  "resourceId": zod.number().optional(),
+  "reason": zod.string().optional()
+})).describe('List of resources that failed to release with reasons')
+})
+
+
+/**
  * @summary List all private rooms
  */
 export const ListRoomsQueryParams = zod.object({
@@ -707,6 +726,25 @@ export const ExtendRoomResponse = zod.object({
   "expiresAt": zod.coerce.date().nullish(),
   "endTime": zod.coerce.date().nullish(),
   "amountPaid": zod.number().nullish()
+})
+
+
+/**
+ * @summary Bulk release rooms by operation type
+ */
+export const BulkReleaseRoomsBody = zod.object({
+  "operation": zod.enum(['all_expired', 'by_status', 'by_ids']).describe('Type of bulk release operation'),
+  "status": zod.enum(['occupied', 'reserved']).optional().describe('Status filter (required when operation is by_status)'),
+  "resourceIds": zod.array(zod.number()).optional().describe('Array of resource IDs to release (required when operation is by_ids)')
+})
+
+export const BulkReleaseRoomsResponse = zod.object({
+  "totalRequested": zod.number().describe('Number of resources requested for release'),
+  "totalReleased": zod.number().describe('Number of resources successfully released'),
+  "failed": zod.array(zod.object({
+  "resourceId": zod.number().optional(),
+  "reason": zod.string().optional()
+})).describe('List of resources that failed to release with reasons')
 })
 
 

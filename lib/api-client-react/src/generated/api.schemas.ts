@@ -482,6 +482,52 @@ export interface Room {
   expiresAt?: string | null;
 }
 
+/**
+ * Type of bulk release operation
+ */
+export type BulkReleaseBodyOperation = typeof BulkReleaseBodyOperation[keyof typeof BulkReleaseBodyOperation];
+
+
+export const BulkReleaseBodyOperation = {
+  all_expired: 'all_expired',
+  by_status: 'by_status',
+  by_ids: 'by_ids',
+} as const;
+
+/**
+ * Status filter (required when operation is by_status)
+ */
+export type BulkReleaseBodyStatus = typeof BulkReleaseBodyStatus[keyof typeof BulkReleaseBodyStatus];
+
+
+export const BulkReleaseBodyStatus = {
+  occupied: 'occupied',
+  reserved: 'reserved',
+} as const;
+
+export interface BulkReleaseBody {
+  /** Type of bulk release operation */
+  operation: BulkReleaseBodyOperation;
+  /** Status filter (required when operation is by_status) */
+  status?: BulkReleaseBodyStatus;
+  /** Array of resource IDs to release (required when operation is by_ids) */
+  resourceIds?: number[];
+}
+
+export type BulkReleaseResultFailedItem = {
+  resourceId?: number;
+  reason?: string;
+};
+
+export interface BulkReleaseResult {
+  /** Number of resources requested for release */
+  totalRequested: number;
+  /** Number of resources successfully released */
+  totalReleased: number;
+  /** List of resources that failed to release with reasons */
+  failed: BulkReleaseResultFailedItem[];
+}
+
 export interface OccupancySummary {
   total: number;
   available: number;

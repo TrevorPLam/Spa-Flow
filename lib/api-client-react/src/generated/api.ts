@@ -25,6 +25,8 @@ import type {
   AuditLogList,
   AuthError,
   AuthUser,
+  BulkReleaseBody,
+  BulkReleaseResult,
   CheckInInput,
   CheckInResult,
   Client,
@@ -2100,6 +2102,77 @@ export const useExtendLocker = <TError = ErrorType<unknown>,
       return useMutation(getExtendLockerMutationOptions(options));
     }
 
+export const getBulkReleaseLockersUrl = () => {
+
+
+
+
+  return `/api/v1/lockers/bulk-release`
+}
+
+/**
+ * @summary Bulk release lockers by operation type
+ */
+export const bulkReleaseLockers = async (bulkReleaseBody: BulkReleaseBody, options?: RequestInit): Promise<BulkReleaseResult> => {
+
+  return customFetch<BulkReleaseResult>(getBulkReleaseLockersUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkReleaseBody,)
+  }
+);}
+
+
+
+
+export const getBulkReleaseLockersMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkReleaseLockers>>, TError,{data: BodyType<BulkReleaseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkReleaseLockers>>, TError,{data: BodyType<BulkReleaseBody>}, TContext> => {
+
+const mutationKey = ['bulkReleaseLockers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkReleaseLockers>>, {data: BodyType<BulkReleaseBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkReleaseLockers(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkReleaseLockersMutationResult = NonNullable<Awaited<ReturnType<typeof bulkReleaseLockers>>>
+    export type BulkReleaseLockersMutationBody = BodyType<BulkReleaseBody>
+    export type BulkReleaseLockersMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk release lockers by operation type
+ */
+export const useBulkReleaseLockers = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkReleaseLockers>>, TError,{data: BodyType<BulkReleaseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkReleaseLockers>>,
+        TError,
+        {data: BodyType<BulkReleaseBody>},
+        TContext
+      > => {
+      return useMutation(getBulkReleaseLockersMutationOptions(options));
+    }
+
 export const getListRoomsUrl = (params?: ListRoomsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -2545,6 +2618,77 @@ export const useExtendRoom = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getExtendRoomMutationOptions(options));
+    }
+
+export const getBulkReleaseRoomsUrl = () => {
+
+
+
+
+  return `/api/v1/rooms/bulk-release`
+}
+
+/**
+ * @summary Bulk release rooms by operation type
+ */
+export const bulkReleaseRooms = async (bulkReleaseBody: BulkReleaseBody, options?: RequestInit): Promise<BulkReleaseResult> => {
+
+  return customFetch<BulkReleaseResult>(getBulkReleaseRoomsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkReleaseBody,)
+  }
+);}
+
+
+
+
+export const getBulkReleaseRoomsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkReleaseRooms>>, TError,{data: BodyType<BulkReleaseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkReleaseRooms>>, TError,{data: BodyType<BulkReleaseBody>}, TContext> => {
+
+const mutationKey = ['bulkReleaseRooms'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkReleaseRooms>>, {data: BodyType<BulkReleaseBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkReleaseRooms(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkReleaseRoomsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkReleaseRooms>>>
+    export type BulkReleaseRoomsMutationBody = BodyType<BulkReleaseBody>
+    export type BulkReleaseRoomsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk release rooms by operation type
+ */
+export const useBulkReleaseRooms = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkReleaseRooms>>, TError,{data: BodyType<BulkReleaseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkReleaseRooms>>,
+        TError,
+        {data: BodyType<BulkReleaseBody>},
+        TContext
+      > => {
+      return useMutation(getBulkReleaseRoomsMutationOptions(options));
     }
 
 export const getCalculatePriceUrl = () => {

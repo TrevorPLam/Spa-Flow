@@ -5,6 +5,7 @@ import {
   useReleaseLocker,
   useRenewLocker,
   useExtendLocker,
+  useBulkReleaseLockers,
   getListLockersQueryKey,
   getGetLockersOccupancyQueryKey,
 } from "@workspace/api-client-react";
@@ -36,6 +37,9 @@ export default function LockersPage() {
   const { toast } = useToast();
   const [selectedLocker, setSelectedLocker] = useState<number | null>(null);
   const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
+  const [selectedLockers, setSelectedLockers] = useState<Set<number>>(new Set());
+  const [showBulkReleaseConfirm, setShowBulkReleaseConfirm] = useState(false);
+  const [bulkReleaseMode, setBulkReleaseMode] = useState<"expired" | "selected">("expired");
 
   const { data: lockers = [] } = useListLockers({}, { query: { queryKey: getListLockersQueryKey({}) } });
   const { data: occupancy } = useGetLockersOccupancy({ query: { queryKey: getGetLockersOccupancyQueryKey() } });
@@ -43,6 +47,7 @@ export default function LockersPage() {
   const release = useReleaseLocker();
   const renew = useRenewLocker();
   const extend = useExtendLocker();
+  const bulkRelease = useBulkReleaseLockers();
 
   const lockersArray = Array.isArray(lockers) ? lockers : [];
   const selected = lockersArray.find(l => l.id === selectedLocker);
@@ -77,6 +82,42 @@ export default function LockersPage() {
     });
   }
 
+  async function handleBulkReleaseExpired() {
+    bulkRelease.mutate({ data: { operation: "all_expired" } }, {
+      onSuccess: (result) => {
+        toast({ title: `Released ${result.totalReleased} expired lockers` });
+        invalidate();
+        setSelectedLockers(new Set());
+        setShowBulkReleaseConfirm(false);
+      },
+      onError: () => toast({ title: "Failed to release lockers", variant: "destructive" }),
+    });
+  }
+
+  async function handleBulkReleaseSelected() {
+    bulkRelease.mutate({ data: { operation: "by_ids", resourceIds: Array.from(selectedLockers) } }, {
+      onSuccess: (result) => {
+        toast({ title: `Released ${result.totalReleased} selected lockers` });
+        invalidate();
+        setSelectedLockers(new Set());
+        setShowBulkReleaseConfirm(false);
+      },
+      onError: () => toast({ title: "Failed to release lockers", variant: "destructive" }),
+    });
+  }
+
+  function toggleLockerSelection(id: number) {
+    setSelectedLockers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
   return (
     <Layout>
       <div className="p-6 space-y-6">
@@ -89,10 +130,20 @@ export default function LockersPage() {
               </p>
             )}
           </div>
-          <div className="flex gap-2 text-xs">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" />Available</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" />Occupied</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500" />Reserved</span>
+          <div className="flex gap-2">
+            <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+              Release All Expired
+            </Button>
+            {selectedLockers.size > 0 && (
+              <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("selected"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+                Release Selected ({selectedLockers.size})
+              </Button>
+            )}
+            <div className="flex gap-2 text-xs items-center">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" />Available</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" />Occupied</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500" />Reserved</span>
+            </div>
           </div>
         </div>
 
@@ -100,23 +151,34 @@ export default function LockersPage() {
           {lockersArray.map(locker => {
             const isOccupied = locker.status === "occupied";
             const isReserved = locker.status === "reserved";
+            const isSelected = selectedLockers.has(locker.id);
             return (
               <button
                 key={locker.id}
                 data-testid={`card-locker-${locker.id}`}
-                onClick={() => (isOccupied || isReserved) ? setSelectedLocker(locker.id) : undefined}
+                onClick={(e) => {
+                  if (e.shiftKey || selectedLockers.size > 0) {
+                    toggleLockerSelection(locker.id);
+                  } else if (isOccupied || isReserved) {
+                    setSelectedLocker(locker.id);
+                  }
+                }}
                 className={cn(
-                  "aspect-square rounded-lg border text-xs font-semibold flex flex-col items-center justify-center transition-all",
+                  "aspect-square rounded-lg border text-xs font-semibold flex flex-col items-center justify-center transition-all relative",
                   isOccupied
                     ? "bg-amber-50 border-amber-300 text-amber-800 cursor-pointer hover:bg-amber-100"
                     : isReserved
                     ? "bg-blue-50 border-blue-300 text-blue-800 cursor-pointer hover:bg-blue-100"
-                    : "bg-green-50 border-green-200 text-green-700 cursor-default"
+                    : "bg-green-50 border-green-200 text-green-700 cursor-default",
+                  isSelected && "ring-2 ring-offset-2 ring-destructive"
                 )}
               >
                 <span>{locker.name}</span>
                 {isOccupied && locker.expiresAt && (
                   <Countdown expiresAt={new Date(locker.expiresAt)} className="text-[9px]" />
+                )}
+                {isSelected && (
+                  <div className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
                 )}
               </button>
             );
@@ -199,6 +261,30 @@ export default function LockersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showBulkReleaseConfirm} onOpenChange={setShowBulkReleaseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkReleaseMode === "expired" ? "Release all expired lockers?" : `Release ${selectedLockers.size} selected lockers?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkReleaseMode === "expired"
+                ? "This will immediately release all lockers whose rental time has expired. This action cannot be undone."
+                : "This will immediately release the selected lockers. This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkReleaseMode === "expired" ? handleBulkReleaseExpired() : handleBulkReleaseSelected()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Release
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

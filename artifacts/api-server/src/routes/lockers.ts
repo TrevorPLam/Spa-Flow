@@ -15,6 +15,7 @@ import {
   RenewLockerBody,
   ExtendLockerParams,
   ExtendLockerBody,
+  BulkReleaseLockersBody,
 } from "@workspace/api-zod";
 import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError } from "../lib/logger";
@@ -396,6 +397,86 @@ router.post("/lockers/:id/extend", requireAuth, apiLimiter, async (req, res): Pr
 
   const [session] = locker.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, locker.sessionId)) : [null];
   res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "locker", resourceId: locker.id, resourceName: locker.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
+});
+
+router.post("/lockers/bulk-release", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const parsed = BulkReleaseLockersBody.safeParse(req.body);
+  if (!parsed.success) {
+    sendValidationError(res, parsed.error.message);
+    return;
+  }
+
+  const { operation, status, resourceIds } = parsed.data;
+  const actingUser = (req as AuthRequest).user!;
+
+  // Determine which lockers to release based on operation type
+  let lockersToRelease: typeof lockersTable.$inferSelect[] = [];
+
+  if (operation === "all_expired") {
+    // Release all lockers where expiresAt is in the past
+    lockersToRelease = await db.select().from(lockersTable).where(
+      sql`${lockersTable.status} = 'occupied' AND ${lockersTable.expiresAt} < NOW()`
+    );
+  } else if (operation === "by_status") {
+    if (!status) {
+      sendValidationError(res, "Status is required for by_status operation");
+      return;
+    }
+    lockersToRelease = await db.select().from(lockersTable).where(eq(lockersTable.status, status as "occupied" | "reserved"));
+  } else if (operation === "by_ids") {
+    if (!resourceIds || resourceIds.length === 0) {
+      sendValidationError(res, "Resource IDs are required for by_ids operation");
+      return;
+    }
+    lockersToRelease = await db.select().from(lockersTable).where(
+      sql`${lockersTable.id} = ANY(${resourceIds})`
+    );
+  }
+
+  const totalRequested = lockersToRelease.length;
+  const failed: Array<{ resourceId: number; reason: string }> = [];
+  const endTime = new Date();
+
+  // Process each locker release in a transaction
+  for (const locker of lockersToRelease) {
+    try {
+      await db.transaction(async (tx) => {
+        if (locker.sessionId) {
+          await tx.update(rentalSessionsTable).set({ status: "completed", endTime })
+            .where(eq(rentalSessionsTable.id, locker.sessionId));
+        }
+
+        await tx.update(lockersTable).set({
+          status: "available",
+          clientId: null,
+          sessionId: null,
+          startTime: null,
+          expiresAt: null,
+        }).where(eq(lockersTable.id, locker.id));
+      });
+
+      // Audit log for each individual release
+      await writeAuditLog({
+        userId: parseInt(actingUser.sub),
+        action: "BULK_RELEASE_LOCKER",
+        resourceType: "locker",
+        resourceId: locker.id,
+        description: `Bulk released locker ${locker.name} (operation: ${operation})`,
+      });
+    } catch (error) {
+      failed.push({ resourceId: locker.id, reason: error instanceof Error ? error.message : "Unknown error" });
+      logTransactionError("bulk locker release", error, { lockerId: locker.id, operation });
+    }
+  }
+
+  const totalReleased = totalRequested - failed.length;
+  const result = {
+    totalRequested,
+    totalReleased,
+    failed,
+  };
+
+  res.json(result);
 });
 
 export default router;

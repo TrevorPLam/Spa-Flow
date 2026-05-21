@@ -158,8 +158,8 @@
 
 ---
 
-## [ ] TASK-039: Add Bulk Operations for Lockers and Rooms
-**Status:** Pending
+## [x] TASK-039: Add Bulk Operations for Lockers and Rooms
+**Status:** Completed
 **Priority:** Low
 
 ### Related File Paths

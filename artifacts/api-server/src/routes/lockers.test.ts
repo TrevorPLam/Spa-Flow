@@ -11,6 +11,78 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     await cleanDatabase();
   });
 
+  describe('POST /api/lockers/bulk-release', () => {
+    it('should release all expired lockers', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      // Create an expired locker (expiresAt in the past)
+      await createTestLockerInDb({ name: 'L101', status: 'occupied', clientId: client.id });
+
+      // Create a non-expired locker
+      await createTestLockerInDb({ name: 'L102', status: 'available' });
+
+      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({
+        operation: 'all_expired',
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('totalRequested');
+      expect(response.body).toHaveProperty('totalReleased');
+      expect(response.body).toHaveProperty('failed');
+      expect(response.body.totalReleased).toBeGreaterThan(0);
+    });
+
+    it('should release lockers by status', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      
+      await createTestLockerInDb({ name: 'L101', status: 'occupied', clientId: client.id });
+      await createTestLockerInDb({ name: 'L102', status: 'occupied', clientId: client.id });
+      await createTestLockerInDb({ name: 'L103', status: 'available' });
+
+      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({
+        operation: 'by_status',
+        status: 'occupied',
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.totalReleased).toBe(2);
+    });
+
+    it('should release lockers by IDs', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      
+      const locker1 = await createTestLockerInDb({ name: 'L101', status: 'occupied', clientId: client.id });
+      const locker2 = await createTestLockerInDb({ name: 'L102', status: 'occupied', clientId: client.id });
+      await createTestLockerInDb({ name: 'L103', status: 'available' });
+
+      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({
+        operation: 'by_ids',
+        resourceIds: [locker1.id, locker2.id],
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.totalReleased).toBe(2);
+    });
+
+    it('should return 401 for unauthenticated request', async () => {
+      const response = await api.post('/api/lockers/bulk-release').send({
+        operation: 'all_expired',
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should validate required operation field', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({});
+
+      expect(response.status).toBe(400);
+    });
+  });
+
   describe('GET /api/lockers', () => {
     it('should return list of lockers for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');

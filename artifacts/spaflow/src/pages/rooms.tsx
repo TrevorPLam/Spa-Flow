@@ -5,6 +5,7 @@ import {
   useReleaseRoom,
   useRenewRoom,
   useExtendRoom,
+  useBulkReleaseRooms,
   getListRoomsQueryKey,
   getGetRoomsOccupancyQueryKey,
 } from "@workspace/api-client-react";
@@ -36,6 +37,9 @@ export default function RoomsPage() {
   const { toast } = useToast();
   const [selectedRoom, setSelectedRoom] = useState<number | null>(null);
   const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
+  const [selectedRooms, setSelectedRooms] = useState<Set<number>>(new Set());
+  const [showBulkReleaseConfirm, setShowBulkReleaseConfirm] = useState(false);
+  const [bulkReleaseMode, setBulkReleaseMode] = useState<"expired" | "selected">("expired");
 
   const { data: rooms = [] } = useListRooms({}, { query: { queryKey: getListRoomsQueryKey({}) } });
   const { data: occupancy } = useGetRoomsOccupancy({ query: { queryKey: getGetRoomsOccupancyQueryKey() } });
@@ -43,6 +47,7 @@ export default function RoomsPage() {
   const release = useReleaseRoom();
   const renew = useRenewRoom();
   const extend = useExtendRoom();
+  const bulkRelease = useBulkReleaseRooms();
 
   const roomsArray = Array.isArray(rooms) ? rooms : [];
   const selected = roomsArray.find(r => r.id === selectedRoom);
@@ -77,6 +82,42 @@ export default function RoomsPage() {
     });
   }
 
+  async function handleBulkReleaseExpired() {
+    bulkRelease.mutate({ data: { operation: "all_expired" } }, {
+      onSuccess: (result) => {
+        toast({ title: `Released ${result.totalReleased} expired rooms` });
+        invalidate();
+        setSelectedRooms(new Set());
+        setShowBulkReleaseConfirm(false);
+      },
+      onError: () => toast({ title: "Failed to release rooms", variant: "destructive" }),
+    });
+  }
+
+  async function handleBulkReleaseSelected() {
+    bulkRelease.mutate({ data: { operation: "by_ids", resourceIds: Array.from(selectedRooms) } }, {
+      onSuccess: (result) => {
+        toast({ title: `Released ${result.totalReleased} selected rooms` });
+        invalidate();
+        setSelectedRooms(new Set());
+        setShowBulkReleaseConfirm(false);
+      },
+      onError: () => toast({ title: "Failed to release rooms", variant: "destructive" }),
+    });
+  }
+
+  function toggleRoomSelection(id: number) {
+    setSelectedRooms(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
   return (
     <Layout>
       <div className="p-6 space-y-6">
@@ -89,10 +130,20 @@ export default function RoomsPage() {
               </p>
             )}
           </div>
-          <div className="flex gap-2 text-xs">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" />Available</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" />Occupied</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500" />Reserved</span>
+          <div className="flex gap-2">
+            <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+              Release All Expired
+            </Button>
+            {selectedRooms.size > 0 && (
+              <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("selected"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+                Release Selected ({selectedRooms.size})
+              </Button>
+            )}
+            <div className="flex gap-2 text-xs items-center">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500" />Available</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500" />Occupied</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500" />Reserved</span>
+            </div>
           </div>
         </div>
 
@@ -100,31 +151,48 @@ export default function RoomsPage() {
           {roomsArray.map(room => {
             const isOccupied = room.status === "occupied";
             const isReserved = room.status === "reserved";
+            const isSelected = selectedRooms.has(room.id);
             return (
               <button
                 key={room.id}
                 data-testid={`card-room-${room.id}`}
-                onClick={() => (isOccupied || isReserved) ? setSelectedRoom(room.id) : undefined}
+                onClick={(e) => {
+                  if (e.shiftKey || selectedRooms.size > 0) {
+                    toggleRoomSelection(room.id);
+                  } else if (isOccupied || isReserved) {
+                    setSelectedRoom(room.id);
+                  }
+                }}
                 className={cn(
-                  "rounded-xl border p-3 text-left transition-all",
+                  "rounded-lg border p-4 text-left transition-all relative",
                   isOccupied
-                    ? "bg-amber-50 border-amber-300 cursor-pointer hover:bg-amber-100"
+                    ? "bg-amber-50 border-amber-300 text-amber-900 cursor-pointer hover:bg-amber-100"
                     : isReserved
-                    ? "bg-blue-50 border-blue-300 cursor-pointer hover:bg-blue-100"
-                    : "bg-green-50 border-green-200 cursor-default"
+                    ? "bg-blue-50 border-blue-300 text-blue-900 cursor-pointer hover:bg-blue-100"
+                    : "bg-green-50 border-green-200 text-green-700 cursor-default",
+                  isSelected && "ring-2 ring-offset-2 ring-destructive"
                 )}
               >
-                <DoorOpen size={20} className={cn(
-                  "mb-1",
-                  isOccupied ? "text-amber-600" : isReserved ? "text-blue-600" : "text-green-600"
-                )} />
-                <p className="text-sm font-semibold">{room.name}</p>
-                {isOccupied && <p className="text-xs text-muted-foreground truncate">{room.clientName}</p>}
-                {isOccupied && room.expiresAt && (
-                  <Countdown expiresAt={new Date(room.expiresAt)} className="text-xs" />
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold">{room.name}</span>
+                  <Badge variant={room.status === "occupied" ? "default" : "secondary"} className="text-xs capitalize">
+                    {room.status}
+                  </Badge>
+                </div>
+                {room.clientName && (
+                  <div className="text-sm text-muted-foreground mb-2">
+                    <span className="font-medium">Client:</span> {room.clientName}
+                  </div>
                 )}
-                {isReserved && <p className="text-xs text-blue-600">Waitlist</p>}
-                {!isOccupied && !isReserved && <p className="text-xs text-green-600">Open</p>}
+                {isOccupied && room.expiresAt && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">Time remaining:</span>
+                    <Countdown expiresAt={new Date(room.expiresAt)} className="font-medium" />
+                  </div>
+                )}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
+                )}
               </button>
             );
           })}
@@ -206,6 +274,30 @@ export default function RoomsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showBulkReleaseConfirm} onOpenChange={setShowBulkReleaseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkReleaseMode === "expired" ? "Release all expired rooms?" : `Release ${selectedRooms.size} selected rooms?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkReleaseMode === "expired"
+                ? "This will immediately release all rooms whose rental time has expired. This action cannot be undone."
+                : "This will immediately release the selected rooms. This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => bulkReleaseMode === "expired" ? handleBulkReleaseExpired() : handleBulkReleaseSelected()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Release
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
