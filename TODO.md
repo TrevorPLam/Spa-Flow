@@ -282,6 +282,59 @@
 
 ---
 
+## [x] TASK-034-FIX-007: Fix Typecheck Errors in spaflow (DateRangePicker and Factory Types)
+**Status:** Complete
+**Priority:** Medium
+
+### Related File Paths
+- `artifacts/spaflow/src/pages/transactions.tsx`
+- `artifacts/spaflow/src/test/mocks/factories.ts`
+- `artifacts/spaflow/src/test/mocks/handlers/clients.ts`
+
+### Definition of Done
+- ✅ DateRangePicker import errors resolved
+- ✅ Factory type mismatch errors resolved
+- ✅ Unused import errors resolved
+- ✅ spaflow typecheck passes
+
+### Out of Scope
+- Changing test logic
+- Removing factory functions
+
+### Rules to Follow
+- Fix the actual type errors, not suppress them
+- Ensure proper type definitions for factories
+- Remove unused imports
+
+### Advanced Coding Pattern
+- Type-safe factory functions
+- Proper import management
+
+### Anti-Patterns
+- Using @ts-ignore to suppress errors
+- Using any types to bypass type checking
+
+### Depends On
+- None
+
+### Blocks
+- Full typecheck workflow
+
+### Implementation Notes
+- **Root Cause 1**: DateRangePicker and DateRangePresets components used but not imported in transactions.tsx
+- **Fix 1**: Added import statement `import { DateRangePicker, DateRangePresets } from "@/components/ui/date-range-picker"`
+- **Fix 2**: Added explicit type annotations for onChange parameters to avoid implicit any types
+- **Root Cause 2**: Factory functions used string IDs but API schema expects number IDs for AuthUser, User, Client, Locker, Room, and Transaction
+- **Fix 3**: Updated all factory functions to use number IDs matching the API schema (AuthUser.id, User.id, Client.id, Locker.id, Room.id, Transaction.id, Transaction.clientId)
+- **Root Cause 3**: Dashboard factory used properties that don't exist in the Dashboard schema (totalClients, activeMemberships, availableLockers, availableRooms, todayTransactions, monthlyRevenue)
+- **Fix 4**: Updated createDashboard to match actual Dashboard schema with lockerOccupancy, roomOccupancy, todayRevenue, activeClients, waitlistCount, lowStockCount, recentTransactions, activeRentals
+- **Root Cause 4**: Unused import of Client type in handlers/clients.ts
+- **Fix 5**: Removed unused Client import from handlers/clients.ts
+- **Additional Fixes**: Updated Locker and Room factories to use 'name' instead of 'number' property, removed non-existent properties (createdAt, updatedAt) from Locker/Room/User factories
+- **Result**: spaflow typecheck now passes with 0 errors
+
+---
+
 ## [ ] TASK-035: Implement Holiday and Special Event Pricing Logic
 **Status:** Pending
 **Priority:** High

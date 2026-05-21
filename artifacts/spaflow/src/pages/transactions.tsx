@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Receipt } from "lucide-react";
 import { format } from "date-fns";
+import { DateRangePicker, DateRangePresets } from "@/components/ui/date-range-picker";
 
 const TYPE_COLORS: Record<string, "default" | "secondary" | "outline"> = {
   locker_rental: "secondary",
@@ -43,16 +44,16 @@ export default function TransactionsPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <DateRangePresets 
+          <DateRangePresets
             value={dateRange}
-            onChange={(range) => {
+            onChange={(range: { from?: Date; to?: Date } | undefined) => {
               setDateRange(range);
               setPage(1);
             }}
           />
-          <DateRangePicker 
+          <DateRangePicker
             value={dateRange}
-            onChange={(range) => {
+            onChange={(range: { from?: Date; to?: Date } | undefined) => {
               setDateRange(range);
               setPage(1);
             }}

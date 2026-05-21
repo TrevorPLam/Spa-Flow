@@ -1,6 +1,5 @@
 import { http, HttpResponse } from 'msw';
 import { createClient, createClientList } from '../factories';
-import type { Client } from '@workspace/api-client-react';
 
 /**
  * Client API handlers
