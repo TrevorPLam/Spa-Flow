@@ -1,8 +1,13 @@
 import { logger } from "./logger";
 import { getEnv } from "./env";
 
+/**
+ * Result of a Square payment processing attempt
+ */
 export interface PaymentResult {
+  /** Square payment ID */
   paymentId: string;
+  /** Payment status (e.g., "COMPLETED", "FAILED") */
   status: string;
 }
 
@@ -15,6 +20,17 @@ interface SquareError {
   }>;
 }
 
+/**
+ * Processes a payment using Square Web Payments SDK
+ * Returns a mock result if Square is not configured (for development/testing)
+ *
+ * @param paymentToken - Square payment token from client
+ * @param amountCents - Payment amount in cents
+ * @param idempotencyKey - Unique key to prevent duplicate payments
+ * @param note - Optional note for the payment
+ * @returns Payment result with ID and status
+ * @throws Error if payment processing fails
+ */
 export async function processSquarePayment(
   paymentToken: string,
   amountCents: number,

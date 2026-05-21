@@ -2,13 +2,24 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getEnv } from "../lib/env";
 
+/**
+ * Current lockout status for a user account
+ */
 export interface LockoutStatus {
+  /** Whether the account is currently locked */
   isLocked: boolean;
+  /** Number of failed login attempts recorded */
   failedAttempts: number;
+  /** Timestamp when lockout will expire, or null if not locked */
   lockedUntil: Date | null;
+  /** Number of remaining attempts before lockout */
   remainingAttempts: number;
 }
 
+/**
+ * Service for managing account lockout after failed login attempts
+ * Implements progressive account locking based on configurable threshold and duration
+ */
 export class AccountLockoutService {
   private threshold: number;
   private durationMs: number;
@@ -20,8 +31,11 @@ export class AccountLockoutService {
   }
 
   /**
-   * Record a failed login attempt for a user
+   * Records a failed login attempt for a user
    * Increments the failed attempt counter and locks the account if threshold is reached
+   *
+   * @param userId - The user ID to record the failed attempt for
+   * @throws Error if user is not found
    */
   async recordFailedAttempt(userId: number): Promise<void> {
     const [user] = await db
@@ -50,8 +64,12 @@ export class AccountLockoutService {
   }
 
   /**
-   * Check if a user account is currently locked
+   * Checks if a user account is currently locked
    * Returns true if locked and lockout period has not expired
+   * Automatically clears expired lockouts
+   *
+   * @param userId - The user ID to check
+   * @returns True if the account is locked, false otherwise
    */
   async isLocked(userId: number): Promise<boolean> {
     const [user] = await db
@@ -80,7 +98,11 @@ export class AccountLockoutService {
   }
 
   /**
-   * Get the current lockout status for a user
+   * Gets the current lockout status for a user
+   *
+   * @param userId - The user ID to get status for
+   * @returns Lockout status information
+   * @throws Error if user is not found
    */
   async getLockoutStatus(userId: number): Promise<LockoutStatus> {
     const [user] = await db
@@ -107,8 +129,10 @@ export class AccountLockoutService {
   }
 
   /**
-   * Reset failed login attempts and clear lockout for a user
+   * Resets failed login attempts and clears lockout for a user
    * Called after successful login or manual unlock
+   *
+   * @param userId - The user ID to reset attempts for
    */
   async resetAttempts(userId: number): Promise<void> {
     await db

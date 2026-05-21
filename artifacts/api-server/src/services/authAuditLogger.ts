@@ -1,18 +1,33 @@
 import { db, auditLogsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
+/**
+ * Data for a login attempt audit log entry
+ */
 export interface LoginAttemptData {
+  /** Optional user ID (null if user not found) */
   userId?: number;
+  /** Email address used for login attempt */
   email: string;
+  /** IP address of the request */
   ipAddress: string;
+  /** Whether the login attempt was successful */
   success: boolean;
+  /** Optional reason for failure */
   reason?: string;
+  /** Optional correlation ID for request tracing */
   correlationId?: string;
 }
 
+/**
+ * Data for a logout audit log entry
+ */
 export interface LogoutData {
+  /** User ID of the user logging out */
   userId: number;
+  /** IP address of the request */
   ipAddress: string;
+  /** Optional correlation ID for request tracing */
   correlationId?: string;
 }
 
@@ -23,7 +38,10 @@ export interface LogoutData {
  */
 export class AuthAuditLogger {
   /**
-   * Log a login attempt (success or failure)
+   * Logs a login attempt (success or failure)
+   * Logs to audit_logs table with appropriate action type
+   *
+   * @param data - Login attempt data including email, IP, and success status
    */
   async logLoginAttempt(data: LoginAttemptData): Promise<void> {
     try {
@@ -48,7 +66,10 @@ export class AuthAuditLogger {
   }
 
   /**
-   * Log a logout event
+   * Logs a logout event
+   * Logs to audit_logs table with LOGOUT action type
+   *
+   * @param data - Logout data including user ID and IP address
    */
   async logLogout(data: LogoutData): Promise<void> {
     try {

@@ -1,6 +1,13 @@
 import { logger } from "./logger";
 import { getEnv } from "./env";
 
+/**
+ * Sends an SMS message using Twilio
+ * If Twilio is not configured, logs and returns without error
+ *
+ * @param to - Recipient phone number in E.164 format
+ * @param message - SMS message content
+ */
 export async function sendSms(to: string, message: string): Promise<void> {
   const env = getEnv();
   const accountSid = env.TWILIO_ACCOUNT_SID;
@@ -34,5 +41,8 @@ export async function sendSms(to: string, message: string): Promise<void> {
   }
 }
 
+/**
+ * Default SMS message sent when a room becomes available for a waitlisted user
+ */
 export const WAITLIST_ROOM_MSG =
   "SpaFlow: A private dressing room is now available for you. Please proceed to the front desk within 15 minutes.";

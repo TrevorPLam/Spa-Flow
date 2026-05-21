@@ -7,6 +7,12 @@ export { createBootstrapLogger };
 const env = getEnv();
 const isProduction = env.NODE_ENV === "production";
 
+/**
+ * Pino logger instance configured for the application
+ * - Redacts sensitive data (authorization headers, cookies)
+ * - Uses pretty printing in development
+ * - Uses JSON format in production
+ */
 export const logger = pino({
   level: env.LOG_LEVEL,
   redact: [
@@ -24,6 +30,14 @@ export const logger = pino({
       }),
 });
 
+/**
+ * Logs a transaction error with standardized format
+ * Includes error details, operation name, and optional context
+ *
+ * @param operation - The operation that failed (e.g., "createLocker", "updateSession")
+ * @param error - The error that occurred
+ * @param context - Additional context data for debugging
+ */
 export function logTransactionError(
   operation: string,
   error: unknown,

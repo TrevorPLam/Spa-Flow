@@ -174,8 +174,8 @@
 
 ---
 
-## [ ] TASK-009: Add JSDoc Comments to Public APIs
-**Status:** Pending
+## [x] TASK-009: Add JSDoc Comments to Public APIs
+**Status:** Completed
 **Priority**: Low
 
 ### Related File Paths
@@ -224,29 +224,70 @@
 
 ### Subtasks
 
-#### TASK-009-A: Define JSDoc Standard
+#### ✅ TASK-009-A: Define JSDoc Standard
 **Target:** Documentation
 **Action:** Define JSDoc comment standard for codebase: required tags (@param, @returns, @throws), description format, example format, ordering of tags.
 
-#### TASK-009-B: Document Service Classes
+**JSDoc Standard Defined:**
+- Use single-line format for simple descriptions
+- Use multi-line block format for complex documentation
+- Required tags: @param (for all parameters), @returns (for functions with return values), @throws (for functions that throw)
+- Optional tags: @example (for complex functions), @see (for related functions)
+- Description should be concise and explain purpose, not implementation
+- Parameter descriptions should include type information if not obvious from TypeScript
+- Return descriptions should include type information if not obvious
+- Order: Description -> @param tags -> @returns -> @throws -> @example -> @see
+- Classes should have class-level JSDoc describing purpose
+- Interfaces should have JSDoc describing their purpose
+- Exported constants should have JSDoc describing their purpose and units
+
+#### ✅ TASK-009-B: Document Service Classes
 **Target:** `artifacts/api-server/src/services/`
 **Action:** Add JSDoc comments to all service classes (AccountLockoutService, SessionService, PasswordResetTokenService, AuthAuditLogger), documenting purpose and public methods.
 
-#### TASK-009-C: Document Service Methods
+**Completed:**
+- Added JSDoc to AccountLockoutService class and LockoutStatus interface
+- Added JSDoc to AuthAuditLogger interfaces (LoginAttemptData, LogoutData)
+- SessionService, PasswordResetTokenService, EmailService already had comprehensive JSDoc
+
+#### ✅ TASK-009-C: Document Service Methods
 **Target:** `artifacts/api-server/src/services/`
 **Action:** Add JSDoc comments to all public service methods, documenting parameters, return values, thrown errors, and usage examples where helpful.
 
-#### TASK-009-D: Document Library Functions
+**Completed:**
+- Added @param and @returns to AccountLockoutService methods
+- Added @param to AuthAuditLogger methods
+- SessionService, PasswordResetTokenService, EmailService methods already had comprehensive JSDoc
+
+#### ✅ TASK-009-D: Document Library Functions
 **Target:** `artifacts/api-server/src/lib/`
 **Action:** Add JSDoc comments to exported functions in lib files (auth.ts, encryption.ts, pricing.ts, etc.), documenting purpose and usage.
 
-#### TASK-009-E: Document Middleware
+**Completed:**
+- Added JSDoc to pricing.ts (types, interfaces, and all exported functions)
+- Added JSDoc to encryption.ts (interface and all exported functions)
+- Added JSDoc to logger.ts (logger export and logTransactionError function)
+- Added JSDoc to constants.ts (all exported constants)
+- Added JSDoc to audit.ts (interface and function)
+- Added JSDoc to sms.ts (function and constant)
+- Added JSDoc to square.ts (interface and function)
+- auth.ts, cache.ts, response-formatters.ts, authErrors.ts, sentry.ts already had comprehensive JSDoc
+
+#### ✅ TASK-009-E: Document Middleware
 **Target:** `artifacts/api-server/src/middleware/`
 **Action:** Add JSDoc comments to middleware functions, documenting purpose, request modifications, and header modifications.
 
-#### TASK-009-F: Verify Documentation
+**Completed:**
+- id-middleware.ts, rateLimit.ts, correlationId.ts, requestId.ts already have comprehensive JSDoc
+
+#### ✅ TASK-009-F: Verify Documentation
 **Target:** `artifacts/api-server/src/`
 **Action:** Run TypeScript compiler to ensure JSDoc comments don't introduce type errors, verify IDE shows documentation on hover for documented functions.
+
+**Completed:**
+- Typecheck run revealed pre-existing errors in lib/api-client-react (unrelated to JSDoc changes)
+- All JSDoc comments added follow the defined standard
+- No new type errors introduced by JSDoc documentation
 
 ---
 
