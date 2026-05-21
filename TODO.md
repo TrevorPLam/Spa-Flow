@@ -155,18 +155,19 @@
 
 ---
 
-## [ ] TASK-034-FIX-004: Fix vi Mock Lint Errors
-**Status:** Pending
+## [x] TASK-034-FIX-004: Fix vi Mock Lint Errors
+**Status:** Complete
 **Priority:** Low
 
 ### Related File Paths
 - `artifacts/api-server/src/routes/products.test.ts`
 - `artifacts/api-server/vitest.config.ts`
+- `artifacts/api-server/tsconfig.json`
 
 ### Definition of Done
-- All vi mock lint errors resolved
-- Vitest configuration properly handles global vi object
-- Tests continue to pass after lint fixes
+- ✅ All vi mock lint errors resolved
+- ✅ Vitest configuration properly handles global vi object
+- ✅ Tests continue to pass after lint fixes
 
 ### Out of Scope
 - Changing test logic or test expectations
@@ -190,10 +191,92 @@
 - Full lint workflow
 
 ### Implementation Notes
-- Pre-existing issue: vi mock lint errors in test files
-- First observed during TASK-029
-- Likely cause: vitest globals not properly configured in tsconfig
-- Affects multiple test files
+- **Root Cause**: vitest.config.ts has `globals: true` but tsconfig.json didn't include vitest/globals in types array, so TypeScript didn't recognize vi as a global
+- **Fix Applied**: Added "vitest/globals" to types array in artifacts/api-server/tsconfig.json
+- **Result**: vi mock errors in products.test.ts resolved (8 errors gone)
+- **Note**: Other test files (email.test.ts, __mocks__/twilio.ts) explicitly import vi from vitest, so they were not affected
+- **Remaining Typecheck Errors**: 11 errors in auth.test.ts and health.ts are unrelated to vi mock issue
+
+---
+
+## [ ] TASK-034-FIX-005: Fix Typecheck Error in auth.test.ts (lockedUntil Property)
+**Status:** Pending
+**Priority:** Medium
+
+### Related File Paths
+- `artifacts/api-server/src/lib/auth.test.ts`
+
+### Definition of Done
+- Typecheck error resolved (Property 'lockedUntil' does not exist)
+- Test passes after fix
+
+### Out of Scope
+- Changing test logic or test expectations
+
+### Rules to Follow
+- Fix the actual type error, not suppress it
+- Ensure user type includes lockedUntil property if it should exist
+
+### Advanced Coding Pattern
+- Type-safe test data setup
+
+### Anti-Patterns
+- Using @ts-ignore to suppress errors
+- Hardcoding property access without type safety
+
+### Depends On
+- None
+
+### Blocks
+- Full typecheck workflow
+
+### Implementation Notes
+- Pre-existing issue: Property 'lockedUntil' does not exist on type at auth.test.ts:870
+- Likely cause: User type missing lockedUntil property or test using wrong property name
+- Discovered during TASK-034-FIX-004 typecheck verification
+
+---
+
+## [ ] TASK-034-FIX-006: Fix Typecheck Errors in health.ts (Missing Exports and Types)
+**Status:** Pending
+**Priority:** Medium
+
+### Related File Paths
+- `artifacts/api-server/src/routes/health.ts`
+- `lib/api-zod/src/index.ts`
+
+### Definition of Done
+- All 10 typecheck errors in health.ts resolved
+- Missing exports from api-zod added or imports fixed
+- Missing types (HealthCheckStatus, LivenessResponse, ReadinessResponse) resolved
+
+### Out of Scope
+- Changing health check logic
+- Removing health check functionality
+
+### Rules to Follow
+- Fix the actual type errors, not suppress them
+- Add missing exports to api-zod if needed
+- Ensure proper type definitions exist
+
+### Advanced Coding Pattern
+- Type-safe API response schemas
+
+### Anti-Patterns
+- Using @ts-ignore to suppress errors
+- Using any types to bypass type checking
+
+### Depends On
+- None
+
+### Blocks
+- Full typecheck workflow
+
+### Implementation Notes
+- Pre-existing issue: 10 typecheck errors in health.ts
+- Errors include: missing exports (healthCheckStatus, LivenessProbeResponse, ReadinessProbeResponse) from api-zod
+- Missing types: HealthCheckStatus, LivenessResponse, ReadinessResponse
+- Discovered during TASK-034-FIX-004 typecheck verification
 
 ---
 
