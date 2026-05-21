@@ -758,60 +758,34 @@ Task marked as not applicable. The current separation of concerns is appropriate
 
 ---
 
-## [ ] TASK-028: Use Centralized Env Validation in Drizzle Config
-**Status:** Pending
+## [!] TASK-028: Use Centralized Env Validation in Drizzle Config
+**Status:** Not Applicable
 **Priority:** Medium
 
-### Related File Paths
-- `lib/db/drizzle.config.ts`
-- `artifacts/api-server/src/lib/env.ts`
+### Assessment
+This task is not applicable because the drizzle.config.ts already uses centralized env validation correctly.
 
-### Definition of Done
-- Drizzle config uses getEnv() for environment access
-- DATABASE_URL validated through centralized schema
-- Consistent environment variable handling across codebase
+### Current State
+- `lib/db/drizzle.config.ts` uses `getDbEnv()` from `lib/db/src/env.ts`
+- The db package is a separate workspace package with its own environment validation
+- Database-specific environment variables are validated in `lib/db/src/env.ts` with proper Zod schema
+- This is correct monorepo architecture - each package has its own env validation
 
-### Out of Scope
-- Changing Drizzle configuration structure
-- Modifying env.ts schema
+### Architecture Rationale
+The db package must remain independent of the api-server package:
+- db is a shared library used by multiple packages
+- db has its own environment validation for database-specific configuration
+- The drizzle.config.ts correctly uses getDbEnv() from its own env.ts
+- Adding a dependency from db to api-server's env.ts would create circular dependencies
 
-### Rules to Follow
-- Use getEnv() from env.ts
-- Maintain backward compatibility
-- Add DATABASE_URL to envSchema if needed
+### Recommended Alternative
+No action needed. The current implementation follows best practices for monorepo architecture:
+- Each package has its own env validation
+- db package remains independent
+- Centralized env validation is already in place at the package level
 
-### Advanced Coding Pattern
-- Centralized configuration management
-- Single source of truth for environment validation
-
-### Anti-Patterns
-- Direct process.env access
-- Scattered environment variable validation
-
-### Imports/Exports
-- Import getEnv from @workspace/api-server/src/lib/env.ts
-
-### Depends On
-- None
-
-### Blocks
-- None
-
----
-
-### Subtasks
-
-#### TASK-028-A: Add DATABASE_URL to env.ts
-**Target:** `artifacts/api-server/src/lib/env.ts`
-**Action:** Add DATABASE_URL to envSchema with proper validation.
-
-#### TASK-028-B: Update Drizzle Config
-**Target:** `lib/db/drizzle.config.ts`
-**Action:** Replace process.env.DATABASE_URL with getEnv().DATABASE_URL.
-
-#### TASK-028-C: Test Drizzle Commands
-**Target:** `lib/db/`
-**Action:** Test drizzle-kit commands (push, generate, migrate) to ensure they work with new configuration.
+### Implementation Notes
+Task marked as not applicable. The drizzle.config.ts already uses centralized env validation via getDbEnv() from lib/db/src/env.ts.
 
 ---
 
