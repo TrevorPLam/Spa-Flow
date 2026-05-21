@@ -17,6 +17,7 @@ import {
   GetClientTransactionsParams,
   RenewMembershipParams,
   RenewMembershipBody,
+  GetClientRentalProductsParams,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
 import { apiLimiter, piiLimiter } from "../middleware/rateLimit";
@@ -572,6 +573,54 @@ router.get("/clients/:id/rentals", requireAuth, apiLimiter, async (req, res): Pr
   })));
 });
 
+router.get("/clients/:id/rentals/:sessionId/products", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const params = GetClientRentalProductsParams.safeParse(req.params);
+  if (!params.success) {
+    sendValidationError(res, params.error.message);
+    return;
+  }
+
+  const { id: clientId, sessionId } = params.data;
+
+  // Verify client exists
+  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
+  if (!client) {
+    sendNotFoundError(res, "Client not found");
+    return;
+  }
+
+  // Verify rental session exists and belongs to client
+  const [session] = await db.select().from(rentalSessionsTable)
+    .where(and(eq(rentalSessionsTable.id, sessionId), eq(rentalSessionsTable.clientId, clientId)));
+  if (!session) {
+    sendNotFoundError(res, "Rental session not found");
+    return;
+  }
+
+  // Fetch product transactions for this session
+  const productTxns = await db.select().from(transactionsTable)
+    .where(and(
+      eq(transactionsTable.clientId, clientId),
+      eq(transactionsTable.sessionId, sessionId),
+      eq(transactionsTable.type, "product")
+    ))
+    .orderBy(desc(transactionsTable.createdAt));
+
+  res.json(productTxns.map(t => ({
+    id: t.id,
+    clientId: t.clientId,
+    clientName: client.name,
+    amount: parseFloat(t.amount),
+    tax: parseFloat(t.tax),
+    total: parseFloat(t.total),
+    type: t.type,
+    squarePaymentId: t.squarePaymentId,
+    description: t.description,
+    sessionId: t.sessionId,
+    createdAt: t.createdAt,
+  })));
+});
+
 router.get("/clients/:id/transactions", requireAuth, apiLimiter, async (req, res): Promise<void> => {
   const params = GetClientTransactionsParams.safeParse(req.params);
   if (!params.success) {
@@ -579,8 +628,16 @@ router.get("/clients/:id/transactions", requireAuth, apiLimiter, async (req, res
     return;
   }
 
+  const { sessionId } = req.query;
+  const whereConditions = [eq(transactionsTable.clientId, params.data.id)];
+
+  // Add sessionId filter if provided
+  if (sessionId) {
+    whereConditions.push(eq(transactionsTable.sessionId, parseInt(sessionId as string)));
+  }
+
   const txns = await db.select().from(transactionsTable)
-    .where(eq(transactionsTable.clientId, params.data.id))
+    .where(and(...whereConditions))
     .orderBy(desc(transactionsTable.createdAt));
 
   const [client] = await db.select({ name: clientsTable.name }).from(clientsTable).where(eq(clientsTable.id, params.data.id));
@@ -595,6 +652,7 @@ router.get("/clients/:id/transactions", requireAuth, apiLimiter, async (req, res
     type: t.type,
     squarePaymentId: t.squarePaymentId,
     description: t.description,
+    sessionId: t.sessionId,
     createdAt: t.createdAt,
   })));
 });

@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_session_id_rental_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."rental_sessions"("id") ON DELETE set null ON UPDATE no action;

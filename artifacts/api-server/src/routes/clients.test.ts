@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import { clientsTable, membershipsTable, transactionsTable } from '@workspace/db/schema';
+import { clientsTable, membershipsTable, transactionsTable, rentalSessionsTable } from '@workspace/db/schema';
 import { eq } from 'drizzle-orm';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
@@ -532,6 +532,102 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);
       }
+    });
+  });
+
+  describe('GET /api/clients/:id/rentals/:sessionId/products', () => {
+    it('should return products purchased during a rental session', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      // Create a rental session
+      const [session] = await db.insert(rentalSessionsTable).values({
+        clientId: client.id,
+        resourceType: 'locker',
+        resourceId: 1,
+        resourceName: 'Locker 1',
+        status: 'active',
+        startTime: new Date(),
+        expiresAt: new Date(Date.now() + 3600000),
+        amountPaid: '25.00',
+      }).returning();
+
+      // Create product transactions linked to the session
+      await db.insert(transactionsTable).values({
+        clientId: client.id,
+        amount: '10.00',
+        tax: '0',
+        total: '10.00',
+        type: 'product',
+        squarePaymentId: 'sq_payment_1',
+        description: 'Product: Towel',
+        sessionId: session.id,
+      });
+
+      await db.insert(transactionsTable).values({
+        clientId: client.id,
+        amount: '5.00',
+        tax: '0',
+        total: '5.00',
+        type: 'product',
+        squarePaymentId: 'sq_payment_1',
+        description: 'Product: Water',
+        sessionId: session.id,
+      });
+
+      const response = await api.get(`/api/clients/${client.id}/rentals/${session.id}/products`).set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toBeInstanceOf(Array);
+      expect(response.body.length).toBe(2);
+      expect(response.body[0]).toHaveProperty('sessionId', session.id);
+      expect(response.body[0]).toHaveProperty('type', 'product');
+    });
+
+    it('should return empty array when no products purchased during session', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      // Create a rental session without products
+      const [session] = await db.insert(rentalSessionsTable).values({
+        clientId: client.id,
+        resourceType: 'locker',
+        resourceId: 1,
+        resourceName: 'Locker 1',
+        status: 'active',
+        startTime: new Date(),
+        expiresAt: new Date(Date.now() + 3600000),
+        amountPaid: '25.00',
+      }).returning();
+
+      const response = await api.get(`/api/clients/${client.id}/rentals/${session.id}/products`).set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toBeInstanceOf(Array);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should return 404 when client does not exist', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+
+      const response = await api.get('/api/clients/99999/rentals/1/products').set(authHeaders);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 404 when rental session does not exist', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+
+      const response = await api.get(`/api/clients/${client.id}/rentals/99999/products`).set(authHeaders);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 401 for unauthenticated request', async () => {
+      const response = await api.get('/api/clients/1/rentals/1/products');
+
+      expect(response.status).toBe(401);
     });
   });
 });

@@ -35,6 +35,7 @@ import type {
   ClientPii,
   ClientUpdate,
   Dashboard,
+  GetClientTransactionsParams,
   GetLockerUtilizationParams,
   GetPeakHoursParams,
   GetRevenueByTypeParams,
@@ -1500,20 +1501,22 @@ export function useGetClientRentals<TData = Awaited<ReturnType<typeof getClientR
 
 
 
-export const getGetClientTransactionsUrl = (id: number,) => {
+export const getGetClientRentalProductsUrl = (id: number,
+    sessionId: number,) => {
 
 
 
 
-  return `/api/v1/clients/${id}/transactions`
+  return `/api/v1/clients/${id}/rentals/${sessionId}/products`
 }
 
 /**
- * @summary Get a client's transaction history
+ * @summary Get products purchased during a specific rental session
  */
-export const getClientTransactions = async (id: number, options?: RequestInit): Promise<Transaction[]> => {
+export const getClientRentalProducts = async (id: number,
+    sessionId: number, options?: RequestInit): Promise<Transaction[]> => {
 
-  return customFetch<Transaction[]>(getGetClientTransactionsUrl(id),
+  return customFetch<Transaction[]>(getGetClientRentalProductsUrl(id,sessionId),
   {
     ...options,
     method: 'GET'
@@ -1526,23 +1529,114 @@ export const getClientTransactions = async (id: number, options?: RequestInit): 
 
 
 
-export const getGetClientTransactionsQueryKey = (id: number,) => {
+export const getGetClientRentalProductsQueryKey = (id: number,
+    sessionId: number,) => {
     return [
-    `/api/v1/clients/${id}/transactions`
+    `/api/v1/clients/${id}/rentals/${sessionId}/products`
     ] as const;
     }
 
 
-export const getGetClientTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof getClientTransactions>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetClientRentalProductsQueryOptions = <TData = Awaited<ReturnType<typeof getClientRentalProducts>>, TError = ErrorType<void>>(id: number,
+    sessionId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientRentalProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetClientTransactionsQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetClientRentalProductsQueryKey(id,sessionId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientTransactions>>> = ({ signal }) => getClientTransactions(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientRentalProducts>>> = ({ signal }) => getClientRentalProducts(id,sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id && sessionId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientRentalProducts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientRentalProductsQueryResult = NonNullable<Awaited<ReturnType<typeof getClientRentalProducts>>>
+export type GetClientRentalProductsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get products purchased during a specific rental session
+ */
+
+export function useGetClientRentalProducts<TData = Awaited<ReturnType<typeof getClientRentalProducts>>, TError = ErrorType<void>>(
+ id: number,
+    sessionId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientRentalProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientRentalProductsQueryOptions(id,sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetClientTransactionsUrl = (id: number,
+    params?: GetClientTransactionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/clients/${id}/transactions?${stringifiedParams}` : `/api/v1/clients/${id}/transactions`
+}
+
+/**
+ * @summary Get a client's transaction history
+ */
+export const getClientTransactions = async (id: number,
+    params?: GetClientTransactionsParams, options?: RequestInit): Promise<Transaction[]> => {
+
+  return customFetch<Transaction[]>(getGetClientTransactionsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientTransactionsQueryKey = (id: number,
+    params?: GetClientTransactionsParams,) => {
+    return [
+    `/api/v1/clients/${id}/transactions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetClientTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof getClientTransactions>>, TError = ErrorType<unknown>>(id: number,
+    params?: GetClientTransactionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientTransactionsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientTransactions>>> = ({ signal }) => getClientTransactions(id,params, { signal, ...requestOptions });
 
 
 
@@ -1560,11 +1654,12 @@ export type GetClientTransactionsQueryError = ErrorType<unknown>
  */
 
 export function useGetClientTransactions<TData = Awaited<ReturnType<typeof getClientTransactions>>, TError = ErrorType<unknown>>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number,
+    params?: GetClientTransactionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetClientTransactionsQueryOptions(id,options)
+  const queryOptions = getGetClientTransactionsQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

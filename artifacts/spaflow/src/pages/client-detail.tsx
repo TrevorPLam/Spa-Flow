@@ -5,11 +5,13 @@ import {
   useUpdateClient,
   useGetClientRentals,
   useGetClientTransactions,
+  useGetClientRentalProducts,
   useRenewMembership,
   getGetClientQueryKey,
   getListClientsQueryKey,
   getGetClientRentalsQueryKey,
   getGetClientTransactionsQueryKey,
+  getGetClientRentalProductsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
@@ -24,7 +26,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +50,34 @@ const renewalSchema = z.object({
 type EditForm = z.infer<typeof editSchema>;
 type RenewalForm = z.infer<typeof renewalSchema>;
 
+function RentalProducts({ clientId, sessionId }: { clientId: number; sessionId: number }) {
+  const { data: products = [], isLoading } = useGetClientRentalProducts(clientId, sessionId, {
+    query: { enabled: !!sessionId, queryKey: getGetClientRentalProductsQueryKey(clientId, sessionId) },
+  });
+
+  if (isLoading) {
+    return <div className="px-6 py-3 text-sm text-muted-foreground">Loading products...</div>;
+  }
+
+  if (products.length === 0) {
+    return <div className="px-6 py-3 text-sm text-muted-foreground">No products purchased during this rental</div>;
+  }
+
+  return (
+    <div className="px-6 py-3 bg-muted/30 border-t">
+      <p className="text-xs font-semibold text-muted-foreground mb-2">Products Purchased</p>
+      <ul className="space-y-1">
+        {products.map(p => (
+          <li key={p.id} className="text-sm flex justify-between">
+            <span>{p.description}</span>
+            <span className="font-medium">${(p.total ?? 0).toFixed(2)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function ClientDetailPage() {
   const [, params] = useRoute("/clients/:id");
   const id = parseInt(params?.id ?? "0");
@@ -59,6 +89,7 @@ export default function ClientDetailPage() {
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [piiData, setPiiData] = useState<{ dob: string | null; address: string | null; documentNumber: string | null } | null>(null);
   const [loadingPii, setLoadingPii] = useState(false);
+  const [expandedRentals, setExpandedRentals] = useState<Set<number>>(new Set());
 
   const { data: client, isLoading } = useGetClient(id, {
     query: { enabled: !!id, queryKey: getGetClientQueryKey(id) },
@@ -66,9 +97,21 @@ export default function ClientDetailPage() {
   const { data: rentals = [] } = useGetClientRentals(id, {
     query: { enabled: !!id, queryKey: getGetClientRentalsQueryKey(id) },
   });
-  const { data: transactions = [] } = useGetClientTransactions(id, {
+  const { data: transactions = [] } = useGetClientTransactions(id, undefined, {
     query: { enabled: !!id, queryKey: getGetClientTransactionsQueryKey(id) },
   });
+
+  function toggleRentalExpansion(rentalId: number) {
+    setExpandedRentals(prev => {
+      const next = new Set(prev);
+      if (next.has(rentalId)) {
+        next.delete(rentalId);
+      } else {
+        next.add(rentalId);
+      }
+      return next;
+    });
+  }
 
   const updateClient = useUpdateClient();
   const renewMembership = useRenewMembership();
@@ -283,12 +326,20 @@ export default function ClientDetailPage() {
             <CardContent className="p-0">
               <ul className="divide-y divide-border">
                 {activeRentals.map(r => (
-                  <li key={r.id} data-testid={`row-rental-${r.id}`} className="px-6 py-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium capitalize">{r.resourceType} {r.resourceName}</p>
-                      <p className="text-xs text-muted-foreground">Since {format(new Date(r.startTime), "h:mm a")}</p>
+                  <li key={r.id} data-testid={`row-rental-${r.id}`}>
+                    <div className="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/50" onClick={() => toggleRentalExpansion(r.id)}>
+                      <div className="flex items-center gap-3">
+                        {expandedRentals.has(r.id) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        <div>
+                          <p className="text-sm font-medium capitalize">{r.resourceType} {r.resourceName}</p>
+                          <p className="text-xs text-muted-foreground">Since {format(new Date(r.startTime), "h:mm a")}</p>
+                        </div>
+                      </div>
+                      {r.expiresAt && <Countdown expiresAt={new Date(r.expiresAt)} />}
                     </div>
-                    {r.expiresAt && <Countdown expiresAt={new Date(r.expiresAt)} />}
+                    {expandedRentals.has(r.id) && (
+                      <RentalProducts clientId={id} sessionId={r.id} />
+                    )}
                   </li>
                 ))}
               </ul>

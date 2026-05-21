@@ -529,6 +529,34 @@ paths:
                 items:
                   $ref: "#/components/schemas/RentalSession"
 
+  /clients/{id}/rentals/{sessionId}/products:
+    get:
+      operationId: getClientRentalProducts
+      tags: [clients]
+      summary: Get products purchased during a specific rental session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Products purchased during the rental session
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Client or rental session not found
+
   /clients/{id}/transactions:
     get:
       operationId: getClientTransactions
@@ -540,6 +568,12 @@ paths:
           required: true
           schema:
             type: integer
+        - name: sessionId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filter transactions by rental session ID
       responses:
         "200":
           description: Client transactions

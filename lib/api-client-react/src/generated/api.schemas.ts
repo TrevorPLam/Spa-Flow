@@ -960,6 +960,13 @@ export const ListClientsMembershipStatus = {
   six_month: 'six_month',
 } as const;
 
+export type GetClientTransactionsParams = {
+/**
+ * Filter transactions by rental session ID
+ */
+sessionId?: number;
+};
+
 export type ListLockersParams = {
 status?: ListLockersStatus;
 };

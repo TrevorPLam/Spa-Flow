@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, numeric, timestamp, pgEnum, index } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { clientsTable } from "./clients";
+import { rentalSessionsTable } from "./rental_sessions";
 
 export const transactionTypeEnum = pgEnum("transaction_type", [
   "locker_rental",
@@ -22,7 +23,8 @@ export const transactionsTable = pgTable("transactions", {
   type: transactionTypeEnum("type").notNull(),
   squarePaymentId: text("square_payment_id"),
   description: text("description"),
-  sessionId: integer("session_id"),
+  // ON DELETE SET NULL: When rental session is deleted, sessionId becomes null to preserve transaction history
+  sessionId: integer("session_id").references(() => rentalSessionsTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   // Composite index for client transaction history queries

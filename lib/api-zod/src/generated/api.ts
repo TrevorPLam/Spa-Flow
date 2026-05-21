@@ -400,10 +400,37 @@ export const GetClientRentalsResponse = zod.array(GetClientRentalsResponseItem)
 
 
 /**
+ * @summary Get products purchased during a specific rental session
+ */
+export const GetClientRentalProductsParams = zod.object({
+  "id": zod.coerce.number(),
+  "sessionId": zod.coerce.number()
+})
+
+export const GetClientRentalProductsResponseItem = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "clientName": zod.string().nullish(),
+  "amount": zod.number(),
+  "tax": zod.number().optional(),
+  "total": zod.number().optional(),
+  "type": zod.enum(['locker_rental', 'room_rental', 'membership', 'product', 'renewal', 'extension']),
+  "squarePaymentId": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const GetClientRentalProductsResponse = zod.array(GetClientRentalProductsResponseItem)
+
+
+/**
  * @summary Get a client's transaction history
  */
 export const GetClientTransactionsParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const GetClientTransactionsQueryParams = zod.object({
+  "sessionId": zod.coerce.number().optional().describe('Filter transactions by rental session ID')
 })
 
 export const GetClientTransactionsResponseItem = zod.object({

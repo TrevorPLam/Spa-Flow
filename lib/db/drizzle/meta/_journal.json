@@ -50,6 +50,13 @@
       "when": 1779342406506,
       "tag": "0006_bright_katie_power",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779359244991,
+      "tag": "0007_medical_captain_cross",
+      "breakpoints": true
     }
   ]
 }

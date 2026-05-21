@@ -38,6 +38,7 @@ export * from './dashboard';
 export * from './dashboardLowStockProductsItem';
 export * from './errorResponse';
 export * from './errorResponseCode';
+export * from './getClientTransactionsParams';
 export * from './getLockerUtilizationGranularity';
 export * from './getLockerUtilizationParams';
 export * from './getPeakHoursParams';
