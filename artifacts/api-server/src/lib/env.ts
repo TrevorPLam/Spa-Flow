@@ -16,6 +16,7 @@ const envSchema = z.object({
   PORT: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(65535)),
   VITE_PORT: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(65535)),
   BASE_PATH: z.string().default('/'),
+  REQUEST_TIMEOUT: z.string().regex(/^\d+[smhd]$/, 'REQUEST_TIMEOUT must be in format like "30s", "1m", "1h"').default('30s'),
 
   // CORS Configuration
   // Comma-separated list of allowed origins (e.g., "http://localhost:5173,https://example.com")

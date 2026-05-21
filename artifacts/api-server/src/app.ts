@@ -17,12 +17,10 @@ import { getEnv } from "./lib/env";
 import { isSentryInitialized, captureUserContext, captureRequestContext } from "./lib/sentry";
 import { correlationIdMiddleware } from "./middleware/correlationId";
 import { requestIdMiddleware } from "./middleware/requestId";
+import { CSRF_COOKIE_MAX_AGE_MS, HSTS_MAX_AGE_MS } from "./lib/constants";
 import "./jobs/cron";
 
 const app: Express = express();
-
-// Request timeout configuration
-const REQUEST_TIMEOUT = '30s';
 
 // haltOnTimedOut middleware - stops request flow if timeout has occurred
 // This must be called after middleware that could take time to process
@@ -65,7 +63,7 @@ const csrfTokenMiddleware = (req: Request, res: Response, next: NextFunction) =>
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 3600000 // 1 hour
+    maxAge: CSRF_COOKIE_MAX_AGE_MS
   });
   res.locals.csrfToken = token;
   next();
@@ -78,7 +76,7 @@ app.use(requestIdMiddleware);
 app.use(correlationIdMiddleware);
 
 // Request timeout middleware - must be early in the chain
-app.use(timeout(REQUEST_TIMEOUT));
+app.use(timeout(getEnv().REQUEST_TIMEOUT));
 
 // Content-Type validation middleware - validates requests with bodies have proper Content-Type
 const contentTypeValidationMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -124,7 +122,7 @@ app.use(helmet({
     },
   },
   hsts: {
-    maxAge: 31536000,
+    maxAge: HSTS_MAX_AGE_MS,
     includeSubDomains: true,
     preload: true,
   },

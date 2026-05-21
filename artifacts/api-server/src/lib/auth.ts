@@ -9,7 +9,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { createAuthErrorResponse, AuthErrorCodes } from "./authErrors";
-import { BCRYPT_ROUNDS } from "./constants";
+import { BCRYPT_ROUNDS, AUTH_COOKIE_MAX_AGE_MS, TIMING_SAFE_LOGIN_DELAY_MAX_MS } from "./constants";
 
 const JWT_SECRET_KEY = new TextEncoder().encode(getEnv().JWT_SECRET);
 const JWT_EXPIRY = getEnv().JWT_EXPIRY;
@@ -158,7 +158,7 @@ export function setAuthCookie(res: Response, token: string): void {
     httpOnly: true,
     secure: getEnv().NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 15 * 60 * 1000, // 15m
+    maxAge: AUTH_COOKIE_MAX_AGE_MS,
     path: "/",
   });
 }
@@ -250,9 +250,9 @@ export async function timingSafeLogin(
   // bcrypt.compare is timing-safe, so this always takes the same time
   const valid = await bcrypt.compare(password, passwordHash);
 
-  // Add small random delay (0-100ms) to normalize timing variations
+  // Add small random delay to normalize timing variations
   // from network, database, and other factors
-  const randomDelay = Math.floor(Math.random() * 100);
+  const randomDelay = Math.floor(Math.random() * TIMING_SAFE_LOGIN_DELAY_MAX_MS);
   await new Promise((resolve) => setTimeout(resolve, randomDelay));
 
   if (!valid) {

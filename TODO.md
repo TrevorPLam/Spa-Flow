@@ -747,8 +747,8 @@ Created lib/db/src/env.ts instead of importing from api-server because:
 
 ---
 
-## [ ] TASK-019: Move Additional Magic Numbers to Constants
-**Status:** Pending
+## [x] TASK-019: Move Additional Magic Numbers to Constants
+**Status:** Completed
 **Priority:** Medium
 
 ### Related File Paths
@@ -762,6 +762,15 @@ Created lib/db/src/env.ts instead of importing from api-server because:
 - Magic numbers in auth.ts moved to constants or env
 - All magic numbers documented
 - Constants file organized by category
+
+### Implementation Notes
+- TASK-019-A: Identified magic numbers in app.ts (REQUEST_TIMEOUT, CSRF cookie maxAge, HSTS maxAge) and auth.ts (auth cookie maxAge, timing-safe login delay)
+- TASK-019-B: Added REQUEST_TIMEOUT to env.ts with validation (format: "30s", "1m", "1h"), updated app.ts to use env value
+- TASK-019-C: Added AUTH_COOKIE_MAX_AGE_MS to constants.ts, updated auth.ts to use constant instead of 15 * 60 * 1000
+- TASK-019-D: Added CSRF_COOKIE_MAX_AGE_MS and HSTS_MAX_AGE_MS to constants.ts, updated app.ts to use constants
+- TASK-019-E: Organized constants.ts by category (Resource Counts, Time Durations, Pricing, Pagination, Security, Tax) with clear section comments
+- TASK-019-F: .env.example already has REQUEST_TIMEOUT documented at lines 62-66 (no changes needed)
+- Added TIMING_SAFE_LOGIN_DELAY_MAX_MS to constants.ts for timing-safe login random delay
 
 ### Out of Scope
 - Magic numbers already covered by TASK-010
@@ -800,26 +809,32 @@ Created lib/db/src/env.ts instead of importing from api-server because:
 #### TASK-019-A: Identify Additional Magic Numbers
 **Target:** `artifacts/api-server/src/`
 **Action:** Search for magic numbers not covered by TASK-010, particularly in app.ts and auth.ts (timeouts, cookie ages, etc.).
+✅ Identified: REQUEST_TIMEOUT (30s), CSRF cookie maxAge (3600000ms), HSTS maxAge (31536000ms), auth cookie maxAge (15 * 60 * 1000ms), timing-safe login delay (100ms)
 
 #### TASK-019-B: Move Request Timeout to env.ts
 **Target:** `artifacts/api-server/src/lib/env.ts` and `app.ts`
 **Action:** Add REQUEST_TIMEOUT_MS to envSchema with validation, update app.ts to use env value instead of hardcoded '30s'.
+✅ Added REQUEST_TIMEOUT to env.ts with regex validation (format: "30s", "1m", "1h"), updated app.ts to use getEnv().REQUEST_TIMEOUT
 
 #### TASK-019-C: Move Cookie Max Ages to constants.ts
 **Target:** `artifacts/api-server/src/lib/constants.ts` and `auth.ts`
 **Action:** Add COOKIE_MAX_AGE_MS and CSRF_COOKIE_MAX_AGE_MS to constants.ts, update auth.ts to use constants.
+✅ Added AUTH_COOKIE_MAX_AGE_MS (15 * 60 * 1000) to constants.ts, updated auth.ts to use constant
 
 #### TASK-019-D: Move CSRF Expiration to constants.ts
 **Target:** `artifacts/api-server/src/lib/constants.ts` and `app.ts`
 **Action:** Add CSRF_COOKIE_MAX_AGE_MS to constants.ts, update app.ts to use constant instead of hardcoded 3600000.
+✅ Added CSRF_COOKIE_MAX_AGE_MS (60 * 60 * 1000) and HSTS_MAX_AGE_MS (365 * 24 * 60 * 60 * 1000) to constants.ts, updated app.ts to use constants
 
 #### TASK-019-E: Organize Constants File
 **Target:** `artifacts/api-server/src/lib/constants.ts`
 **Action:** Organize constants by category (timeouts, counts, pricing, etc.) with clear section comments.
+✅ Organized constants.ts by category with section comments: Resource Counts, Time Durations, Pricing, Pagination, Security, Tax
 
 #### TASK-019-F: Update .env.example
 **Target:** `.env.example`
 **Action:** Add REQUEST_TIMEOUT_MS to .env.example with documentation and default value.
+✅ Already documented at lines 62-66 (no changes needed)
 
 ---
 
