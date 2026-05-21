@@ -1279,6 +1279,95 @@ Task marked as not applicable. The drizzle.config.ts already uses centralized en
 
 ---
 
+## [ ] TASK-034-FIX-001: Fix Test Infrastructure Authentication Issues
+**Status:** Pending
+**Priority:** High
+
+### Related File Paths
+- `artifacts/api-server/src/routes/checkin.test.ts`
+- `artifacts/api-server/src/lib/auth.test.ts`
+- `artifacts/api-server/src/test/test-helpers.ts`
+
+### Definition of Done
+- All checkin tests pass without 403 Forbidden errors
+- Authentication token generation in test helpers works correctly
+- Test environment properly configured with required secrets
+- Test infrastructure supports both STAFF and MANAGER role authentication
+
+### Out of Scope
+- Changing test logic or test expectations
+- Modifying production authentication code
+
+### Rules to Follow
+- Fix only the test infrastructure, not the tests themselves
+- Ensure test environment variables are properly configured
+- Verify JWT secret and encryption key are available in test environment
+
+### Advanced Coding Pattern
+- Test environment isolation and configuration
+
+### Anti-Patterns
+- Modifying test expectations to match broken infrastructure
+- Hardcoding test credentials in test files
+
+### Depends On
+- None
+
+### Blocks
+- Multiple test tasks (TASK-034-E, TASK-047, TASK-077, TASK-078)
+
+### Implementation Notes
+- Pre-existing issue: checkin tests returning 403 instead of expected status codes
+- Affects multiple test files across the api-server package
+- Likely cause: JWT secret or authentication configuration missing in test environment
+- Issue first observed during TASK-004 and persisted through TASK-034
+
+---
+
+## [ ] TASK-034-FIX-002: Fix Typecheck Errors in lib/api-client-react and lib/api-zod
+**Status:** Pending
+**Priority:** Medium
+
+### Related File Paths
+- `lib/api-client-react/src/custom-fetch.test.ts`
+- `lib/api-zod/src/index.ts`
+
+### Definition of Done
+- All typecheck errors in lib/api-client-react resolved
+- All typecheck errors in lib/api-zod resolved
+- `pnpm run typecheck:libs` passes without errors
+- Codegen-generated types do not have duplicate exports
+
+### Out of Scope
+- Changing the API spec (openapi.yaml)
+- Modifying the codegen configuration
+
+### Rules to Follow
+- Fix the actual type errors, not suppress them
+- Ensure global is properly available in test environment
+- Resolve duplicate export conflicts in api-zod
+
+### Advanced Coding Pattern
+- Type-safe codegen output configuration
+
+### Anti-Patterns
+- Using @ts-ignore to suppress errors
+- Manually editing generated files
+
+### Depends On
+- None
+
+### Blocks
+- Full typecheck workflow (blocks `pnpm run typecheck`)
+
+### Implementation Notes
+- Pre-existing issue: 'global' not found errors in custom-fetch.test.ts
+- Pre-existing issue: duplicate export conflicts in api-zod/src/index.ts
+- First observed during TASK-009, persisted through multiple tasks
+- Codegen regenerates files but typecheck errors persist
+
+---
+
 ## [ ] TASK-035: Implement Holiday and Special Event Pricing Logic
 **Status:** Pending
 **Priority:** High
