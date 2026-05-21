@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, waitlistTable, clientsTable, roomsTable } from "@workspace/db";
+import { db, waitlistTable, clientsTable, roomsTable, lockersTable, rentalSessionsTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
@@ -10,17 +10,19 @@ import { sendValidationError, sendNotFoundError } from "../lib/response-formatte
 const router = Router();
 
 /**
- * Formats a waitlist entry for API response using pre-loaded client and room maps
+ * Formats a waitlist entry for API response using pre-loaded client, room, and locker maps
  * Used for batch operations to avoid N+1 queries
  *
  * @param w - The waitlist entry record from the database
  * @param clientMap - Map of client IDs to client data (name, phone)
  * @param roomMap - Map of room IDs to room names
+ * @param lockerMap - Map of locker IDs to locker names
  * @returns Formatted waitlist entry for API response
  */
-function formatEntry(w: typeof waitlistTable.$inferSelect, clientMap: Map<number, { name: string; phone: string | null }>, roomMap: Map<number, string>) {
+function formatEntry(w: typeof waitlistTable.$inferSelect, clientMap: Map<number, { name: string; phone: string | null }>, roomMap: Map<number, string>, lockerMap: Map<number, string>) {
   const client = clientMap.get(w.clientId);
   const room = w.assignedRoomId ? roomMap.get(w.assignedRoomId) : null;
+  const locker = w.currentLockerId ? lockerMap.get(w.currentLockerId) : null;
   return {
     id: w.id,
     clientId: w.clientId,
@@ -30,6 +32,8 @@ function formatEntry(w: typeof waitlistTable.$inferSelect, clientMap: Map<number
     status: w.status,
     assignedRoomId: w.assignedRoomId,
     assignedRoomName: room ?? null,
+    currentLockerId: w.currentLockerId,
+    currentLockerName: locker ?? null,
     assignedAt: w.assignedAt,
     confirmBy: w.confirmBy,
     createdAt: w.createdAt,
@@ -49,6 +53,9 @@ async function formatEntrySingle(w: typeof waitlistTable.$inferSelect) {
   const [room] = w.assignedRoomId
     ? await db.select({ name: roomsTable.name }).from(roomsTable).where(eq(roomsTable.id, w.assignedRoomId))
     : [null];
+  const [locker] = w.currentLockerId
+    ? await db.select({ name: lockersTable.name }).from(lockersTable).where(eq(lockersTable.id, w.currentLockerId))
+    : [null];
   return {
     id: w.id,
     clientId: w.clientId,
@@ -58,6 +65,8 @@ async function formatEntrySingle(w: typeof waitlistTable.$inferSelect) {
     status: w.status,
     assignedRoomId: w.assignedRoomId,
     assignedRoomName: room?.name ?? null,
+    currentLockerId: w.currentLockerId,
+    currentLockerName: locker?.name ?? null,
     assignedAt: w.assignedAt,
     confirmBy: w.confirmBy,
     createdAt: w.createdAt,
@@ -95,7 +104,17 @@ router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void>
     rooms.forEach(r => roomMap.set(r.id, r.name));
   }
 
-  const formatted = entries.map(e => formatEntry(e, clientMap, roomMap));
+  // Batch fetch locker data
+  const lockerIds = [...new Set(entries.map(e => e.currentLockerId).filter((id): id is number => id !== null))];
+  const lockerMap = new Map<number, string>();
+  if (lockerIds.length > 0) {
+    const lockers = await db.select({ id: lockersTable.id, name: lockersTable.name })
+      .from(lockersTable)
+      .where(sql`${lockersTable.id} = ANY(${lockerIds})`);
+    lockers.forEach(l => lockerMap.set(l.id, l.name));
+  }
+
+  const formatted = entries.map(e => formatEntry(e, clientMap, roomMap, lockerMap));
   res.json(formatted);
 });
 
@@ -128,10 +147,21 @@ router.post("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void
   const maxPosResult = await db.execute(sql`SELECT COALESCE(MAX(position), 0) as max_pos FROM waitlist_entries WHERE status IN ('waiting', 'assigned')`);
   const position = ((maxPosResult.rows[0] as { max_pos: number })?.max_pos ?? 0) + 1;
 
+  // Check if client has an active locker rental
+  const [activeRental] = await db.select({ resourceId: rentalSessionsTable.resourceId })
+    .from(rentalSessionsTable)
+    .where(and(
+      eq(rentalSessionsTable.clientId, client.id),
+      eq(rentalSessionsTable.status, "active"),
+      eq(rentalSessionsTable.resourceType, "locker")
+    ));
+  const currentLockerId = activeRental?.resourceId ?? null;
+
   const [entry] = await db.insert(waitlistTable).values({
     clientId: client.id,
     position,
     status: "waiting",
+    currentLockerId,
   }).returning();
 
   const actingUser = (req as AuthRequest).user!;

@@ -21,6 +21,10 @@ export interface WaitlistEntry {
   /** @nullable */
   assignedRoomName?: string | null;
   /** @nullable */
+  currentLockerId?: number | null;
+  /** @nullable */
+  currentLockerName?: string | null;
+  /** @nullable */
   assignedAt?: Date | null;
   /** @nullable */
   confirmBy?: Date | null;

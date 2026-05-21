@@ -2,6 +2,7 @@ import { pgTable, serial, integer, timestamp, pgEnum, index, unique } from "driz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { clientsTable } from "./clients";
+import { lockersTable } from "./lockers";
 
 export const waitlistStatusEnum = pgEnum("waitlist_status", ["waiting", "assigned", "confirmed", "expired"]);
 
@@ -12,6 +13,7 @@ export const waitlistTable = pgTable("waitlist_entries", {
   position: integer("position").notNull(),
   status: waitlistStatusEnum("status").notNull().default("waiting"),
   assignedRoomId: integer("assigned_room_id"),
+  currentLockerId: integer("current_locker_id").references(() => lockersTable.id, { onDelete: "set null" }),
   assignedAt: timestamp("assigned_at", { withTimezone: true }),
   confirmBy: timestamp("confirm_by", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -24,6 +26,8 @@ export const waitlistTable = pgTable("waitlist_entries", {
   clientIdIdx: index("idx_waitlist_client_id").on(table.clientId),
   // Index on status for filtering
   statusIdx: index("idx_waitlist_status").on(table.status),
+  // Index on currentLockerId for locker-based queries
+  currentLockerIdIdx: index("idx_waitlist_current_locker_id").on(table.currentLockerId),
 }));
 
 export const insertWaitlistSchema = createInsertSchema(waitlistTable).omit({ id: true, createdAt: true });

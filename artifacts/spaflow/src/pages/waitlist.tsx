@@ -188,6 +188,11 @@ export default function WaitlistPage() {
                           {entry.clientPhone && <span>{entry.clientPhone} · </span>}
                           Joined {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
                         </p>
+                        {entry.currentLockerName && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Locker {entry.currentLockerName}
+                          </p>
+                        )}
                         {entry.status === "assigned" && entry.assignedRoomName && (
                           <p className="text-xs text-primary mt-0.5">
                             Room {entry.assignedRoomName} assigned

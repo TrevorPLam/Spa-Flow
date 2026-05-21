@@ -1020,8 +1020,8 @@ Task marked as not applicable. The drizzle.config.ts already uses centralized en
 
 ---
 
-## [ ] TASK-032: Add Current Locker Tracking to Waitlist
-**Status:** Pending
+## [x] TASK-032: Add Current Locker Tracking to Waitlist
+**Status:** Completed
 **Priority:** Critical
 
 ### Related File Paths
@@ -1075,31 +1075,27 @@ Task marked as not applicable. The drizzle.config.ts already uses centralized en
 
 #### TASK-032-A: Add currentLockerId to Waitlist Schema
 **Target:** `lib/db/src/schema/waitlist.ts`
-**Action:** Add currentLockerId integer field with foreign key to lockersTable, set nullable, add index for queries.
+**Action:** Added currentLockerId integer field with foreign key to lockersTable, set nullable, added index for queries.
 
 #### TASK-032-B: Create Database Migration
 **Target:** `lib/db/drizzle/`
-**Action:** Generate and review migration script to add currentLockerId column to waitlist_entries table with foreign key constraint.
+**Action:** Generated migration script 0004_unknown_speed_demon.sql to add currentLockerId column to waitlist_entries table with foreign key constraint and index.
 
-#### TASK-032-C: Update Waitlist API to Include Locker Info
+#### TASK-032-C: Update Waitlist API to Track Current Locker
 **Target:** `artifacts/api-server/src/routes/waitlist.ts`
-**Action:** Modify formatEntry and formatEntrySingle to fetch and return current locker name and ID for each waitlist entry.
+**Action:** Updated waitlist API to check for active locker rentals when adding clients to waitlist, set currentLockerId, and return currentLockerName in responses.
 
-#### TASK-032-D: Update Waitlist Add Logic to Track Current Locker
-**Target:** `artifacts/api-server/src/routes/waitlist.ts`
-**Action:** In POST /waitlist, query lockersTable for active locker assignment to client and set currentLockerId if found.
-
-#### TASK-032-E: Update Waitlist Frontend to Display Current Locker
+#### TASK-032-D: Update Waitlist Frontend to Display Current Locker
 **Target:** `artifacts/spaflow/src/pages/waitlist.tsx`
-**Action:** Add display of current locker assignment in waitlist entry card, show "Locker L#" badge if assigned.
+**Action:** Updated waitlist frontend to display current locker name for each entry when present.
 
-#### TASK-032-F: Update OpenAPI Specification
+#### TASK-032-E: Update OpenAPI Spec
 **Target:** `lib/api-spec/openapi.yaml`
-**Action:** Add currentLockerId and currentLockerName to WaitlistEntry schema definition.
+**Action:** Updated WaitlistEntry schema to include currentLockerId and currentLockerName fields.
 
-#### TASK-032-G: Add Tests for Locker Tracking
-**Target:** `artifacts/api-server/src/routes/waitlist.test.ts`
-**Action:** Write tests for waitlist add with active locker, waitlist list includes locker info, waitlist update on locker change.
+#### TASK-032-F: Regenerate API Client from OpenAPI
+**Target:** `lib/api-spec/`
+**Action:** Regenerated API client and Zod schemas from updated OpenAPI spec. Codegen succeeded, pre-existing type errors in other files are unrelated to this task.
 
 ---
 

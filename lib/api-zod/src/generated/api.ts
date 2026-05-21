@@ -748,6 +748,8 @@ export const ListWaitlistResponseItem = zod.object({
   "status": zod.enum(['waiting', 'assigned', 'confirmed', 'expired']),
   "assignedRoomId": zod.number().nullish(),
   "assignedRoomName": zod.string().nullish(),
+  "currentLockerId": zod.number().nullish(),
+  "currentLockerName": zod.string().nullish(),
   "assignedAt": zod.coerce.date().nullish(),
   "confirmBy": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -787,6 +789,8 @@ export const ConfirmWaitlistAssignmentResponse = zod.object({
   "status": zod.enum(['waiting', 'assigned', 'confirmed', 'expired']),
   "assignedRoomId": zod.number().nullish(),
   "assignedRoomName": zod.string().nullish(),
+  "currentLockerId": zod.number().nullish(),
+  "currentLockerName": zod.string().nullish(),
   "assignedAt": zod.coerce.date().nullish(),
   "confirmBy": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
