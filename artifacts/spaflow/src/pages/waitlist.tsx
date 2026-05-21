@@ -37,6 +37,20 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "destructive",
 };
 
+// Type guard for error objects
+function isErrorWithMessage(err: unknown): err is { data?: { error?: string } } {
+  return typeof err === 'object' && err !== null && 'data' in err;
+}
+
+// Type guard for Badge variant
+function getBadgeVariant(status: string): "default" | "secondary" | "outline" | "destructive" {
+  const variant = STATUS_COLORS[status];
+  if (variant === "default" || variant === "secondary" || variant === "outline" || variant === "destructive") {
+    return variant;
+  }
+  return "secondary";
+}
+
 export default function WaitlistPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -72,7 +86,7 @@ export default function WaitlistPage() {
         setSelectedClientName("");
       },
       onError: (err: unknown) => {
-        const msg = (err as { data?: { error?: string } })?.data?.error ?? "Failed to add to waitlist";
+        const msg = isErrorWithMessage(err) ? err.data?.error ?? "Failed to add to waitlist" : "Failed to add to waitlist";
         toast({ title: msg, variant: "destructive" });
       },
     });
@@ -183,7 +197,7 @@ export default function WaitlistPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={STATUS_COLORS[entry.status] as "default" | "secondary" | "outline" | "destructive"}>
+                      <Badge variant={getBadgeVariant(entry.status)}>
                         {entry.status}
                       </Badge>
                       {entry.status === "assigned" && (

@@ -43,6 +43,11 @@ const userSchema = z.object({
 
 type UserForm = z.infer<typeof userSchema>;
 
+// Type guard for user role
+function isValidUserRole(role: string): role is "STAFF" | "MANAGER" {
+  return role === "STAFF" || role === "MANAGER";
+}
+
 export default function UsersPage() {
   const { isManager, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
@@ -69,7 +74,8 @@ export default function UsersPage() {
   }
 
   function openEdit(u: typeof users[0]) {
-    form.reset({ email: u.email, name: u.name, password: "", role: u.role as "STAFF" | "MANAGER" });
+    const role = isValidUserRole(u.role) ? u.role : "STAFF";
+    form.reset({ email: u.email, name: u.name, password: "", role });
     setEditingUser({ id: u.id });
     setShowForm(true);
   }
