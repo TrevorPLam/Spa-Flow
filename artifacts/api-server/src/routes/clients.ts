@@ -366,25 +366,29 @@ router.post("/clients/:id/memberships", requireAuth, apiLimiter, async (req, res
     expiresAt.setMonth(expiresAt.getMonth() + 6);
   }
 
-  const membership = await db.transaction(async (tx) => {
-    const [membership] = await tx.insert(membershipsTable).values({
-      clientId: client.id,
-      type: type as "one_time" | "six_month",
-      purchasedAt,
-      expiresAt,
-    }).returning();
+  let membership;
+  try {
+    membership = await db.transaction(async (tx) => {
+      const [membership] = await tx.insert(membershipsTable).values({
+        clientId: client.id,
+        type: type as "one_time" | "six_month",
+        purchasedAt,
+        expiresAt,
+      }).returning();
 
-    // Update client membership status
-    await tx.update(clientsTable).set({
-      membershipStatus: type as "one_time" | "six_month",
-      membershipExpiresAt: expiresAt,
-    }).where(eq(clientsTable.id, client.id));
+      // Update client membership status
+      await tx.update(clientsTable).set({
+        membershipStatus: type as "one_time" | "six_month",
+        membershipExpiresAt: expiresAt,
+      }).where(eq(clientsTable.id, client.id));
 
-    return membership;
-  }).catch((error) => {
+      return membership;
+    });
+  } catch (error) {
     logTransactionError("membership addition", error, { clientId: client.id, type });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to add membership" });
+    return;
+  }
 
   const actingUser = (req as AuthRequest).user!;
   await writeAuditLog({

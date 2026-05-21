@@ -153,42 +153,46 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
   const startTime = new Date();
   const expiresAt = new Date(startTime.getTime() + SESSION_DURATION_MS);
 
-  const session = await db.transaction(async (tx) => {
-    const [session] = await tx.insert(rentalSessionsTable).values({
-      clientId: client.id,
-      resourceType: "room",
-      resourceId: room.id,
-      resourceName: room.name,
-      status: "active",
-      startTime,
-      expiresAt,
-      amountPaid: String(subtotal),
-    }).returning();
+  let session;
+  try {
+    session = await db.transaction(async (tx) => {
+      const [session] = await tx.insert(rentalSessionsTable).values({
+        clientId: client.id,
+        resourceType: "room",
+        resourceId: room.id,
+        resourceName: room.name,
+        status: "active",
+        startTime,
+        expiresAt,
+        amountPaid: String(subtotal),
+      }).returning();
 
-    await tx.update(roomsTable).set({
-      status: "occupied",
-      clientId: client.id,
-      sessionId: session.id,
-      startTime,
-      expiresAt,
-    }).where(eq(roomsTable.id, room.id));
+      await tx.update(roomsTable).set({
+        status: "occupied",
+        clientId: client.id,
+        sessionId: session.id,
+        startTime,
+        expiresAt,
+      }).where(eq(roomsTable.id, room.id));
 
-    await tx.insert(transactionsTable).values({
-      clientId: client.id,
-      amount: String(subtotal),
-      tax: String(tax),
-      total: String(total),
-      type: "room_rental",
-      squarePaymentId: paymentId,
-      description: `Room ${room.name} rental`,
-      sessionId: session.id,
+      await tx.insert(transactionsTable).values({
+        clientId: client.id,
+        amount: String(subtotal),
+        tax: String(tax),
+        total: String(total),
+        type: "room_rental",
+        squarePaymentId: paymentId,
+        description: `Room ${room.name} rental`,
+        sessionId: session.id,
+      });
+
+      return session;
     });
-
-    return session;
-  }).catch((error) => {
+  } catch (error) {
     logTransactionError("room assignment", error, { roomId: room.id, clientId: client.id });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to assign room" });
+    return;
+  }
 
   const actingUser = (req as AuthRequest).user!;
   await writeAuditLog({
@@ -230,40 +234,43 @@ router.post("/rooms/:id/release", requireAuth, apiLimiter, async (req, res): Pro
   const sessionId = room.sessionId;
   const endTime = new Date();
 
-  await db.transaction(async (tx) => {
-    if (sessionId) {
-      await tx.update(rentalSessionsTable).set({ status: "completed", endTime })
-        .where(eq(rentalSessionsTable.id, sessionId));
-    }
+  try {
+    await db.transaction(async (tx) => {
+      if (sessionId) {
+        await tx.update(rentalSessionsTable).set({ status: "completed", endTime })
+          .where(eq(rentalSessionsTable.id, sessionId));
+      }
 
-    await tx.update(roomsTable).set({
-      status: "available",
-      clientId: null,
-      sessionId: null,
-      startTime: null,
-      expiresAt: null,
-    }).where(eq(roomsTable.id, room.id));
+      await tx.update(roomsTable).set({
+        status: "available",
+        clientId: null,
+        sessionId: null,
+        startTime: null,
+        expiresAt: null,
+      }).where(eq(roomsTable.id, room.id));
 
-    // Atomically assign next waitlist entry
-    try {
-      await assignNextWaitlistEntry(room.id);
-    } catch (err) {
-      // Log waitlist assignment failure but don't fail release operation
-      // This is an operational error - the room release should succeed even if waitlist fails
-      logger.error({ 
-        err: err instanceof Error ? {
-          name: err.name,
-          message: err.message,
-          stack: err.stack,
-        } : String(err),
-        roomId: room.id,
-        sessionId,
-      }, 'Failed to assign waitlist entry during room release');
-    }
-  }).catch((error) => {
+      // Atomically assign next waitlist entry
+      try {
+        await assignNextWaitlistEntry(room.id);
+      } catch (err) {
+        // Log waitlist assignment failure but don't fail release operation
+        // This is an operational error - the room release should succeed even if waitlist fails
+        logger.error({ 
+          err: err instanceof Error ? {
+            name: err.name,
+            message: err.message,
+            stack: err.stack,
+          } : String(err),
+          roomId: room.id,
+          sessionId,
+        }, 'Failed to assign waitlist entry during room release');
+      }
+    });
+  } catch (error) {
     logTransactionError("room release", error, { roomId: room.id, sessionId });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to release room" });
+    return;
+  }
 
   const actingUser = (req as AuthRequest).user!;
   await writeAuditLog({
@@ -311,16 +318,19 @@ router.post("/rooms/:id/renew", requireAuth, apiLimiter, async (req, res): Promi
   if (total > 0) { await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Room ${room.name} renewal`); }
 
   const newExpiresAt = new Date((room.expiresAt ?? new Date()).getTime() + SESSION_DURATION_MS);
-  await db.transaction(async (tx) => {
-    await tx.update(roomsTable).set({ expiresAt: newExpiresAt }).where(eq(roomsTable.id, room.id));
-    if (room.sessionId) {
-      await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, room.sessionId));
-      if (client) { await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "renewal", squarePaymentId: parsed.data.idempotencyKey, description: `Room ${room.name} 6h renewal`, sessionId: room.sessionId }); }
-    }
-  }).catch((error) => {
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(roomsTable).set({ expiresAt: newExpiresAt }).where(eq(roomsTable.id, room.id));
+      if (room.sessionId) {
+        await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, room.sessionId));
+        if (client) { await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "renewal", squarePaymentId: parsed.data.idempotencyKey, description: `Room ${room.name} 6h renewal`, sessionId: room.sessionId }); }
+      }
+    });
+  } catch (error) {
     logTransactionError("room renewal", error, { roomId: room.id, clientId: client?.id });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to renew room" });
+    return;
+  }
 
   const [session] = room.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, room.sessionId)) : [null];
   res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "room", resourceId: room.id, resourceName: room.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
@@ -345,16 +355,19 @@ router.post("/rooms/:id/extend", requireAuth, apiLimiter, async (req, res): Prom
   if (total > 0) { await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Room ${room.name} 2h extension`); }
 
   const newExpiresAt = new Date((room.expiresAt ?? new Date()).getTime() + EXTENSION_DURATION_MS);
-  await db.transaction(async (tx) => {
-    await tx.update(roomsTable).set({ expiresAt: newExpiresAt }).where(eq(roomsTable.id, room.id));
-    if (room.sessionId) {
-      await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, room.sessionId));
-      if (client) { await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "extension", squarePaymentId: parsed.data.idempotencyKey, description: `Room ${room.name} 2h extension`, sessionId: room.sessionId }); }
-    }
-  }).catch((error) => {
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(roomsTable).set({ expiresAt: newExpiresAt }).where(eq(roomsTable.id, room.id));
+      if (room.sessionId) {
+        await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, room.sessionId));
+        if (client) { await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "extension", squarePaymentId: parsed.data.idempotencyKey, description: `Room ${room.name} 2h extension`, sessionId: room.sessionId }); }
+      }
+    });
+  } catch (error) {
     logTransactionError("room extension", error, { roomId: room.id, clientId: client?.id });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to extend room" });
+    return;
+  }
 
   const [session] = room.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, room.sessionId)) : [null];
   res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "room", resourceId: room.id, resourceName: room.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });

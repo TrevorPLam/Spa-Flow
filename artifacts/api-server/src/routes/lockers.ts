@@ -239,23 +239,26 @@ router.post("/lockers/:id/release", requireAuth, apiLimiter, async (req, res): P
   const sessionId = locker.sessionId;
   const endTime = new Date();
 
-  await db.transaction(async (tx) => {
-    if (sessionId) {
-      await tx.update(rentalSessionsTable).set({ status: "completed", endTime })
-        .where(eq(rentalSessionsTable.id, sessionId));
-    }
+  try {
+    await db.transaction(async (tx) => {
+      if (sessionId) {
+        await tx.update(rentalSessionsTable).set({ status: "completed", endTime })
+          .where(eq(rentalSessionsTable.id, sessionId));
+      }
 
-    await tx.update(lockersTable).set({
-      status: "available",
-      clientId: null,
-      sessionId: null,
-      startTime: null,
-      expiresAt: null,
-    }).where(eq(lockersTable.id, locker.id));
-  }).catch((error) => {
+      await tx.update(lockersTable).set({
+        status: "available",
+        clientId: null,
+        sessionId: null,
+        startTime: null,
+        expiresAt: null,
+      }).where(eq(lockersTable.id, locker.id));
+    });
+  } catch (error) {
     logTransactionError("locker release", error, { lockerId: locker.id, sessionId });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to release locker" });
+    return;
+  }
 
   const actingUser = (req as AuthRequest).user!;
   await writeAuditLog({
@@ -319,19 +322,22 @@ router.post("/lockers/:id/renew", requireAuth, apiLimiter, async (req, res): Pro
   }
 
   const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + SESSION_DURATION_MS);
-  await db.transaction(async (tx) => {
-    await tx.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
 
-    if (locker.sessionId) {
-      await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, locker.sessionId));
-      if (client) {
-        await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "renewal", squarePaymentId: parsed.data.idempotencyKey, description: `Locker ${locker.name} 6h renewal`, sessionId: locker.sessionId });
+      if (locker.sessionId) {
+        await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, locker.sessionId));
+        if (client) {
+          await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "renewal", squarePaymentId: parsed.data.idempotencyKey, description: `Locker ${locker.name} 6h renewal`, sessionId: locker.sessionId });
+        }
       }
-    }
-  }).catch((error) => {
+    });
+  } catch (error) {
     logTransactionError("locker renewal", error, { lockerId: locker.id });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to renew locker" });
+    return;
+  }
 
   const [session] = locker.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, locker.sessionId)) : [null];
   res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "locker", resourceId: locker.id, resourceName: locker.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
@@ -371,19 +377,22 @@ router.post("/lockers/:id/extend", requireAuth, apiLimiter, async (req, res): Pr
   }
 
   const newExpiresAt = new Date((locker.expiresAt ?? new Date()).getTime() + EXTENSION_DURATION_MS);
-  await db.transaction(async (tx) => {
-    await tx.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
+  try {
+    await db.transaction(async (tx) => {
+      await tx.update(lockersTable).set({ expiresAt: newExpiresAt }).where(eq(lockersTable.id, locker.id));
 
-    if (locker.sessionId) {
-      await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, locker.sessionId));
-      if (client) {
-        await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "extension", squarePaymentId: parsed.data.idempotencyKey, description: `Locker ${locker.name} 2h extension`, sessionId: locker.sessionId });
+      if (locker.sessionId) {
+        await tx.update(rentalSessionsTable).set({ expiresAt: newExpiresAt }).where(eq(rentalSessionsTable.id, locker.sessionId));
+        if (client) {
+          await tx.insert(transactionsTable).values({ clientId: client.id, amount: String(subtotal), tax: String(tax), total: String(total), type: "extension", squarePaymentId: parsed.data.idempotencyKey, description: `Locker ${locker.name} 2h extension`, sessionId: locker.sessionId });
+        }
       }
-    }
-  }).catch((error) => {
+    });
+  } catch (error) {
     logTransactionError("locker extension", error, { lockerId: locker.id });
-    throw error;
-  });
+    res.status(500).json({ error: "Failed to extend locker" });
+    return;
+  }
 
   const [session] = locker.sessionId ? await db.select().from(rentalSessionsTable).where(eq(rentalSessionsTable.id, locker.sessionId)) : [null];
   res.json({ id: session?.id ?? 0, clientId: session?.clientId ?? 0, clientName: client?.name ?? null, resourceType: "locker", resourceId: locker.id, resourceName: locker.name, status: "active", startTime: session?.startTime ?? new Date(), expiresAt: newExpiresAt, endTime: null, amountPaid: subtotal });
