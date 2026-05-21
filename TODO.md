@@ -66,19 +66,21 @@
 
 ---
 
-## [ ] TASK-038: Enhance Pricing Rule Display in Check-in
-**Status:** Pending
+## [x] TASK-038: Enhance Pricing Rule Display in Check-in
+**Status:** Complete
 **Priority:** Medium
 
 ### Related File Paths
 - `artifacts/spaflow/src/pages/checkin.tsx`
+- `artifacts/spaflow/src/components/PricingBreakdown.tsx`
+- `artifacts/spaflow/src/components/PricingBreakdown.test.tsx`
 
 ### Definition of Done
-- Pricing breakdown clearly shows applied rules
-- Each rule has explanatory tooltip
-- Special pricing prominently highlighted
-- Membership cost separated if bundled
-- Visual hierarchy in pricing display
+- ✅ Pricing breakdown clearly shows applied rules
+- ✅ Each rule has explanatory tooltip
+- ✅ Special pricing prominently highlighted
+- ✅ Membership cost separated if bundled
+- ✅ Visual hierarchy in pricing display
 
 ### Out of Scope
 - Changing pricing calculation logic
@@ -117,26 +119,42 @@
 #### TASK-038-A: Create Pricing Breakdown Component
 **Target:** `artifacts/spaflow/src/components/`
 **Action:** Create PricingBreakdown component accepting subtotal, tax, total, appliedRules array, render structured breakdown.
+**Status:** ✅ Complete
 
 #### TASK-038-B: Add Rule Explanations
 **Target:** `artifacts/spaflow/src/components/PricingBreakdown.tsx`
 **Action:** Add tooltip or expandable section for each pricing rule with detailed explanation of why it was applied.
+**Status:** ✅ Complete
 
 #### TASK-038-C: Highlight Special Pricing
 **Target:** `artifacts/spaflow/src/components/PricingBreakdown.tsx`
 **Action:** Use distinct color/badge for birthday, 1824, and other special pricing rules to draw attention.
+**Status:** ✅ Complete
 
 #### TASK-038-D: Separate Membership Cost
 **Target:** `artifacts/spaflow/src/components/PricingBreakdown.tsx`
 **Action:** Show membership cost as separate line item when bundled, distinguish from rental cost.
+**Status:** ✅ Complete
 
 #### TASK-038-E: Integrate Component into Check-in
 **Target:** `artifacts/spaflow/src/pages/checkin.tsx`
 **Action:** Replace existing pricing display with PricingBreakdown component in payment step.
+**Status:** ✅ Complete
 
 #### TASK-038-F: Add Tests for Pricing Display
 **Target:** `artifacts/spaflow/src/components/PricingBreakdown.test.tsx`
 **Action:** Write tests for component rendering with various rule combinations, verify tooltips work, verify special highlighting.
+**Status:** ✅ Complete
+
+### Implementation Notes
+- **PricingBreakdown Component**: Created reusable component with rule explanations, special pricing badges, and membership cost separation
+- **Rule Explanations**: Added comprehensive RULE_EXPLANATIONS mapping for all pricing rules with tooltips using Radix UI Tooltip
+- **Special Pricing Highlighting**: Birthday rules use purple badges, 18-24 rules use blue badges, standard rules use outline badges
+- **Membership Cost**: When membershipBundled is true, shows rental cost and membership cost separately, then combined subtotal
+- **Integration**: Replaced inline pricing display in checkin.tsx payment step with PricingBreakdown component
+- **Tests**: Wrote 18 comprehensive tests covering rendering, special badges, membership display, tax rates, tooltips, cost calculation, and edge cases
+- **Quality Assurance**: Typecheck passed, all 18 tests passed (lint not configured in root package.json)
+- **Dependencies Note**: TASK-034 and TASK-035 don't exist in TODO.md, but pricing functionality is already implemented so task proceeded without blockers
 
 ---
 

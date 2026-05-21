@@ -21,11 +21,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Search, User, Lock, DoorOpen, CreditCard as CreditCardIcon, Check, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PaymentForm, CreditCard as SquareCreditCard } from "react-square-web-payments-sdk";
+import { PricingBreakdown } from "@/components/PricingBreakdown";
 
 type Step = "client" | "resource" | "products" | "payment" | "success";
 
@@ -104,7 +104,7 @@ export default function CheckInPage() {
 
   const calculatePrice = useCalculatePrice();
   const checkIn = useCheckIn();
-  const [priceResult, setPriceResult] = useState<{ subtotal: number; tax: number; total: number; appliedRules: string[] } | null>(null);
+  const [priceResult, setPriceResult] = useState<{ subtotal: number; tax: number; total: number; appliedRules: string[]; membershipCost?: number; membershipBundled?: boolean } | null>(null);
 
   const resources = resourceType === "locker" ? lockers : rooms;
   const hasExistingMembership = selectedClient?.membershipStatus !== "none";
@@ -476,24 +476,15 @@ export default function CheckInPage() {
                   <span className="text-muted-foreground">{resourceType === "locker" ? "Locker" : "Room"}</span>
                   <span className="font-medium">{selectedResource.name}</span>
                 </div>
-                {priceResult.appliedRules.map((rule, i) => (
-                  <div key={i} className="flex justify-between text-xs">
-                    <span className="text-primary">{rule}</span>
-                  </div>
-                ))}
-                <Separator className="my-2" />
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>${priceResult.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax ({taxRate !== null ? (taxRate * 100).toFixed(3) : 'Loading...'}%)</span>
-                  <span>${priceResult.tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-base">
-                  <span>Total</span>
-                  <span>${priceResult.total.toFixed(2)}</span>
-                </div>
+                <PricingBreakdown
+                  subtotal={priceResult.subtotal}
+                  tax={priceResult.tax}
+                  total={priceResult.total}
+                  appliedRules={priceResult.appliedRules}
+                  membershipCost={priceResult.membershipCost}
+                  membershipBundled={priceResult.membershipBundled}
+                  taxRate={taxRate ?? undefined}
+                />
               </div>
 
               {/* Square payment form */}
