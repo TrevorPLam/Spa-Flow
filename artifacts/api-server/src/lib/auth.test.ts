@@ -862,12 +862,12 @@ describe('account lockout integration tests', () => {
         .where(eq(usersTable.id, testUserId));
 
       // Verify reset
-      [user] = await db.select({
+      const [resetUser] = await db.select({
         failedLoginAttempts: usersTable.failedLoginAttempts,
         lockedUntil: usersTable.lockedUntil,
       }).from(usersTable).where(eq(usersTable.id, testUserId));
-      expect(user.failedLoginAttempts).toBe(0);
-      expect(user.lockedUntil).toBeNull();
+      expect(resetUser.failedLoginAttempts).toBe(0);
+      expect(resetUser.lockedUntil).toBeNull();
     });
   });
 });
