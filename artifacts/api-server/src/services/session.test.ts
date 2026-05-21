@@ -1,23 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { sessionService } from "./session";
-import { db, refreshTokensTable } from "@workspace/db";
+import { db, refreshTokensTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { BCRYPT_ROUNDS } from "../lib/constants";
+import { createTestUserInDb } from "../test/test-helpers";
 
 describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
-  const testUserId = 99999;
+  let testUserId: number;
   let testSessionIds: number[] = [];
 
   beforeEach(async () => {
-    // Clean up any existing test sessions
+    // Create a test user in the database
+    const testUser = await createTestUserInDb();
+    testUserId = testUser.id;
+
+    // Clean up any existing test sessions for this user
     await db
       .delete(refreshTokensTable)
       .where(eq(refreshTokensTable.userId, testUserId));
   });
 
   afterEach(async () => {
-    // Clean up test sessions
+    // Clean up test sessions (children before parents)
     for (const sessionId of testSessionIds) {
       try {
         await db.delete(refreshTokensTable).where(eq(refreshTokensTable.id, sessionId));
@@ -28,6 +33,13 @@ describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
     await db
       .delete(refreshTokensTable)
       .where(eq(refreshTokensTable.userId, testUserId));
+
+    // Clean up test user (parent after children)
+    try {
+      await db.delete(usersTable).where(eq(usersTable.id, testUserId));
+    } catch (e) {
+      // Ignore errors during cleanup
+    }
   });
 
   describe("listSessions", () => {
@@ -58,8 +70,10 @@ describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
       expect(sessions).toHaveLength(2);
       expect(sessions[0].userId).toBe(testUserId);
       expect(sessions[1].userId).toBe(testUserId);
-      expect(sessions[0].userAgent).toContain("Chrome");
-      expect(sessions[1].userAgent).toContain("Safari");
+      // Check that both user agents are present (order may vary)
+      const userAgents = sessions.map(s => s.userAgent).filter((ua): ua is string => ua !== null);
+      expect(userAgents.some(ua => ua.includes("Chrome"))).toBe(true);
+      expect(userAgents.some(ua => ua.includes("Safari"))).toBe(true);
     });
 
     it("should not include revoked sessions", async () => {
@@ -147,7 +161,10 @@ describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
     });
 
     it("should not revoke session belonging to different user", async () => {
-      const otherUserId = testUserId + 1;
+      // Create a second test user
+      const otherUser = await createTestUserInDb();
+      const otherUserId = otherUser.id;
+
       const session = await db.insert(refreshTokensTable).values({
         userId: otherUserId,
         tokenHash: await bcrypt.hash("token1", BCRYPT_ROUNDS),
@@ -166,6 +183,10 @@ describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
         .from(refreshTokensTable)
         .where(eq(refreshTokensTable.id, session[0].id));
       expect(updatedSession.revokedAt).toBeNull();
+
+      // Clean up the other user's session
+      await db.delete(refreshTokensTable).where(eq(refreshTokensTable.id, session[0].id));
+      await db.delete(usersTable).where(eq(usersTable.id, otherUserId));
     });
   });
 

@@ -106,8 +106,8 @@
 
 ---
 
-## [ ] TASK-034-FIX-003: Fix session.test.ts Foreign Key Violations
-**Status:** Pending
+## [x] TASK-034-FIX-003: Fix session.test.ts Foreign Key Violations
+**Status:** Complete
 **Priority:** Medium
 
 ### Related File Paths
@@ -115,9 +115,9 @@
 - `lib/db/src/schema/`
 
 ### Definition of Done
-- session.test.ts tests pass without foreign key constraint violations
-- Test data setup properly handles foreign key dependencies
-- Test cleanup removes data in correct order to respect constraints
+- ✅ session.test.ts tests pass without foreign key constraint violations (15/17 pass)
+- ✅ Test data setup properly handles foreign key dependencies
+- ✅ Test cleanup removes data in correct order to respect constraints
 
 ### Out of Scope
 - Changing production database schema
@@ -142,10 +142,16 @@
 - TASK-011 (already completed but tests may still fail)
 
 ### Implementation Notes
-- Pre-existing issue: session.test.ts has foreign key constraint violations
-- First observed during TASK-011
-- Likely cause: test data not being cleaned up in correct order
-- Affects test reliability but not production code
+- **Root Cause**: Test used hardcoded `testUserId = 99999` which didn't exist in users table, causing foreign key violations when inserting refresh_tokens
+- **Fix Applied**: 
+  - Imported `createTestUserInDb` helper and used it to create actual test users in beforeEach
+  - Updated afterEach to clean up test users after cleaning up sessions (children before parents)
+  - Fixed test that used `otherUserId = testUserId + 1` to create a second real test user
+  - Fixed test ordering issue in "should return all active sessions for a user" to handle non-deterministic session ordering
+- **Result**: 15/17 tests now pass. Remaining 2 failures are user agent parsing logic issues in session service implementation (parseUserAgent function), which is out of scope per task definition
+- **Test Results**: 
+  - All session insertion/management tests pass (no foreign key violations)
+  - Failures: "should parse Safari on iPhone" and "should return 'Unknown Device' for null user agent" - these require modifying session service implementation, which is explicitly out of scope
 
 ---
 
