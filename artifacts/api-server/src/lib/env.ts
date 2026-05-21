@@ -6,15 +6,6 @@ import { createBootstrapLogger } from './logger-bootstrap';
 const bootstrapLogger = createBootstrapLogger();
 
 const envSchema = z.object({
-  // Database
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid URL'),
-  DB_POOL_MAX: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(100)).default(20),
-  DB_POOL_IDLE_TIMEOUT_MS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1000)).default(30000),
-  DB_POOL_CONNECTION_TIMEOUT_MS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1000)).default(5000),
-  DB_STATEMENT_TIMEOUT_MS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1000)).default(30000),
-  DB_LOCK_TIMEOUT_MS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1000)).default(5000),
-  DB_IDLE_IN_TRANSACTION_TIMEOUT_MS: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1000)).default(60000),
-
   // Security - Secrets (minimum 32 characters for cryptographic security)
   ENCRYPTION_KEY: z.string().min(32, 'ENCRYPTION_KEY must be at least 32 characters'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
@@ -134,23 +125,6 @@ export function getTwilioAuthHeader(): string | undefined {
   return `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`;
 }
 
-// Helper function to get database configuration
-export function getDatabaseConfig() {
-  const env = getEnv();
-  return {
-    connectionString: env.DATABASE_URL,
-    pool: {
-      max: env.DB_POOL_MAX,
-      idleTimeoutMillis: env.DB_POOL_IDLE_TIMEOUT_MS,
-      connectionTimeoutMillis: env.DB_POOL_CONNECTION_TIMEOUT_MS,
-    },
-    timeouts: {
-      statementTimeout: env.DB_STATEMENT_TIMEOUT_MS,
-      lockTimeout: env.DB_LOCK_TIMEOUT_MS,
-      idleInTransactionSessionTimeout: env.DB_IDLE_IN_TRANSACTION_TIMEOUT_MS,
-    },
-  };
-}
 
 // Helper function to get email configuration
 export function getEmailConfig() {
