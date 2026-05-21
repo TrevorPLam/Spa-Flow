@@ -1,5 +1,6 @@
 import { db, refreshTokensTable } from "@workspace/db";
 import { eq, and, isNull, desc } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 /**
  * Session information for display to users
@@ -195,7 +196,6 @@ export class SessionService {
       .where(isNull(refreshTokensTable.revokedAt));
 
     for (const session of sessions) {
-      const bcrypt = require("bcryptjs");
       const isValid = await bcrypt.compare(token, session.tokenHash);
       if (isValid) {
         return session.id;
