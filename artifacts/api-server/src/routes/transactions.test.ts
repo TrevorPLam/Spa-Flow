@@ -4,7 +4,7 @@ import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from 
 import { db } from '@workspace/db';
 import { transactionsTable } from '@workspace/db/schema';
 
-describe('Transactions API', { tags: ['@regression', '@integration'] }, () => {
+describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

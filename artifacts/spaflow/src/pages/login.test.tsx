@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import LoginPage from './login';
 import { render as renderWithProviders } from '@/test/test-utils';
 
-describe('LoginPage', { tags: ['@smoke', '@critical'] }, () => {
+describe('LoginPage', { tags: ['smoke', 'critical'] }, () => {
   describe('Rendering', () => {
     it('renders email and password inputs', () => {
       // Arrange

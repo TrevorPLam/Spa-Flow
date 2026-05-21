@@ -46,12 +46,22 @@ describe('Dashboard API Hooks @integration', () => {
       });
 
       expect(result.current.data).toMatchObject({
-        totalClients: 100,
-        activeMemberships: 75,
-        availableLockers: 20,
-        availableRooms: 5,
-        todayTransactions: 15,
-        monthlyRevenue: 5000,
+        lockerOccupancy: {
+          total: 167,
+          available: 20,
+          occupied: 145,
+          reserved: 2,
+        },
+        roomOccupancy: {
+          total: 38,
+          available: 5,
+          occupied: 30,
+          reserved: 3,
+        },
+        todayRevenue: 500,
+        activeClients: 75,
+        waitlistCount: 10,
+        lowStockCount: 3,
       });
     });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { api } from '../test/test-helpers';
 
-describe('Config API', { tags: ['@smoke'] }, () => {
+describe('Config API', { tags: ['smoke'] }, () => {
   describe('GET /api/v1/config', () => {
     it('should return configuration values', async () => {
       const response = await api.get('/api/v1/config');

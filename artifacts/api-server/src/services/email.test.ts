@@ -24,7 +24,7 @@ vi.mock("../lib/env", () => ({
 // Mock fetch
 global.fetch = vi.fn();
 
-describe("EmailService", { tags: ['@regression', '@integration'] }, () => {
+describe("EmailService", { tags: ['regression', 'integration'] }, () => {
   let emailService: EmailService;
 
   beforeEach(() => {

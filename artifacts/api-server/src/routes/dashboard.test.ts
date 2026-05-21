@@ -4,7 +4,7 @@ import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb,
 import { db } from '@workspace/db';
 import { transactionsTable, productsTable, rentalSessionsTable } from '@workspace/db/schema';
 
-describe('Dashboard API', { tags: ['@regression', '@integration'] }, () => {
+describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

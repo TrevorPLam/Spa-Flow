@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { BCRYPT_ROUNDS } from "../lib/constants";
 
-describe("PasswordResetTokenService", { tags: ['@regression', '@integration'] }, () => {
+describe("PasswordResetTokenService", { tags: ['regression', 'integration'] }, () => {
   let service: PasswordResetTokenService;
   let testUserId: number;
   let testEmail: string;

@@ -15,7 +15,7 @@ vi.mock('../lib/twilio', () => ({
   sendSms: vi.fn().mockResolvedValue({ sid: 'sms-test-123' }),
 }));
 
-describe('Check-in API', { tags: ['@regression'] }, () => {
+describe('Check-in API', { tags: ['regression'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

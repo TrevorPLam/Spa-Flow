@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRouter);
 
-describe('Auth Audit Logging Integration Tests', { tags: ['@regression', '@integration'] }, () => {
+describe('Auth Audit Logging Integration Tests', { tags: ['regression', 'integration'] }, () => {
   let testUserId: number;
   const testEmail = 'audit-test@example.com';
   const testPassword = 'TestPassword123!';

@@ -15,35 +15,35 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', '.stryker-tmp'],
     tags: [
       {
-        name: '@smoke',
+        name: 'smoke',
         description: 'Critical functionality tests that verify basic application health',
       },
       {
-        name: '@regression',
+        name: 'regression',
         description: 'Tests that ensure new changes don\'t break existing functionality',
       },
       {
-        name: '@critical',
+        name: 'critical',
         description: 'High-priority tests that must pass for application stability',
       },
       {
-        name: '@integration',
+        name: 'integration',
         description: 'Tests that verify integration between components or services',
       },
       {
-        name: '@slow',
+        name: 'slow',
         description: 'Tests that take longer to execute',
         timeout: 60_000,
       },
       {
-        name: '@flaky',
+        name: 'flaky',
         description: 'Tests that are known to be unstable',
         retry: process.env.CI ? 3 : 0,
         timeout: 30_000,
         priority: 1,
       },
       {
-        name: '@quarantine',
+        name: 'quarantine',
         description: 'Tests that are quarantined due to flakiness - excluded from CI runs',
         retry: 0,
         timeout: 30_000,

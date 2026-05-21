@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { BCRYPT_ROUNDS } from "../lib/constants";
 import { createTestUserInDb } from "../test/test-helpers";
 
-describe("SessionService", { tags: ['@regression', '@integration'] }, () => {
+describe("SessionService", { tags: ['regression', 'integration'] }, () => {
   let testUserId: number;
   let testSessionIds: number[] = [];
 

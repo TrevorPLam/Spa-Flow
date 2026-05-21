@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-describe('env', { tags: ['@regression'] }, () => {
+describe('env', { tags: ['regression'] }, () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {

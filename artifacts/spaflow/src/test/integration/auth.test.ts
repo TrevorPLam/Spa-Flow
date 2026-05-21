@@ -52,7 +52,7 @@ describe('Auth API Hooks @integration', () => {
 
       expect(result.current.data).toMatchObject({
         user: {
-          id: 'user-1',
+          id: 1,
           email: 'test@example.com',
           role: 'STAFF',
         },
@@ -173,7 +173,7 @@ describe('Auth API Hooks @integration', () => {
       });
 
       expect(result.current.data).toMatchObject({
-        id: 'user-1',
+        id: 1,
         email: 'test@example.com',
         role: 'STAFF',
       });

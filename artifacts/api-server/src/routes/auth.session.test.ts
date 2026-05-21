@@ -18,7 +18,7 @@ type TestUser = {
   updatedAt: Date;
 };
 
-describe("Session Management Endpoints", { tags: ['@smoke', '@critical'] }, () => {
+describe("Session Management Endpoints", { tags: ['smoke', 'critical'] }, () => {
   let testUser: TestUser;
   let authToken: string;
   let testSessionIds: number[] = [];

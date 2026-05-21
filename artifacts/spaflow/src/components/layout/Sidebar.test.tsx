@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { render as renderWithProviders } from '@/test/test-utils';
 import { Sidebar } from './Sidebar';
 
-describe('Sidebar', { tags: ['@smoke', '@critical'] }, () => {
+describe('Sidebar', { tags: ['smoke', 'critical'] }, () => {
   describe('Rendering', () => {
     it('renders main navigation items', () => {
       // Arrange

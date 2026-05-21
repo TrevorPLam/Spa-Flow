@@ -11,7 +11,7 @@ vi.mock('@workspace/db', () => ({
   usersTable: {},
 }));
 
-describe('AccountLockoutService', { tags: ['@regression', '@integration'] }, () => {
+describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () => {
   let service: AccountLockoutService;
   const mockSelect = vi.mocked(db.select);
   const mockUpdate = vi.mocked(db.update);

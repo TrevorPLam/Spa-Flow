@@ -9,7 +9,7 @@ import {
   type ProductType,
 } from './pricing';
 
-describe('pricing', { tags: ['@regression'] }, () => {
+describe('pricing', { tags: ['regression'] }, () => {
   describe('calculatePrice', () => {
     it('should apply birthday special for locker on birthday', () => {
       const input: PricingInput = {

@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 app.use('/auth', authRouter);
 
-describe('Auth Role Validation Integration Tests', { tags: ['@regression', '@integration'] }, () => {
+describe('Auth Role Validation Integration Tests', { tags: ['regression', 'integration'] }, () => {
   const testEmail = 'role-validation-test@example.com';
   const testPassword = 'TestPassword123!';
   const validSecret = 'a'.repeat(32);

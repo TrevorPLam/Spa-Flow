@@ -6,7 +6,7 @@ import { clientsTable, membershipsTable, transactionsTable } from '@workspace/db
 import { eq } from 'drizzle-orm';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
-describe('Clients API', { tags: ['@smoke', '@critical'] }, () => {
+describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

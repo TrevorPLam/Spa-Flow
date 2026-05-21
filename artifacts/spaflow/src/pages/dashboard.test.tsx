@@ -8,7 +8,7 @@ vi.mock('@/components/layout/Layout', () => ({
   Layout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-describe('DashboardPage', { tags: ['@smoke', '@critical'] }, () => {
+describe('DashboardPage', { tags: ['smoke', 'critical'] }, () => {
   it('renders loading state', () => {
     // Arrange
     renderWithProviders(<DashboardPage />);

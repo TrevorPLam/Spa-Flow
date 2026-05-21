@@ -4,7 +4,7 @@ import { createAuthenticatedRequest, createTestUserInDb, cleanDatabase } from '.
 import { db } from '@workspace/db';
 import { auditLogsTable } from '@workspace/db/schema';
 
-describe('Audit Logs API', { tags: ['@regression', '@integration'] }, () => {
+describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
   });

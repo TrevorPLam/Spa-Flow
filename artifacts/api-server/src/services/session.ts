@@ -50,18 +50,18 @@ function parseUserAgent(userAgent: string | null): string {
     browser = "Opera";
   }
 
-  // Detect OS
+  // Detect OS (check iOS/macOS order to avoid false positives)
   let os = "Unknown OS";
   if (ua.includes("windows")) {
     os = "Windows";
+  } else if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
+    os = "iOS";
   } else if (ua.includes("mac os x") || ua.includes("macintosh")) {
     os = "macOS";
   } else if (ua.includes("linux")) {
     os = "Linux";
   } else if (ua.includes("android")) {
     os = "Android";
-  } else if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
-    os = "iOS";
   }
 
   // Detect mobile
@@ -107,7 +107,7 @@ export class SessionService {
       userId: session.userId,
       createdAt: session.createdAt,
       expiresAt: session.expiresAt,
-      userAgent: session.userAgent ? parseUserAgent(session.userAgent) : null,
+      userAgent: parseUserAgent(session.userAgent),
       isCurrent: currentTokenHash ? session.tokenHash === currentTokenHash : false,
     }));
   }
