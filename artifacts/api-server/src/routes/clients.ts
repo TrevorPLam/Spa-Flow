@@ -15,13 +15,16 @@ import {
   AddMembershipBody,
   GetClientRentalsParams,
   GetClientTransactionsParams,
+  RenewMembershipParams,
+  RenewMembershipBody,
 } from "@workspace/api-zod";
 import { nanoid } from "nanoid";
 import { apiLimiter, piiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDel, cacheDelPattern } from "../lib/cache";
 import { logTransactionError } from "../lib/logger";
-import { DEFAULT_PAGE_SIZE } from "../lib/constants";
-import { sendValidationError, sendNotFoundError } from "../lib/response-formatters";
+import { DEFAULT_PAGE_SIZE, MEMBERSHIP_ONE_TIME_COST, MEMBERSHIP_SIX_MONTH_COST } from "../lib/constants";
+import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
+import { processSquarePayment } from "../lib/square";
 
 const router = Router();
 
@@ -406,6 +409,133 @@ router.post("/clients/:id/memberships", requireAuth, apiLimiter, async (req, res
   await cacheDelPattern('clients:search:*');
 
   res.status(201).json({
+    id: membership.id,
+    clientId: membership.clientId,
+    type: membership.type,
+    purchasedAt: membership.purchasedAt,
+    expiresAt: membership.expiresAt,
+  });
+});
+
+/**
+ * POST /clients/:id/memberships/renew
+ * Renew an expired membership with payment processing
+ * Only allows renewal for expired memberships
+ * Creates new membership record, updates client status, and creates transaction
+ */
+router.post("/clients/:id/memberships/renew", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const params = RenewMembershipParams.safeParse(req.params);
+  if (!params.success) {
+    sendValidationError(res, params.error.message);
+    return;
+  }
+
+  const parsed = RenewMembershipBody.safeParse(req.body);
+  if (!parsed.success) {
+    sendValidationError(res, parsed.error.message);
+    return;
+  }
+
+  const { membershipType, paymentToken, idempotencyKey } = parsed.data;
+
+  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
+  if (!client) {
+    sendNotFoundError(res, "Client not found");
+    return;
+  }
+
+  // Validate membership is expired
+  const now = new Date();
+  const isExpired = client.membershipStatus !== "none" && client.membershipExpiresAt && new Date(client.membershipExpiresAt) < now;
+  const hasNoMembership = client.membershipStatus === "none";
+
+  if (!isExpired && !hasNoMembership) {
+    sendConflictError(res, "Membership is not expired and cannot be renewed");
+    return;
+  }
+
+  // Calculate membership cost
+  const membershipCost = membershipType === "one_time" ? MEMBERSHIP_ONE_TIME_COST : MEMBERSHIP_SIX_MONTH_COST;
+  const taxRate = 0.08875; // TODO: Use from constants/env
+  const tax = membershipCost * taxRate;
+  const total = membershipCost + tax;
+
+  // Process payment
+  let paymentResult: { paymentId: string; status: string };
+  try {
+    paymentResult = await processSquarePayment(
+      paymentToken,
+      Math.round(total * 100),
+      idempotencyKey,
+      `Membership renewal: ${membershipType} for ${client.name}`
+    );
+  } catch (error) {
+    logTransactionError("membership renewal payment", error, { clientId: client.id, membershipType });
+    res.status(500).json({ error: "Payment processing failed" });
+    return;
+  }
+
+  // Calculate expiration date
+  const purchasedAt = new Date();
+  let expiresAt: Date | null = null;
+  if (membershipType === "six_month") {
+    expiresAt = new Date(purchasedAt);
+    expiresAt.setMonth(expiresAt.getMonth() + 6);
+  }
+
+  // Create membership, update client, and create transaction in a single transaction
+  let membership: typeof membershipsTable.$inferSelect;
+  try {
+    membership = await db.transaction(async (tx) => {
+      // Create new membership record
+      const [membership] = await tx.insert(membershipsTable).values({
+        clientId: client.id,
+        type: membershipType as "one_time" | "six_month",
+        purchasedAt,
+        expiresAt,
+      }).returning();
+
+      // Update client membership status
+      await tx.update(clientsTable).set({
+        membershipStatus: membershipType as "one_time" | "six_month",
+        membershipExpiresAt: expiresAt,
+      }).where(eq(clientsTable.id, client.id));
+
+      // Create transaction record
+      await tx.insert(transactionsTable).values({
+        clientId: client.id,
+        amount: String(membershipCost),
+        tax: String(tax),
+        total: String(total),
+        type: "membership",
+        squarePaymentId: paymentResult.paymentId,
+        description: `${membershipType} membership renewal for ${client.name}`,
+      });
+
+      return membership;
+    });
+  } catch (error) {
+    logTransactionError("membership renewal", error, { clientId: client.id, membershipType });
+    res.status(500).json({ error: "Failed to renew membership" });
+    return;
+  }
+
+  const actingUser = (req as AuthRequest).user!;
+  await writeAuditLog({
+    userId: parseInt(actingUser.sub),
+    action: "RENEW_MEMBERSHIP",
+    resourceType: "client",
+    resourceId: client.id,
+    description: `Renewed ${membershipType} membership for client ${client.name}`,
+  });
+
+  // Invalidate cache for this client (both manager and staff versions)
+  await cacheDel(buildCacheKey('client', client.id.toString(), 'manager'));
+  await cacheDel(buildCacheKey('client', client.id.toString(), 'staff'));
+  // Invalidate client search cache
+  await cacheDelPattern('clients:search:*');
+
+  res.json({
     id: membership.id,
     clientId: membership.clientId,
     type: membership.type,

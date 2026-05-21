@@ -474,6 +474,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/Membership"
 
+  /clients/{id}/memberships/renew:
+    post:
+      operationId: renewMembership
+      tags: [clients]
+      summary: Renew an expired membership
+      description: Renews a client's expired membership with payment processing. Only allowed for expired memberships.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenewMembershipBody"
+      responses:
+        "200":
+          description: Membership renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "400":
+          description: Invalid request (membership not expired)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: Client not found
+
   /clients/{id}/rentals:
     get:
       operationId: getClientRentals
@@ -1774,6 +1808,18 @@ components:
       required: [type]
       properties:
         type:
+          type: string
+          enum: [one_time, six_month]
+        paymentToken:
+          type: string
+        idempotencyKey:
+          type: string
+
+    RenewMembershipBody:
+      type: object
+      required: [membershipType, paymentToken, idempotencyKey]
+      properties:
+        membershipType:
           type: string
           enum: [one_time, six_month]
         paymentToken:

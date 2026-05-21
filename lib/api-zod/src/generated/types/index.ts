@@ -84,6 +84,8 @@ export * from './readinessResponseStatus';
 export * from './refreshTokenInput';
 export * from './refreshTokenResponse';
 export * from './renewInput';
+export * from './renewMembershipBody';
+export * from './renewMembershipBodyMembershipType';
 export * from './rentalSession';
 export * from './rentalSessionResourceType';
 export * from './rentalSessionStatus';

@@ -354,6 +354,29 @@ export const AddMembershipBody = zod.object({
 
 
 /**
+ * Renews a client's expired membership with payment processing. Only allowed for expired memberships.
+ * @summary Renew an expired membership
+ */
+export const RenewMembershipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RenewMembershipBody = zod.object({
+  "membershipType": zod.enum(['one_time', 'six_month']),
+  "paymentToken": zod.string(),
+  "idempotencyKey": zod.string()
+})
+
+export const RenewMembershipResponse = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "type": zod.enum(['one_time', 'six_month']),
+  "purchasedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date().nullish()
+})
+
+
+/**
  * @summary Get a client's rental history
  */
 export const GetClientRentalsParams = zod.object({

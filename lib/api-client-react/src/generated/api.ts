@@ -65,6 +65,7 @@ import type {
   RefreshTokenInput,
   RefreshTokenResponse,
   RenewInput,
+  RenewMembershipBody,
   RentalSession,
   RevenueByTypeReport,
   RevenueReport,
@@ -1345,6 +1346,79 @@ export const useAddMembership = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAddMembershipMutationOptions(options));
+    }
+
+export const getRenewMembershipUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/clients/${id}/memberships/renew`
+}
+
+/**
+ * Renews a client's expired membership with payment processing. Only allowed for expired memberships.
+ * @summary Renew an expired membership
+ */
+export const renewMembership = async (id: number,
+    renewMembershipBody: RenewMembershipBody, options?: RequestInit): Promise<Membership> => {
+
+  return customFetch<Membership>(getRenewMembershipUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      renewMembershipBody,)
+  }
+);}
+
+
+
+
+export const getRenewMembershipMutationOptions = <TError = ErrorType<AuthError | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renewMembership>>, TError,{id: number;data: BodyType<RenewMembershipBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renewMembership>>, TError,{id: number;data: BodyType<RenewMembershipBody>}, TContext> => {
+
+const mutationKey = ['renewMembership'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renewMembership>>, {id: number;data: BodyType<RenewMembershipBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renewMembership(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenewMembershipMutationResult = NonNullable<Awaited<ReturnType<typeof renewMembership>>>
+    export type RenewMembershipMutationBody = BodyType<RenewMembershipBody>
+    export type RenewMembershipMutationError = ErrorType<AuthError | void>
+
+    /**
+ * @summary Renew an expired membership
+ */
+export const useRenewMembership = <TError = ErrorType<AuthError | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renewMembership>>, TError,{id: number;data: BodyType<RenewMembershipBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renewMembership>>,
+        TError,
+        {id: number;data: BodyType<RenewMembershipBody>},
+        TContext
+      > => {
+      return useMutation(getRenewMembershipMutationOptions(options));
     }
 
 export const getGetClientRentalsUrl = (id: number,) => {

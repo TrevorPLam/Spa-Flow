@@ -418,6 +418,20 @@ export interface MembershipInput {
   idempotencyKey?: string;
 }
 
+export type RenewMembershipBodyMembershipType = typeof RenewMembershipBodyMembershipType[keyof typeof RenewMembershipBodyMembershipType];
+
+
+export const RenewMembershipBodyMembershipType = {
+  one_time: 'one_time',
+  six_month: 'six_month',
+} as const;
+
+export interface RenewMembershipBody {
+  membershipType: RenewMembershipBodyMembershipType;
+  paymentToken: string;
+  idempotencyKey: string;
+}
+
 export type LockerStatus = typeof LockerStatus[keyof typeof LockerStatus];
 
 

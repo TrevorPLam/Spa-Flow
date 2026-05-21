@@ -5,6 +5,7 @@ import {
   useUpdateClient,
   useGetClientRentals,
   useGetClientTransactions,
+  useRenewMembership,
   getGetClientQueryKey,
   getListClientsQueryKey,
   getGetClientRentalsQueryKey,
@@ -23,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +41,12 @@ const editSchema = z.object({
   notes: z.string().optional(),
 });
 
+const renewalSchema = z.object({
+  membershipType: z.enum(["one_time", "six_month"]),
+});
+
 type EditForm = z.infer<typeof editSchema>;
+type RenewalForm = z.infer<typeof renewalSchema>;
 
 export default function ClientDetailPage() {
   const [, params] = useRoute("/clients/:id");
@@ -50,6 +56,7 @@ export default function ClientDetailPage() {
   const { toast } = useToast();
   const [showEdit, setShowEdit] = useState(false);
   const [showPiiModal, setShowPiiModal] = useState(false);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [piiData, setPiiData] = useState<{ dob: string | null; address: string | null; documentNumber: string | null } | null>(null);
   const [loadingPii, setLoadingPii] = useState(false);
 
@@ -64,10 +71,16 @@ export default function ClientDetailPage() {
   });
 
   const updateClient = useUpdateClient();
+  const renewMembership = useRenewMembership();
 
   const form = useForm<EditForm>({
     resolver: zodResolver(editSchema),
     defaultValues: { name: "", email: "", phone: "", notes: "" },
+  });
+
+  const renewalForm = useForm<RenewalForm>({
+    resolver: zodResolver(renewalSchema),
+    defaultValues: { membershipType: "one_time" },
   });
 
   async function fetchPii() {
@@ -123,6 +136,39 @@ export default function ClientDetailPage() {
     });
   }
 
+  function openRenewalModal() {
+    renewalForm.reset({ membershipType: "one_time" });
+    setShowRenewalModal(true);
+  }
+
+  async function onRenewalSubmit(values: RenewalForm) {
+    // Generate idempotency key
+    const idempotencyKey = `renewal_${id}_${Date.now()}`;
+    // Mock payment token for development
+    const paymentToken = "SQUARE_MOCK_TOKEN_RENEWAL";
+
+    renewMembership.mutate({
+      id,
+      data: {
+        membershipType: values.membershipType,
+        paymentToken,
+        idempotencyKey,
+      },
+    }, {
+      onSuccess: () => {
+        toast({ title: "Membership renewed successfully" });
+        queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getListClientsQueryKey({}) });
+        setShowRenewalModal(false);
+      },
+      onError: () => toast({ title: "Failed to renew membership", variant: "destructive" }),
+    });
+  }
+
+  // Check if membership is expired or can be renewed
+  const isMembershipExpired = client?.membershipStatus !== "none" && client?.membershipExpiresAt && new Date(client.membershipExpiresAt) < new Date();
+  const canRenew = isMembershipExpired || client?.membershipStatus === "none";
+
   if (isLoading) return <Layout><div className="p-8 text-muted-foreground text-sm">Loading...</div></Layout>;
   if (!client) return <Layout><div className="p-8 text-muted-foreground text-sm">Client not found</div></Layout>;
 
@@ -151,10 +197,18 @@ export default function ClientDetailPage() {
               )}
             </div>
           </div>
-          <Button data-testid="button-edit-client" variant="outline" size="sm" onClick={openEdit} className="gap-2">
-            <Pencil size={14} />
-            Edit
-          </Button>
+          <div className="flex items-center gap-2">
+            {canRenew && (
+              <Button data-testid="button-renew-membership" variant="default" size="sm" onClick={openRenewalModal} className="gap-2">
+                <RefreshCw size={14} />
+                Renew Membership
+              </Button>
+            )}
+            <Button data-testid="button-edit-client" variant="outline" size="sm" onClick={openEdit} className="gap-2">
+              <Pencil size={14} />
+              Edit
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -347,6 +401,52 @@ export default function ClientDetailPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPiiModal(false)}>Close</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRenewalModal} onOpenChange={setShowRenewalModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renew Membership</DialogTitle>
+          </DialogHeader>
+          <Form {...renewalForm}>
+            <form onSubmit={renewalForm.handleSubmit(onRenewalSubmit)} className="space-y-4">
+              <FormField control={renewalForm.control} name="membershipType" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Membership Type</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        type="button"
+                        variant={field.value === "one_time" ? "default" : "outline"}
+                        onClick={() => field.onChange("one_time")}
+                        className="h-20 flex flex-col gap-1"
+                      >
+                        <span className="font-semibold">One-time</span>
+                        <span className="text-xs opacity-70">$13.00</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={field.value === "six_month" ? "default" : "outline"}
+                        onClick={() => field.onChange("six_month")}
+                        className="h-20 flex flex-col gap-1"
+                      >
+                        <span className="font-semibold">6-month</span>
+                        <span className="text-xs opacity-70">$42.00</span>
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowRenewalModal(false)}>Cancel</Button>
+                <Button data-testid="button-submit-renewal" type="submit" disabled={renewMembership.isPending}>
+                  {renewMembership.isPending ? "Processing..." : "Renew"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </Layout>

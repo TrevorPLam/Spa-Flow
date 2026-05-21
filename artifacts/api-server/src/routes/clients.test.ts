@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
-import { clientsTable, membershipsTable } from '@workspace/db/schema';
+import { clientsTable, membershipsTable, transactionsTable } from '@workspace/db/schema';
 import { eq } from 'drizzle-orm';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
 
@@ -303,6 +303,140 @@ describe('Clients API', { tags: ['@smoke', '@critical'] }, () => {
       const auditLogs = await db.select().from(require('@workspace/db/schema').auditLogsTable)
         .where(eq(require('@workspace/db/schema').auditLogsTable.action, 'VIEW_PII'));
       
+      expect(auditLogs.length).toBeGreaterThan(0);
+      expect(auditLogs[0]).toHaveProperty('resourceType', 'client');
+      expect(auditLogs[0]).toHaveProperty('resourceId', client.id);
+    });
+  });
+
+  describe('POST /api/clients/:id/memberships/renew', () => {
+    it('should renew expired membership with payment', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({
+        name: 'John Doe',
+        email: 'john@example.com',
+        membershipStatus: 'six_month',
+        membershipExpiresAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Expired 30 days ago
+      });
+
+      const renewalData = {
+        membershipType: 'six_month',
+        paymentToken: 'SQUARE_MOCK_TOKEN_RENEWAL',
+        idempotencyKey: `renewal_${client.id}_${Date.now()}`,
+      };
+
+      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('type', 'six_month');
+      expect(response.body).toHaveProperty('purchasedAt');
+      expect(response.body).toHaveProperty('expiresAt');
+
+      // Verify client membership status was updated
+      const updatedClient = await db.select().from(clientsTable).where(eq(clientsTable.id, client.id));
+      expect(updatedClient[0].membershipStatus).toBe('six_month');
+      expect(updatedClient[0].membershipExpiresAt).not.toBeNull();
+
+      // Verify transaction was created
+      const transactions = await db.select().from(transactionsTable).where(eq(transactionsTable.clientId, client.id));
+      expect(transactions.length).toBeGreaterThan(0);
+      expect(transactions[transactions.length - 1].type).toBe('membership');
+    });
+
+    it('should allow renewal for client with no membership', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({
+        name: 'John Doe',
+        email: 'john@example.com',
+        membershipStatus: 'none',
+      });
+
+      const renewalData = {
+        membershipType: 'one_time',
+        paymentToken: 'SQUARE_MOCK_TOKEN_RENEWAL',
+        idempotencyKey: `renewal_${client.id}_${Date.now()}`,
+      };
+
+      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('type', 'one_time');
+    });
+
+    it('should reject renewal for active membership', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({
+        name: 'John Doe',
+        email: 'john@example.com',
+        membershipStatus: 'six_month',
+        membershipExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Expires in 30 days
+      });
+
+      const renewalData = {
+        membershipType: 'six_month',
+        paymentToken: 'SQUARE_MOCK_TOKEN_RENEWAL',
+        idempotencyKey: `renewal_${client.id}_${Date.now()}`,
+      };
+
+      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error');
+    });
+
+    it('should return 404 for non-existent client', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+
+      const renewalData = {
+        membershipType: 'one_time',
+        paymentToken: 'SQUARE_MOCK_TOKEN_RENEWAL',
+        idempotencyKey: `renewal_99999_${Date.now()}`,
+      };
+
+      const response = await api.post('/api/clients/99999/memberships/renew').set(authHeaders).send(renewalData);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 401 for unauthenticated request', async () => {
+      const client = await createTestClientInDb({
+        name: 'John Doe',
+        email: 'john@example.com',
+        membershipStatus: 'none',
+      });
+
+      const renewalData = {
+        membershipType: 'one_time',
+        paymentToken: 'SQUARE_MOCK_TOKEN_RENEWAL',
+        idempotencyKey: `renewal_${client.id}_${Date.now()}`,
+      };
+
+      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).send(renewalData);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should create audit log entry for renewal', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const client = await createTestClientInDb({
+        name: 'John Doe',
+        email: 'john@example.com',
+        membershipStatus: 'none',
+      });
+
+      const renewalData = {
+        membershipType: 'one_time',
+        paymentToken: 'SQUARE_MOCK_TOKEN_RENEWAL',
+        idempotencyKey: `renewal_${client.id}_${Date.now()}`,
+      };
+
+      await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+
+      // Verify audit log entry was created
+      const auditLogs = await db.select().from(require('@workspace/db/schema').auditLogsTable)
+        .where(eq(require('@workspace/db/schema').auditLogsTable.action, 'RENEW_MEMBERSHIP'));
+
       expect(auditLogs.length).toBeGreaterThan(0);
       expect(auditLogs[0]).toHaveProperty('resourceType', 'client');
       expect(auditLogs[0]).toHaveProperty('resourceId', client.id);
