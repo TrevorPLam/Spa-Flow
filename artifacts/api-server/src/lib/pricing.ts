@@ -77,6 +77,10 @@ export interface PricingResult {
   subtotal: number;
   /** List of pricing rules that were applied (for display/debugging) */
   appliedRules: string[];
+  /** Cost of bundled membership purchase (if applicable) */
+  membershipCost?: number;
+  /** Whether membership was auto-bundled for 1824 special */
+  membershipBundled?: boolean;
 }
 
 /**
@@ -180,6 +184,19 @@ export function calculatePrice(input: PricingInput): PricingResult {
   }
 
   return { subtotal: 0, appliedRules: ["Unknown product type"] };
+}
+
+/**
+ * Checks if a client is eligible for the 1824 special (18-24 age range with locker rental)
+ * This is used to determine if membership should be auto-bundled
+ *
+ * @param clientAge - Client age in years
+ * @param customerType - Current customer type
+ * @param productType - Product type being rented
+ * @returns True if eligible for 1824 special but not currently a member
+ */
+export function isEligibleFor1824Special(clientAge: number, customerType: CustomerType, productType: ProductType): boolean {
+  return clientAge >= 18 && clientAge <= 24 && customerType === "NON_MEMBER" && productType === "LOCKER";
 }
 
 /**

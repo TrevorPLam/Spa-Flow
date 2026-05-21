@@ -733,7 +733,8 @@ export const CheckInResponse = zod.object({
   "type": zod.enum(['one_time', 'six_month']),
   "purchasedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date().nullish()
-}).optional()
+}).optional(),
+  "membershipBundled": zod.boolean().optional().describe('Whether membership was auto-bundled for 1824 special')
 })
 
 

@@ -1914,6 +1914,9 @@ components:
           $ref: "#/components/schemas/Transaction"
         membership:
           $ref: "#/components/schemas/Membership"
+        membershipBundled:
+          type: boolean
+          description: Whether membership was auto-bundled for 1824 special
 
     # Waitlist
     WaitlistEntry:

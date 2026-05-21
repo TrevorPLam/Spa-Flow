@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { api } from '../test/test-helpers';
-import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, cleanDatabase } from '../test/test-helpers';
+import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
 import { productsTable } from '@workspace/db/schema';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
+import { encryptField } from '../lib/encryption';
 
 // Mock Square and Twilio
 vi.mock('../lib/square', () => ({
@@ -149,6 +150,99 @@ describe('Check-in API', { tags: ['@regression'] }, () => {
       const response = await api.post('/api/checkin').set(authHeaders).send(invalidData);
 
       expect(response.status).toBe(400);
+    });
+
+    it('should auto-bundle one-time membership for 18-24 non-members renting lockers (1824 special)', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      // Create a 20-year-old non-member client
+      const dob = new Date();
+      dob.setFullYear(dob.getFullYear() - 20);
+      const encryptedDob = encryptField(dob.toISOString());
+      const client = await createTestClientInDb({
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        membershipStatus: 'none',
+        dobEncrypted: encryptedDob.ciphertext,
+        dobDek: encryptedDob.dek,
+      });
+      const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        paymentToken: 'test-token-123',
+        // No membershipType provided - should auto-bundle
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('session');
+      expect(response.body).toHaveProperty('transaction');
+      expect(response.body).toHaveProperty('membership');
+      expect(response.body.membershipBundled).toBe(true);
+      expect(response.body.membership).toHaveProperty('type', 'one_time');
+    });
+
+    it('should not auto-bundle membership for 25+ year old non-members', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      // Create a 30-year-old non-member client
+      const dob = new Date();
+      dob.setFullYear(dob.getFullYear() - 30);
+      const encryptedDob = encryptField(dob.toISOString());
+      const client = await createTestClientInDb({
+        name: 'John Smith',
+        email: 'john@example.com',
+        membershipStatus: 'none',
+        dobEncrypted: encryptedDob.ciphertext,
+        dobDek: encryptedDob.dek,
+      });
+      const locker = await createTestLockerInDb({ name: 'L102', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'LOCKER' as const,
+        resourceId: locker.id,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('session');
+      expect(response.body.membershipBundled).toBe(false);
+      expect(response.body.membership).toBeNull();
+    });
+
+    it('should not auto-bundle membership for room rentals (1824 special only applies to lockers)', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      // Create a 20-year-old non-member client
+      const dob = new Date();
+      dob.setFullYear(dob.getFullYear() - 20);
+      const encryptedDob = encryptField(dob.toISOString());
+      const client = await createTestClientInDb({
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        membershipStatus: 'none',
+        dobEncrypted: encryptedDob.ciphertext,
+        dobDek: encryptedDob.dek,
+      });
+      const room = await createTestRoomInDb({ name: 'R101', status: 'available' });
+
+      const checkinData = {
+        clientId: client.id,
+        resourceType: 'ROOM' as const,
+        resourceId: room.id,
+        paymentToken: 'test-token-123',
+      };
+
+      const response = await api.post('/api/checkin').set(authHeaders).send(checkinData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('session');
+      expect(response.body.membershipBundled).toBe(false);
+      expect(response.body.membership).toBeNull();
     });
   });
 

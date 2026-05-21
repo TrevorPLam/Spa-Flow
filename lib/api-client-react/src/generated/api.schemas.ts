@@ -584,6 +584,8 @@ export interface CheckInResult {
   session: RentalSession;
   transaction: Transaction;
   membership?: Membership;
+  /** Whether membership was auto-bundled for 1824 special */
+  membershipBundled?: boolean;
 }
 
 export type WaitlistEntryStatus = typeof WaitlistEntryStatus[keyof typeof WaitlistEntryStatus];

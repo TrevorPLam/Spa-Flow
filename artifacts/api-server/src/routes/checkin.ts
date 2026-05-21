@@ -4,7 +4,7 @@ import { eq, sql, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { processSquarePayment } from "../lib/square";
-import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType, type ProductType, type RoomQualityTier } from "../lib/pricing";
+import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, isEligibleFor1824Special, type CustomerType, type ProductType, type RoomQualityTier } from "../lib/pricing";
 import { maybeDecrypt } from "../lib/encryption";
 import { CheckInBody } from "@workspace/api-zod";
 import { checkinLimiter } from "../middleware/rateLimit";
@@ -21,7 +21,8 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     return;
   }
 
-  const { clientId, resourceType, resourceId, paymentToken, idempotencyKey, membershipType, productIds, roomTier } = parsed.data;
+  const { clientId, resourceType, resourceId, paymentToken, idempotencyKey, membershipType: requestedMembershipType, productIds, roomTier } = parsed.data;
+  let membershipType = requestedMembershipType;
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
   if (!client) {
@@ -89,6 +90,19 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
   let newMembership = null;
   let membershipCost = 0;
   let effectiveMembershipStatus = client.membershipStatus;
+  let membershipBundled = false;
+
+  // Auto-bundle one-time membership for 18-24 non-members renting lockers (1824 special)
+  if (!membershipType && client.membershipStatus === "none" && resourceType === "locker") {
+    const dob = maybeDecrypt(client.dobEncrypted, client.dobDek);
+    const clientAge = dob ? calculateAge(dob) : 25;
+    const initialCustomerType: CustomerType = effectiveMembershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
+    
+    if (isEligibleFor1824Special(clientAge, initialCustomerType, "LOCKER")) {
+      membershipType = "one_time";
+      membershipBundled = true;
+    }
+  }
 
   if (membershipType && client.membershipStatus === "none") {
     membershipCost = membershipType === "one_time" ? MEMBERSHIP_ONE_TIME_COST : MEMBERSHIP_SIX_MONTH_COST;
@@ -181,6 +195,20 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
       sessionId: session.id,
     }).returning();
 
+    // Create separate transaction record for membership purchase when bundled
+    if (membershipBundled && membershipCost > 0) {
+      await tx.insert(transactionsTable).values({
+        clientId: client.id,
+        amount: String(membershipCost),
+        tax: "0",
+        total: String(membershipCost),
+        type: "membership",
+        squarePaymentId: result.paymentId,
+        description: `One-time membership (1824 Special)`,
+        sessionId: session.id,
+      });
+    }
+
     // Create individual transaction records for each product and decrement stock
     for (const product of selectedProducts) {
       // Create product transaction
@@ -264,6 +292,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
       createdAt: txn.createdAt,
     },
     membership: newMembership,
+    membershipBundled,
   });
 });
 

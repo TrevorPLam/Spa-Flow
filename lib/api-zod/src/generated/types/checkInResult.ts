@@ -13,4 +13,6 @@ export interface CheckInResult {
   session: RentalSession;
   transaction: Transaction;
   membership?: Membership;
+  /** Whether membership was auto-bundled for 1824 special */
+  membershipBundled?: boolean;
 }

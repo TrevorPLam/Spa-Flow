@@ -40,7 +40,7 @@ export default function CheckInPage() {
   const [membershipType, setMembershipType] = useState<"none" | "one_time" | "six_month">("none");
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [selectedRoomTier, setSelectedRoomTier] = useState<"standard" | "premium" | "deluxe" | null>(null);
-  const [lastResult, setLastResult] = useState<{ session: { resourceName: string }; transaction: { total?: number } } | null>(null);
+  const [lastResult, setLastResult] = useState<{ session: { resourceName: string }; transaction: { total?: number }; membershipBundled?: boolean } | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [taxRate, setTaxRate] = useState<number | null>(null);
 
@@ -180,7 +180,7 @@ export default function CheckInPage() {
 
     // Use Square token if available, otherwise fall back to mock for development
     const token = paymentToken || `SQUARE_MOCK_TOKEN_${Date.now()}`;
-    
+
     checkIn.mutate({
       data: {
         clientId: selectedClient.id,
@@ -194,7 +194,7 @@ export default function CheckInPage() {
       },
     }, {
       onSuccess: (result) => {
-        setLastResult(result);
+        setLastResult(result as { session: { resourceName: string }; transaction: { total?: number }; membershipBundled?: boolean });
         setPaymentToken(null); // Reset token after successful payment
         queryClient.invalidateQueries({ queryKey: getListLockersQueryKey({}) });
         queryClient.invalidateQueries({ queryKey: getGetLockersOccupancyQueryKey() });
@@ -206,14 +206,14 @@ export default function CheckInPage() {
       onError: (err: unknown) => {
         setPaymentToken(null); // Reset token on error
         let message = "Check-in failed";
-        
+
         // Handle specific error types
         if (typeof err === 'string') {
           message = err;
         } else if (err && typeof err === 'object') {
           const errorObj = err as { data?: { error?: string }; message?: string };
           message = errorObj.data?.error || errorObj.message || message;
-          
+
           // Provide more specific error messages for common payment failures
           if (message.toLowerCase().includes('declined')) {
             message = "Payment declined. Please try a different card.";
@@ -223,7 +223,7 @@ export default function CheckInPage() {
             message = "Card has expired. Please use a different card.";
           }
         }
-        
+
         toast({ title: message, variant: "destructive" });
       },
     });
@@ -546,7 +546,12 @@ export default function CheckInPage() {
                 <p className="text-muted-foreground text-sm mt-1">
                   {selectedClient?.name} is checked in to {lastResult.session.resourceName}
                 </p>
-                <p className="text-muted-foreground text-sm">
+                {lastResult.membershipBundled && (
+                  <Badge className="mt-2 bg-purple-100 text-purple-800 border-purple-300">
+                    1824 Special Applied
+                  </Badge>
+                )}
+                <p className="text-muted-foreground text-sm mt-2">
                   Total charged: ${(lastResult.transaction.total ?? 0).toFixed(2)}
                 </p>
               </div>
