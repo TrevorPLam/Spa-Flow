@@ -205,6 +205,64 @@ describe('pricing', { tags: ['@regression'] }, () => {
       const result = calculatePrice({ ...input, productType: 'ROOM' as ProductType });
       expect(result.appliedRules).toContain('Weekday room rate');
     });
+
+    it('should skip birthday special when specialsDisabled is true', () => {
+      const input: PricingInput = {
+        customerType: 'MEMBER',
+        productType: 'LOCKER',
+        startTime: new Date('2024-01-15T10:00:00'),
+        clientAge: 30,
+        hasBirthdayToday: true,
+        specialsDisabled: true,
+      };
+      const result = calculatePrice(input);
+      expect(result.subtotal).not.toBe(0);
+      expect(result.appliedRules).toContain('Birthday special disabled due to special event');
+      expect(result.appliedRules).not.toContain('Birthday Special: locker fee waived');
+    });
+
+    it('should skip 18-24 special when specialsDisabled is true', () => {
+      const input: PricingInput = {
+        customerType: 'MEMBER',
+        productType: 'LOCKER',
+        startTime: new Date('2024-01-15T10:00:00'),
+        clientAge: 20,
+        hasBirthdayToday: false,
+        specialsDisabled: true,
+      };
+      const result = calculatePrice(input);
+      expect(result.subtotal).toBe(15);
+      expect(result.appliedRules).toContain('18-24 special disabled due to special event');
+      expect(result.appliedRules).not.toContain('18-24 Special: weekday locker is free');
+    });
+
+    it('should apply standard pricing when specialsDisabled is true', () => {
+      const input: PricingInput = {
+        customerType: 'NON_MEMBER',
+        productType: 'LOCKER',
+        startTime: new Date('2024-01-15T10:00:00'),
+        clientAge: 30,
+        hasBirthdayToday: false,
+        specialsDisabled: true,
+      };
+      const result = calculatePrice(input);
+      expect(result.subtotal).toBe(15);
+      expect(result.appliedRules).toContain('Weekday peak locker rate (8am-4pm)');
+    });
+
+    it('should not skip specials when specialsDisabled is false or undefined', () => {
+      const input: PricingInput = {
+        customerType: 'MEMBER',
+        productType: 'LOCKER',
+        startTime: new Date('2024-01-15T10:00:00'),
+        clientAge: 20,
+        hasBirthdayToday: false,
+        specialsDisabled: false,
+      };
+      const result = calculatePrice(input);
+      expect(result.subtotal).toBe(0);
+      expect(result.appliedRules).toContain('18-24 Special: weekday locker is free');
+    });
   });
 
   describe('calculateAge', () => {

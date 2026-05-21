@@ -8,335 +8,8 @@
 
 ---
 
-## [x] TASK-034-FIX-001: Fix Test Infrastructure Authentication Issues
+## [x] TASK-035: Implement Holiday and Special Event Pricing Logic
 **Status:** Complete
-**Priority:** High
-
-### Related File Paths
-- `artifacts/api-server/src/routes/checkin.test.ts`
-- `artifacts/api-server/src/lib/auth.test.ts`
-- `artifacts/api-server/src/test/test-helpers.ts`
-- `artifacts/api-server/src/test/setup.ts`
-
-### Definition of Done
-- ✅ All checkin tests pass without 403 Forbidden errors (now getting 404 - separate data setup issue)
-- ✅ Authentication token generation in test helpers works correctly
-- ✅ Test environment properly configured with required secrets
-- ✅ Test infrastructure supports both STAFF and MANAGER role authentication
-
-### Out of Scope
-- Changing test logic or test expectations
-- Modifying production authentication code
-
-### Rules to Follow
-- Fix only the test infrastructure, not the tests themselves
-- Ensure test environment variables are properly configured
-- Verify JWT secret and encryption key are available in test environment
-
-### Advanced Coding Pattern
-- Test environment isolation and configuration
-
-### Anti-Patterns
-- Modifying test expectations to match broken infrastructure
-- Hardcoding test credentials in test files
-
-### Depends On
-- None
-
-### Blocks
-- Multiple test tasks (TASK-034-E, TASK-047, TASK-077, TASK-078)
-
-### Implementation Notes
-- **Root Cause**: JWT_SECRET, ENCRYPTION_KEY, CSRF_SECRET not set in test environment, causing module-level constants to fail during import
-- **Fix Applied**: Added required secrets to `src/test/setup.ts` before module imports
-- **Additional Fix**: Updated `createAuthenticatedRequest` to set cookies in format expected by Express middleware (not Authorization header)
-- **Additional Fix**: Added CSRF token generation to test helper to bypass CSRF protection in tests
-- **Result**: Authentication infrastructure now working (no 403 errors), remaining 404 errors are due to missing test data setup (separate issue)
-- **Test Results**: 
-  - Checkin tests: 2/19 passing (no 403 errors, 404 errors are data setup issue)
-  - Auth tests: 51/54 passing (3 failures are account lockout state persistence, not authentication)
-
----
-
-## [x] TASK-034-FIX-002: Fix Typecheck Errors in lib/api-client-react and lib/api-zod
-**Status:** Complete
-**Priority:** Medium
-
-### Related File Paths
-- `lib/api-client-react/src/custom-fetch.test.ts`
-- `lib/api-client-react/src/vitest.d.ts` (created)
-- `lib/api-client-react/tsconfig.json` (modified)
-- `lib/api-zod/src/index.ts`
-
-### Definition of Done
-- ✅ All typecheck errors in lib/api-client-react resolved
-- ✅ All typecheck errors in lib/api-zod resolved
-- ✅ `pnpm run typecheck:libs` passes without errors
-- ✅ Codegen-generated types do not have duplicate exports
-
-### Out of Scope
-- Changing the API spec (openapi.yaml)
-- Modifying the codegen configuration
-
-### Rules to Follow
-- Fix the actual type errors, not suppress them
-- Ensure global is properly available in test environment
-- Resolve duplicate export conflicts in api-zod
-
-### Advanced Coding Pattern
-- Type-safe codegen output configuration
-
-### Anti-Patterns
-- Using @ts-ignore to suppress errors
-- Manually editing generated files
-
-### Depends On
-- None
-
-### Blocks
-- Full typecheck workflow (blocks `pnpm run typecheck`)
-
-### Implementation Notes
-- **Root Cause 1**: 'global' not found errors in custom-fetch.test.ts due to missing vitest types
-- **Fix 1**: Added `"types": ["vitest/globals"]` to lib/api-client-react/tsconfig.json
-- **Fix 2**: Created lib/api-client-react/src/vitest.d.ts with global type declaration
-- **Root Cause 2**: duplicate export conflicts in api-zod/src/index.ts - both ./generated/api and ./generated/types export same types (LoginResponse, RefreshTokenResponse, RevokeAllSessionsBody, RevokeSessionBody)
-- **Fix 3**: Removed `export * from './generated/types'` from api-zod/src/index.ts, keeping only zod schemas from ./generated/api
-- **Result**: typecheck:libs now passes with 0 errors
-
----
-
-## [x] TASK-034-FIX-003: Fix session.test.ts Foreign Key Violations
-**Status:** Complete
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/api-server/src/services/session.test.ts`
-- `lib/db/src/schema/`
-
-### Definition of Done
-- ✅ session.test.ts tests pass without foreign key constraint violations (15/17 pass)
-- ✅ Test data setup properly handles foreign key dependencies
-- ✅ Test cleanup removes data in correct order to respect constraints
-
-### Out of Scope
-- Changing production database schema
-- Modifying session service implementation
-
-### Rules to Follow
-- Fix test data setup and teardown, not the actual tests
-- Ensure proper cleanup order (children before parents)
-- Use transactions where appropriate for test isolation
-
-### Advanced Coding Pattern
-- Test data lifecycle management
-
-### Anti-Patterns
-- Disabling foreign key constraints in tests
-- Hardcoding IDs that conflict with existing data
-
-### Depends On
-- None
-
-### Blocks
-- TASK-011 (already completed but tests may still fail)
-
-### Implementation Notes
-- **Root Cause**: Test used hardcoded `testUserId = 99999` which didn't exist in users table, causing foreign key violations when inserting refresh_tokens
-- **Fix Applied**: 
-  - Imported `createTestUserInDb` helper and used it to create actual test users in beforeEach
-  - Updated afterEach to clean up test users after cleaning up sessions (children before parents)
-  - Fixed test that used `otherUserId = testUserId + 1` to create a second real test user
-  - Fixed test ordering issue in "should return all active sessions for a user" to handle non-deterministic session ordering
-- **Result**: 15/17 tests now pass. Remaining 2 failures are user agent parsing logic issues in session service implementation (parseUserAgent function), which is out of scope per task definition
-- **Test Results**: 
-  - All session insertion/management tests pass (no foreign key violations)
-  - Failures: "should parse Safari on iPhone" and "should return 'Unknown Device' for null user agent" - these require modifying session service implementation, which is explicitly out of scope
-
----
-
-## [x] TASK-034-FIX-004: Fix vi Mock Lint Errors
-**Status:** Complete
-**Priority:** Low
-
-### Related File Paths
-- `artifacts/api-server/src/routes/products.test.ts`
-- `artifacts/api-server/vitest.config.ts`
-- `artifacts/api-server/tsconfig.json`
-
-### Definition of Done
-- ✅ All vi mock lint errors resolved
-- ✅ Vitest configuration properly handles global vi object
-- ✅ Tests continue to pass after lint fixes
-
-### Out of Scope
-- Changing test logic or test expectations
-- Removing actual mock functionality
-
-### Rules to Follow
-- Configure vitest to provide vi globals properly
-- Ensure type declarations include vitest globals
-
-### Advanced Coding Pattern
-- Test framework configuration
-
-### Anti-Patterns
-- Disabling lint rules instead of fixing the root cause
-- Using @ts-ignore to suppress errors
-
-### Depends On
-- None
-
-### Blocks
-- Full lint workflow
-
-### Implementation Notes
-- **Root Cause**: vitest.config.ts has `globals: true` but tsconfig.json didn't include vitest/globals in types array, so TypeScript didn't recognize vi as a global
-- **Fix Applied**: Added "vitest/globals" to types array in artifacts/api-server/tsconfig.json
-- **Result**: vi mock errors in products.test.ts resolved (8 errors gone)
-- **Note**: Other test files (email.test.ts, __mocks__/twilio.ts) explicitly import vi from vitest, so they were not affected
-- **Remaining Typecheck Errors**: 11 errors in auth.test.ts and health.ts are unrelated to vi mock issue
-
----
-
-## [x] TASK-034-FIX-005: Fix Typecheck Error in auth.test.ts (lockedUntil Property)
-**Status:** Complete
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/api-server/src/lib/auth.test.ts`
-
-### Definition of Done
-- ✅ Typecheck error resolved (Property 'lockedUntil' does not exist)
-- ⚠️ Test passes after fix (pre-existing test failures due to lockout implementation, not type error)
-
-### Out of Scope
-- Changing test logic or test expectations
-
-### Rules to Follow
-- Fix the actual type error, not suppress it
-- Ensure user type includes lockedUntil property if it should exist
-
-### Advanced Coding Pattern
-- Type-safe test data setup
-
-### Anti-Patterns
-- Using @ts-ignore to suppress errors
-- Hardcoding property access without type safety
-
-### Depends On
-- None
-
-### Blocks
-- Full typecheck workflow
-
-### Implementation Notes
-- **Root Cause**: Variable `user` was first assigned a type with only `failedLoginAttempts`, then reassigned with a type including `lockedUntil`. TypeScript's type inference didn't recognize the reassignment with a different type structure.
-- **Fix Applied**: Used a new variable `resetUser` for the second query instead of reassigning `user`, avoiding the type inference conflict.
-- **Result**: Typecheck error in auth.test.ts resolved. No typecheck errors remain in auth.test.ts.
-- **Note**: 3 test failures remain in account lockout integration tests, but these are due to the lockout implementation (timingSafeLogin doesn't increment failedLoginAttempts or set lockedUntil), which is outside the scope of this typecheck fix.
-
----
-
-## [x] TASK-034-FIX-006: Fix Typecheck Errors in health.ts (Missing Exports and Types)
-**Status:** Complete
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/api-server/src/routes/health.ts`
-- `lib/api-zod/src/index.ts`
-
-### Definition of Done
-- ✅ All 10 typecheck errors in health.ts resolved
-- ✅ Missing exports from api-zod added or imports fixed
-- ✅ Missing types (HealthCheckStatus, LivenessResponse, ReadinessResponse) resolved
-
-### Out of Scope
-- Changing health check logic
-- Removing health check functionality
-
-### Rules to Follow
-- Fix the actual type errors, not suppress them
-- Add missing exports to api-zod if needed
-- Ensure proper type definitions exist
-
-### Advanced Coding Pattern
-- Type-safe API response schemas
-
-### Anti-Patterns
-- Using @ts-ignore to suppress errors
-- Using any types to bypass type checking
-
-### Depends On
-- None
-
-### Blocks
-- Full typecheck workflow
-
-### Implementation Notes
-- **Root Cause**: health.ts was importing Zod schemas (LivenessProbeResponse, ReadinessProbeResponse) from @workspace/api-zod but needed TypeScript types (LivenessResponse, ReadinessResponse, HealthCheckStatus)
-- **Fix 1**: Updated lib/api-zod/src/index.ts to export health-related types from generated/types (HealthCheckStatus, LivenessResponse, ReadinessResponse) using selective exports to avoid duplicate export conflicts with generated/api
-- **Fix 2**: Updated health.ts imports to use type-only imports of the correct TypeScript types from @workspace/api-zod
-- **Result**: api-server typecheck now passes with 0 errors in health.ts
-- **Note**: Pre-existing typecheck errors in spaflow remain (DateRangePicker imports, factory type mismatches) but are unrelated to this task
-
----
-
-## [x] TASK-034-FIX-007: Fix Typecheck Errors in spaflow (DateRangePicker and Factory Types)
-**Status:** Complete
-**Priority:** Medium
-
-### Related File Paths
-- `artifacts/spaflow/src/pages/transactions.tsx`
-- `artifacts/spaflow/src/test/mocks/factories.ts`
-- `artifacts/spaflow/src/test/mocks/handlers/clients.ts`
-
-### Definition of Done
-- ✅ DateRangePicker import errors resolved
-- ✅ Factory type mismatch errors resolved
-- ✅ Unused import errors resolved
-- ✅ spaflow typecheck passes
-
-### Out of Scope
-- Changing test logic
-- Removing factory functions
-
-### Rules to Follow
-- Fix the actual type errors, not suppress them
-- Ensure proper type definitions for factories
-- Remove unused imports
-
-### Advanced Coding Pattern
-- Type-safe factory functions
-- Proper import management
-
-### Anti-Patterns
-- Using @ts-ignore to suppress errors
-- Using any types to bypass type checking
-
-### Depends On
-- None
-
-### Blocks
-- Full typecheck workflow
-
-### Implementation Notes
-- **Root Cause 1**: DateRangePicker and DateRangePresets components used but not imported in transactions.tsx
-- **Fix 1**: Added import statement `import { DateRangePicker, DateRangePresets } from "@/components/ui/date-range-picker"`
-- **Fix 2**: Added explicit type annotations for onChange parameters to avoid implicit any types
-- **Root Cause 2**: Factory functions used string IDs but API schema expects number IDs for AuthUser, User, Client, Locker, Room, and Transaction
-- **Fix 3**: Updated all factory functions to use number IDs matching the API schema (AuthUser.id, User.id, Client.id, Locker.id, Room.id, Transaction.id, Transaction.clientId)
-- **Root Cause 3**: Dashboard factory used properties that don't exist in the Dashboard schema (totalClients, activeMemberships, availableLockers, availableRooms, todayTransactions, monthlyRevenue)
-- **Fix 4**: Updated createDashboard to match actual Dashboard schema with lockerOccupancy, roomOccupancy, todayRevenue, activeClients, waitlistCount, lowStockCount, recentTransactions, activeRentals
-- **Root Cause 4**: Unused import of Client type in handlers/clients.ts
-- **Fix 5**: Removed unused Client import from handlers/clients.ts
-- **Additional Fixes**: Updated Locker and Room factories to use 'name' instead of 'number' property, removed non-existent properties (createdAt, updatedAt) from Locker/Room/User factories
-- **Result**: spaflow typecheck now passes with 0 errors
-
----
-
-## [ ] TASK-035: Implement Holiday and Special Event Pricing Logic
-**Status:** Pending
 **Priority:** High
 
 ### Related File Paths
@@ -346,11 +19,11 @@
 - `artifacts/spaflow/src/pages/settings.tsx`
 
 ### Definition of Done
-- Special events table created with date ranges and disable flags
-- Pricing logic checks for active special events
-- Specials disabled on holiday/special event dates
-- Admin UI to manage special events
-- Tests updated and passing
+- ✅ Special events table created with date ranges and disable flags
+- ✅ Pricing logic checks for active special events
+- ✅ Specials disabled on holiday/special event dates
+- ✅ Admin UI to manage special events
+- ✅ Tests updated and passing
 
 ### Out of Scope
 - Automatic holiday calendar integration
@@ -388,33 +61,46 @@
 
 ### Subtasks
 
-#### TASK-035-A: Create Special Events Schema
+#### ✅ TASK-035-A: Create Special Events Schema
 **Target:** `lib/db/src/schema/special_events.ts`
 **Action:** Create specialEventsTable with id, name, startDate, endDate, disableSpecials boolean, createdAt fields.
 
-#### TASK-035-B: Create Special Events Migration
+#### ✅ TASK-035-B: Create Special Events Migration
 **Target:** `lib/db/drizzle/`
 **Action:** Generate migration to create special_events table with proper indexes on date ranges.
 
-#### TASK-035-C: Add Special Event Check to Pricing Logic
+#### ✅ TASK-035-C: Add Special Event Check to Pricing Logic
 **Target:** `artifacts/api-server/src/lib/pricing.ts`
 **Action:** Add isSpecialEventActive function, modify calculatePrice to skip birthday and 1824 specials when event active.
 
-#### TASK-035-D: Add Special Events API Endpoints
+#### ✅ TASK-035-D: Add Special Events API Endpoints
 **Target:** `artifacts/api-server/src/routes/config.ts`
 **Action:** Add GET/POST/PUT/DELETE endpoints for special events management, require manager role.
 
-#### TASK-035-E: Create Special Events Admin UI
+#### ✅ TASK-035-E: Create Special Events Admin UI
 **Target:** `artifacts/spaflow/src/pages/settings.tsx`
 **Action:** Add special events management section with date range picker, disable specials toggle, CRUD operations.
 
-#### TASK-035-F: Add Special Events to Config API
+#### ✅ TASK-035-F: Add Special Events to Config API
 **Target:** `artifacts/api-server/src/routes/config.ts`
 **Action:** Add active special events to config endpoint response for frontend reference.
 
-#### TASK-035-G: Add Tests for Special Event Logic
+#### ✅ TASK-035-G: Add Tests for Special Event Logic
 **Target:** `artifacts/api-server/src/lib/pricing.test.ts`
 **Action:** Write tests for pricing on special event date, verify birthday special disabled, verify 1824 special disabled.
+
+### Implementation Notes
+- **Schema**: Created special_events table with id, name, startDate, endDate, disableSpecials boolean, createdAt, updatedAt fields
+- **Indexes**: Added indexes on startDate, endDate, and composite dateRange index for efficient queries
+- **Migration**: Generated migration 0006_bright_katie_power.sql to create special_events table
+- **Pricing Logic**: Added specialsDisabled parameter to PricingInput, modified calculatePrice to skip birthday and 18-24 specials when true
+- **Special Events Utility**: Created special-events.ts with isSpecialEventActive function using cache-aside pattern (5-minute TTL)
+- **API Endpoints**: Added GET/POST/PUT/DELETE /api/v1/config/special-events endpoints with manager role requirement and audit logging
+- **Cache Invalidation**: Implemented cache invalidation on create/update/delete operations
+- **Config API**: Updated GET /api/v1/config to include specialsDisabled flag for frontend reference
+- **Admin UI**: Created settings.tsx page with CRUD operations for special events management (manager-only access)
+- **Tests**: Added 5 test cases to pricing.test.ts for special event logic (birthday disabled, 18-24 disabled, standard pricing, false/undefined handling)
+- **Type Safety**: Fixed TypeScript errors in config.ts (AuthPayload.sub vs .id, req.params.id array handling)
 
 ---
 

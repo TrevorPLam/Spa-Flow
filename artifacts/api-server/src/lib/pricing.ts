@@ -67,6 +67,8 @@ export interface PricingInput {
   hasBirthdayToday: boolean;
   /** Room quality tier (only applicable for ROOM product type) */
   roomTier?: RoomQualityTier;
+  /** Whether specials are disabled due to active special event (holiday, etc.) */
+  specialsDisabled?: boolean;
 }
 
 /**
@@ -138,21 +140,26 @@ function isWeekend(date: Date): boolean {
  * ```
  */
 export function calculatePrice(input: PricingInput): PricingResult {
-  const { customerType, productType, startTime, clientAge, hasBirthdayToday } = input;
+  const { customerType, productType, startTime, clientAge, hasBirthdayToday, specialsDisabled } = input;
   const appliedRules: string[] = [];
 
-  // Birthday special: locker is free regardless of other rates
-  if (hasBirthdayToday && productType === "LOCKER") {
+  // Birthday special: locker is free regardless of other rates (unless disabled by special event)
+  if (hasBirthdayToday && productType === "LOCKER" && !specialsDisabled) {
     appliedRules.push("Birthday Special: locker fee waived");
     return { subtotal: 0, appliedRules };
+  }
+
+  // If birthday special is disabled due to special event, log it
+  if (hasBirthdayToday && productType === "LOCKER" && specialsDisabled) {
+    appliedRules.push("Birthday special disabled due to special event");
   }
 
   const weekend = isWeekend(startTime);
   const weekdayPeak = isWeekdayPeak(startTime);
 
   if (productType === "LOCKER") {
-    // 18-24 special (MEMBER only, applies after membership purchase)
-    if (clientAge >= 18 && clientAge <= 24 && customerType === "MEMBER") {
+    // 18-24 special (MEMBER only, applies after membership purchase, unless disabled by special event)
+    if (clientAge >= 18 && clientAge <= 24 && customerType === "MEMBER" && !specialsDisabled) {
       if (weekend) {
         appliedRules.push("18-24 Special: weekend locker rate $7");
         return { subtotal: 7, appliedRules };
@@ -160,6 +167,11 @@ export function calculatePrice(input: PricingInput): PricingResult {
         appliedRules.push("18-24 Special: weekday locker is free");
         return { subtotal: 0, appliedRules };
       }
+    }
+
+    // If 18-24 special is disabled due to special event, log it
+    if (clientAge >= 18 && clientAge <= 24 && customerType === "MEMBER" && specialsDisabled) {
+      appliedRules.push("18-24 special disabled due to special event");
     }
 
     // Standard locker pricing
