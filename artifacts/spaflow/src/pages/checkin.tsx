@@ -40,6 +40,8 @@ export default function CheckInPage() {
   const [membershipType, setMembershipType] = useState<"none" | "one_time" | "six_month">("none");
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [selectedRoomTier, setSelectedRoomTier] = useState<"standard" | "premium" | "deluxe" | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number; default: number } | null>(null);
   const [lastResult, setLastResult] = useState<{ session: { resourceName: string }; transaction: { total?: number }; membershipBundled?: boolean } | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   const [taxRate, setTaxRate] = useState<number | null>(null);
@@ -118,9 +120,29 @@ export default function CheckInPage() {
   function handleSelectResource(resource: { id: number; name: string; qualityTier?: string }) {
     setSelectedResource(resource);
     if (resourceType === "room" && resource.qualityTier) {
-      setSelectedRoomTier(resource.qualityTier as "standard" | "premium" | "deluxe");
+      const tier = resource.qualityTier as "standard" | "premium" | "deluxe";
+      setSelectedRoomTier(tier);
+      
+      // Calculate price range based on tier and time
+      const now = new Date();
+      const day = now.getDay();
+      const hour = now.getHours();
+      const isWeekend = day === 6 || day === 0 || (day === 5 && hour >= 16) || (day === 1 && hour < 8);
+      
+      const ranges: Record<string, { min: number; max: number }> = {
+        standard: isWeekend ? { min: 28, max: 31 } : { min: 25, max: 28 },
+        premium: isWeekend ? { min: 32, max: 35 } : { min: 29, max: 32 },
+        deluxe: isWeekend ? { min: 36, max: 37 } : { min: 33, max: 34 },
+      };
+      
+      const range = ranges[tier] || ranges.standard;
+      const defaultPrice = Math.round((range.min + range.max) / 2 * 100) / 100;
+      setPriceRange({ min: range.min, max: range.max, default: defaultPrice });
+      setSelectedPrice(defaultPrice);
     } else {
       setSelectedRoomTier(null);
+      setPriceRange(null);
+      setSelectedPrice(null);
     }
     setValidationErrors(prev => ({ ...prev, resource: "" }));
     setStep("products");
@@ -142,13 +164,14 @@ export default function CheckInPage() {
         clientId: selectedClient.id,
         resourceType,
         membershipType: (!hasExistingMembership && membershipType !== "none") ? membershipType : null,
+        selectedPrice: resourceType === "room" ? selectedPrice ?? undefined : undefined,
       },
     });
 
     // Calculate product total
     const productTotal = products
-      .filter(p => selectedProductIds.includes(p.id))
-      .reduce((sum, p) => sum + p.price, 0);
+      .filter((p: any) => selectedProductIds.includes(p.id))
+      .reduce((sum: number, p: any) => sum + p.price, 0);
 
     // Add product total to the price result
     const updatedResult = {
@@ -191,6 +214,7 @@ export default function CheckInPage() {
         membershipType: (!hasExistingMembership && membershipType !== "none") ? membershipType : null,
         productIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
         roomTier: resourceType === "room" ? selectedRoomTier : undefined,
+        selectedPrice: resourceType === "room" ? selectedPrice ?? undefined : undefined,
       },
     }, {
       onSuccess: (result) => {
@@ -235,6 +259,8 @@ export default function CheckInPage() {
     setSelectedClient(null);
     setSelectedResource(null);
     setSelectedRoomTier(null);
+    setSelectedPrice(null);
+    setPriceRange(null);
     setMembershipType("none");
     setSelectedProductIds([]);
     setPriceResult(null);
@@ -445,7 +471,42 @@ export default function CheckInPage() {
                 <div className="bg-muted/40 rounded-lg p-3 text-sm">
                   <div className="flex justify-between font-medium">
                     <span>Products subtotal</span>
-                    <span>${products.filter(p => selectedProductIds.includes(p.id)).reduce((sum, p) => sum + p.price, 0).toFixed(2)}</span>
+                    <span>${products.filter((p: any) => selectedProductIds.includes(p.id)).reduce((sum: number, p: any) => sum + p.price, 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Price selection for rooms */}
+              {resourceType === "room" && priceRange && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-blue-900">Room Price Selection</label>
+                    <p className="text-xs text-blue-700">Select price within allowed range: ${priceRange.min} - ${priceRange.max}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-blue-900">${priceRange.min}</span>
+                    <input
+                      type="range"
+                      min={priceRange.min}
+                      max={priceRange.max}
+                      step={0.5}
+                      value={selectedPrice || priceRange.default}
+                      onChange={(e) => setSelectedPrice(parseFloat(e.target.value))}
+                      className="flex-1 h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-sm text-blue-900">${priceRange.max}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={priceRange.min}
+                      max={priceRange.max}
+                      step={0.5}
+                      value={selectedPrice || priceRange.default}
+                      onChange={(e) => setSelectedPrice(parseFloat(e.target.value))}
+                      className="w-24 h-8"
+                    />
+                    <span className="text-xs text-blue-700">Selected price</span>
                   </div>
                 </div>
               )}

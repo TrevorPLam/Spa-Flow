@@ -80,6 +80,7 @@ export * from './priceCalculation';
 export * from './priceCalculationInput';
 export * from './priceCalculationInputMembershipType';
 export * from './priceCalculationInputResourceType';
+export * from './priceCalculationInputRoomTier';
 export * from './product';
 export * from './productInput';
 export * from './productUpdate';

@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { processSquarePayment } from "../lib/square";
-import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType } from "../lib/pricing";
+import { calculatePrice, computeTotal, calculateAge, isBirthdayToday, type CustomerType, type RoomQualityTier } from "../lib/pricing";
 import { maybeDecrypt } from "../lib/encryption";
 import { sendSms, WAITLIST_ROOM_MSG } from "../lib/sms";
 import {
@@ -130,6 +130,7 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
   const customerType: CustomerType = client.membershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
   const clientAge = dob ? calculateAge(dob) : 25;
   const hasBirthdayToday = dob ? isBirthdayToday(dob) : false;
+  const roomTier = room.qualityTier as RoomQualityTier;
 
   const { subtotal } = calculatePrice({
     customerType,
@@ -137,6 +138,7 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
     startTime: new Date(),
     clientAge,
     hasBirthdayToday,
+    roomTier,
   });
   const { tax, total } = computeTotal(subtotal);
 
@@ -313,7 +315,15 @@ router.post("/rooms/:id/renew", requireAuth, apiLimiter, async (req, res): Promi
   const [client] = room.clientId ? await db.select().from(clientsTable).where(eq(clientsTable.id, room.clientId)) : [null];
   const dob = client ? maybeDecrypt(client.dobEncrypted, client.dobDek) : null;
   const customerType: CustomerType = client?.membershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
-  const { subtotal } = calculatePrice({ customerType, productType: "ROOM", startTime: new Date(), clientAge: dob ? calculateAge(dob) : 25, hasBirthdayToday: dob ? isBirthdayToday(dob) : false });
+  const roomTier = room.qualityTier as RoomQualityTier;
+  const { subtotal } = calculatePrice({ 
+    customerType, 
+    productType: "ROOM", 
+    startTime: new Date(), 
+    clientAge: dob ? calculateAge(dob) : 25, 
+    hasBirthdayToday: dob ? isBirthdayToday(dob) : false,
+    roomTier,
+  });
   const { tax, total } = computeTotal(subtotal);
 
   if (total > 0) { await processSquarePayment(parsed.data.paymentToken, Math.round(total * 100), parsed.data.idempotencyKey, `Room ${room.name} renewal`); }
@@ -349,7 +359,15 @@ router.post("/rooms/:id/extend", requireAuth, apiLimiter, async (req, res): Prom
   const [client] = room.clientId ? await db.select().from(clientsTable).where(eq(clientsTable.id, room.clientId)) : [null];
   const dob = client ? maybeDecrypt(client.dobEncrypted, client.dobDek) : null;
   const customerType: CustomerType = client?.membershipStatus !== "none" ? "MEMBER" : "NON_MEMBER";
-  const { subtotal: base } = calculatePrice({ customerType, productType: "ROOM", startTime: new Date(), clientAge: dob ? calculateAge(dob) : 25, hasBirthdayToday: dob ? isBirthdayToday(dob) : false });
+  const roomTier = room.qualityTier as RoomQualityTier;
+  const { subtotal: base } = calculatePrice({ 
+    customerType, 
+    productType: "ROOM", 
+    startTime: new Date(), 
+    clientAge: dob ? calculateAge(dob) : 25, 
+    hasBirthdayToday: dob ? isBirthdayToday(dob) : false,
+    roomTier,
+  });
   const subtotal = Math.round((base / EXTENSION_SURCHARGE_DIVISOR) * 100) / 100;
   const { tax, total } = computeTotal(subtotal);
 

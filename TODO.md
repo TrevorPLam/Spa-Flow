@@ -339,8 +339,8 @@
 
 ---
 
-## [ ] TASK-041: Implement Room Price Range Selection
-**Status:** Pending
+## [x] TASK-041: Implement Room Price Range Selection
+**Status:** Completed
 **Priority:** Critical
 
 ### Related File Paths
@@ -393,35 +393,48 @@
 ### Blocks
 - None
 
+### Implementation Notes
+- Price range constants were already defined in pricing.ts TIER_PRICING
+- Added helper functions: getTierMidpointPrice, getTierPriceRange, isPriceInRange
+- Updated calculatePrice to accept optional selectedPrice parameter
+- Default pricing now uses midpoint instead of minimum
+- Added selectedPrice to CheckInInput and PriceCalculationInput in OpenAPI spec
+- Regenerated API client to include new fields
+- Added price selection UI with slider and input in check-in page
+- Updated rooms.ts to pass roomTier to calculatePrice for assign/renew/extend
+- Added comprehensive unit tests for range pricing functions
+- Fixed existing pricing tests to expect midpoint pricing
+
 ---
 
 ### Subtasks
 
-#### TASK-041-A: Define Price Range Constants
+#### ✅ TASK-041-A: Define Price Range Constants
 **Target:** `artifacts/api-server/src/lib/constants.ts`
 **Action:** Add price range constants for each quality tier and time period (weekday/weekend), define min/max/default for each.
+**Status:** Already existed in pricing.ts TIER_PRICING
 
-#### TASK-041-B: Update Pricing Engine for Range Selection
+#### ✅ TASK-041-B: Update Pricing Engine for Range Selection
 **Target:** `artifacts/api-server/src/lib/pricing.ts`
 **Action:** Modify calculatePrice to accept optional selectedPrice parameter, validate against range, default to midpoint if not provided.
 
-#### TASK-041-C: Add Price Selection to Check-in Schema
+#### ✅ TASK-041-C: Add Price Selection to Check-in Schema
 **Target:** `lib/api-zod/src/`
 **Action:** Add optional selectedPrice field to CheckInBody schema with validation against allowed range based on room tier and time.
 
-#### TASK-041-D: Update Check-in API for Price Selection
+#### ✅ TASK-041-D: Update Check-in API for Price Selection
 **Target:** `artifacts/api-server/src/routes/checkin.ts`
 **Action:** Accept selectedPrice in check-in request, validate against range, use selected price or default in transaction.
 
-#### TASK-041-E: Add Price Selection UI to Check-in
+#### ✅ TASK-041-E: Add Price Selection UI to Check-in
 **Target:** `artifacts/spaflow/src/pages/checkin.tsx`
 **Action:** When room selected, show price range with slider or input, allow staff to select price within range, display selected price in summary.
 
-#### TASK-041-F: Update Renew/Extend for Range Pricing
+#### ✅ TASK-041-F: Update Renew/Extend for Range Pricing
 **Target:** `artifacts/api-server/src/routes/rooms.ts`
 **Action:** Fetch room tier and original price, apply range pricing for renewals/extensions, maintain price consistency.
 
-#### TASK-041-G: Add Tests for Range Pricing
+#### ✅ TASK-041-G: Add Tests for Range Pricing
 **Target:** `artifacts/api-server/src/lib/pricing.test.ts`
 **Action:** Write tests for range validation, default selection, boundary cases, verify pricing within ranges for all tiers.
 

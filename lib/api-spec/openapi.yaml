@@ -2035,6 +2035,13 @@ components:
         membershipType:
           type: ["string", "null"]
           enum: [one_time, six_month, null]
+        roomTier:
+          type: ["string", "null"]
+          enum: [standard, premium, deluxe]
+        selectedPrice:
+          type: ["number", "null"]
+          description: Selected price within allowed range for rooms (only applicable for room rentals)
+          minimum: 0
 
     PriceCalculation:
       type: object
@@ -2077,6 +2084,10 @@ components:
         roomTier:
           type: ["string", "null"]
           enum: [standard, premium, deluxe]
+        selectedPrice:
+          type: ["number", "null"]
+          description: Selected price within allowed range for rooms (only applicable for room rentals)
+          minimum: 0
 
     CheckInResult:
       type: object

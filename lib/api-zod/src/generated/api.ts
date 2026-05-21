@@ -751,10 +751,16 @@ export const BulkReleaseRoomsResponse = zod.object({
 /**
  * @summary Calculate price for a rental
  */
+export const calculatePriceBodySelectedPriceMin = 0;
+
+
+
 export const CalculatePriceBody = zod.object({
   "clientId": zod.number(),
   "resourceType": zod.enum(['locker', 'room']),
-  "membershipType": zod.union([zod.literal('one_time'),zod.literal('six_month'),zod.literal(null)]).nullish()
+  "membershipType": zod.union([zod.literal('one_time'),zod.literal('six_month'),zod.literal(null)]).nullish(),
+  "roomTier": zod.enum(['standard', 'premium', 'deluxe']).nullish(),
+  "selectedPrice": zod.number().min(calculatePriceBodySelectedPriceMin).nullish().describe('Selected price within allowed range for rooms (only applicable for room rentals)')
 })
 
 export const CalculatePriceResponse = zod.object({
@@ -768,6 +774,10 @@ export const CalculatePriceResponse = zod.object({
 /**
  * @summary Full check-in flow - process payment and assign resource
  */
+export const checkInBodySelectedPriceMin = 0;
+
+
+
 export const CheckInBody = zod.object({
   "clientId": zod.number(),
   "resourceType": zod.enum(['locker', 'room']),
@@ -776,7 +786,8 @@ export const CheckInBody = zod.object({
   "idempotencyKey": zod.string(),
   "membershipType": zod.union([zod.literal('one_time'),zod.literal('six_month'),zod.literal(null)]).nullish(),
   "productIds": zod.array(zod.number()).optional(),
-  "roomTier": zod.enum(['standard', 'premium', 'deluxe']).nullish()
+  "roomTier": zod.enum(['standard', 'premium', 'deluxe']).nullish(),
+  "selectedPrice": zod.number().min(checkInBodySelectedPriceMin).nullish().describe('Selected price within allowed range for rooms (only applicable for room rentals)')
 })
 
 export const CheckInResponse = zod.object({

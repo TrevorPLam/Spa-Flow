@@ -21,7 +21,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     return;
   }
 
-  const { clientId, resourceType, resourceId, paymentToken, idempotencyKey, membershipType: requestedMembershipType, productIds, roomTier } = parsed.data;
+  const { clientId, resourceType, resourceId, paymentToken, idempotencyKey, membershipType: requestedMembershipType, productIds, roomTier, selectedPrice } = parsed.data;
   let membershipType = requestedMembershipType;
 
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
@@ -122,6 +122,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     clientAge,
     hasBirthdayToday,
     roomTier: actualRoomTier ?? undefined,
+    selectedPrice: selectedPrice ?? undefined,
   });
 
   const totalSubtotal = rentalSubtotal + membershipCost + productTotal;

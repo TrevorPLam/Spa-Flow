@@ -52,6 +52,43 @@ export function getTierPrice(tier: RoomQualityTier, isWeekend: boolean): number 
 }
 
 /**
+ * Gets the midpoint price for a room tier at a given time
+ * Returns the midpoint of the tier range (default selection)
+ *
+ * @param tier - Room quality tier
+ * @param isWeekend - Whether the rental is during weekend pricing period
+ * @returns Midpoint price for the tier
+ */
+export function getTierMidpointPrice(tier: RoomQualityTier, isWeekend: boolean): number {
+  const pricing = isWeekend ? TIER_PRICING.weekend[tier] : TIER_PRICING.weekday[tier];
+  return Math.round((pricing.min + pricing.max) / 2 * 100) / 100;
+}
+
+/**
+ * Gets the price range for a room tier at a given time
+ *
+ * @param tier - Room quality tier
+ * @param isWeekend - Whether the rental is during weekend pricing period
+ * @returns Price range with min and max values
+ */
+export function getTierPriceRange(tier: RoomQualityTier, isWeekend: boolean): { min: number; max: number } {
+  return isWeekend ? TIER_PRICING.weekend[tier] : TIER_PRICING.weekday[tier];
+}
+
+/**
+ * Validates that a selected price is within the allowed range for a room tier
+ *
+ * @param price - Price to validate
+ * @param tier - Room quality tier
+ * @param isWeekend - Whether the rental is during weekend pricing period
+ * @returns True if price is within range, false otherwise
+ */
+export function isPriceInRange(price: number, tier: RoomQualityTier, isWeekend: boolean): boolean {
+  const range = getTierPriceRange(tier, isWeekend);
+  return price >= range.min && price <= range.max;
+}
+
+/**
  * Input parameters for pricing calculation
  */
 export interface PricingInput {
@@ -69,6 +106,8 @@ export interface PricingInput {
   roomTier?: RoomQualityTier;
   /** Whether specials are disabled due to active special event (holiday, etc.) */
   specialsDisabled?: boolean;
+  /** Selected price within allowed range for rooms (only applicable for ROOM product type) */
+  selectedPrice?: number;
 }
 
 /**
@@ -189,7 +228,22 @@ export function calculatePrice(input: PricingInput): PricingResult {
 
   if (productType === "ROOM") {
     const tier = input.roomTier ?? "standard";
-    const tierPrice = getTierPrice(tier, weekend);
+    
+    // Handle selected price if provided
+    if (input.selectedPrice !== undefined) {
+      // Validate selected price is within allowed range
+      if (!isPriceInRange(input.selectedPrice, tier, weekend)) {
+        const range = getTierPriceRange(tier, weekend);
+        appliedRules.push(`Invalid price: $${input.selectedPrice} outside range $${range.min}-$${range.max}`);
+        return { subtotal: getTierMidpointPrice(tier, weekend), appliedRules };
+      }
+      const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+      appliedRules.push(`${tierName} room rate (${weekend ? "weekend" : "weekday"}) - custom price $${input.selectedPrice}`);
+      return { subtotal: input.selectedPrice, appliedRules };
+    }
+    
+    // Default to midpoint of range
+    const tierPrice = getTierMidpointPrice(tier, weekend);
     const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
     appliedRules.push(`${tierName} room rate (${weekend ? "weekend" : "weekday"})`);
     return { subtotal: tierPrice, appliedRules };

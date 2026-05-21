@@ -20,4 +20,10 @@ export interface CheckInInput {
   productIds?: number[];
   /** @nullable */
   roomTier?: CheckInInputRoomTier;
+  /**
+     * Selected price within allowed range for rooms (only applicable for room rentals)
+     * @minimum 0
+     * @nullable
+     */
+  selectedPrice?: number | null;
 }

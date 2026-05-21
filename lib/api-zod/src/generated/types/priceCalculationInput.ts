@@ -7,10 +7,19 @@
  */
 import type { PriceCalculationInputMembershipType } from './priceCalculationInputMembershipType';
 import type { PriceCalculationInputResourceType } from './priceCalculationInputResourceType';
+import type { PriceCalculationInputRoomTier } from './priceCalculationInputRoomTier';
 
 export interface PriceCalculationInput {
   clientId: number;
   resourceType: PriceCalculationInputResourceType;
   /** @nullable */
   membershipType?: PriceCalculationInputMembershipType;
+  /** @nullable */
+  roomTier?: PriceCalculationInputRoomTier;
+  /**
+     * Selected price within allowed range for rooms (only applicable for room rentals)
+     * @minimum 0
+     * @nullable
+     */
+  selectedPrice?: number | null;
 }

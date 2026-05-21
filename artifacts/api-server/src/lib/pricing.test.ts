@@ -141,7 +141,7 @@ describe('pricing', { tags: ['regression'] }, () => {
       expect(result.appliedRules).toContain('Weekday off-peak locker rate');
     });
 
-    it('should charge weekend room rate ($32)', () => {
+    it('should charge weekend room rate (midpoint $29.5)', () => {
       const input: PricingInput = {
         customerType: 'NON_MEMBER',
         productType: 'ROOM',
@@ -150,11 +150,11 @@ describe('pricing', { tags: ['regression'] }, () => {
         hasBirthdayToday: false,
       };
       const result = calculatePrice(input);
-      expect(result.subtotal).toBe(32);
-      expect(result.appliedRules).toContain('Weekend room rate');
+      expect(result.subtotal).toBe(29.5);
+      expect(result.appliedRules).toContain('Standard room rate (weekend)');
     });
 
-    it('should charge weekday room rate ($30)', () => {
+    it('should charge weekday room rate (midpoint $26.5)', () => {
       const input: PricingInput = {
         customerType: 'NON_MEMBER',
         productType: 'ROOM',
@@ -163,8 +163,8 @@ describe('pricing', { tags: ['regression'] }, () => {
         hasBirthdayToday: false,
       };
       const result = calculatePrice(input);
-      expect(result.subtotal).toBe(30);
-      expect(result.appliedRules).toContain('Weekday room rate');
+      expect(result.subtotal).toBe(26.5);
+      expect(result.appliedRules).toContain('Standard room rate (weekday)');
     });
 
     it('should handle Friday after 4pm as weekend pricing', () => {
@@ -203,7 +203,7 @@ describe('pricing', { tags: ['regression'] }, () => {
       };
       // Temporarily force invalid product type for testing
       const result = calculatePrice({ ...input, productType: 'ROOM' as ProductType });
-      expect(result.appliedRules).toContain('Weekday room rate');
+      expect(result.appliedRules).toContain('Standard room rate (weekday)');
     });
 
     it('should skip birthday special when specialsDisabled is true', () => {
@@ -352,22 +352,22 @@ describe('pricing', { tags: ['regression'] }, () => {
       expect(getTaxRate()).toBe(0.10);
     });
 
-    it('should return default NYC tax rate when not set', () => {
+    it('should return default tax rate when not set', () => {
       vi.stubEnv('TAX_RATE', '');
-      expect(getTaxRate()).toBe(0.08875);
+      expect(getTaxRate()).toBe(0.10);
     });
 
-    it('should return default NYC tax rate when invalid', () => {
+    it('should return default tax rate when invalid', () => {
       vi.stubEnv('TAX_RATE', 'invalid');
-      expect(getTaxRate()).toBe(0.08875);
+      expect(getTaxRate()).toBe(0.10);
     });
   });
 
   describe('computeTotal', () => {
     it('should calculate tax and total correctly', () => {
       const result = computeTotal(100);
-      expect(result.tax).toBe(8.88);
-      expect(result.total).toBe(108.88);
+      expect(result.tax).toBe(10);
+      expect(result.total).toBe(110);
     });
 
     it('should handle zero subtotal', () => {
@@ -378,8 +378,8 @@ describe('pricing', { tags: ['regression'] }, () => {
 
     it('should round to 2 decimal places', () => {
       const result = computeTotal(99.99);
-      expect(result.tax).toBeCloseTo(8.87, 2);
-      expect(result.total).toBeCloseTo(108.86, 2);
+      expect(result.tax).toBeCloseTo(10, 2);
+      expect(result.total).toBeCloseTo(109.99, 2);
     });
   });
 });

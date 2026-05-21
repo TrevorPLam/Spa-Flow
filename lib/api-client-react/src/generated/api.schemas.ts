@@ -574,11 +574,31 @@ export const PriceCalculationInputMembershipType = {
   six_month: 'six_month',
 } as const;
 
+/**
+ * @nullable
+ */
+export type PriceCalculationInputRoomTier = typeof PriceCalculationInputRoomTier[keyof typeof PriceCalculationInputRoomTier] | null;
+
+
+export const PriceCalculationInputRoomTier = {
+  standard: 'standard',
+  premium: 'premium',
+  deluxe: 'deluxe',
+} as const;
+
 export interface PriceCalculationInput {
   clientId: number;
   resourceType: PriceCalculationInputResourceType;
   /** @nullable */
   membershipType?: PriceCalculationInputMembershipType;
+  /** @nullable */
+  roomTier?: PriceCalculationInputRoomTier;
+  /**
+     * Selected price within allowed range for rooms (only applicable for room rentals)
+     * @minimum 0
+     * @nullable
+     */
+  selectedPrice?: number | null;
 }
 
 export interface PriceCalculation {
@@ -630,6 +650,12 @@ export interface CheckInInput {
   productIds?: number[];
   /** @nullable */
   roomTier?: CheckInInputRoomTier;
+  /**
+     * Selected price within allowed range for rooms (only applicable for room rentals)
+     * @minimum 0
+     * @nullable
+     */
+  selectedPrice?: number | null;
 }
 
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
