@@ -64,7 +64,7 @@ Due to these integration challenges, the mutation testing is currently configure
 ## Future Improvements
 
 ### Short-term
-1. **Debug Vitest runner**: Investigate why test discovery fails in Stryker sandbox
+1. **Debug Vitest runner**: Investigate why test discovery fails in Stryker sandbox (documented in "Current Challenges" section with workaround)
 2. **Alternative runners**: Consider using Jest runner if Vitest integration cannot be resolved
 3. **Manual mutation testing**: Run targeted mutation tests on critical functions manually
 

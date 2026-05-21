@@ -98,6 +98,7 @@ This command fails the CI pipeline if any high or critical severity vulnerabilit
 **How to document false positives:**
 1. For pnpm audit, use `auditConfig.ignoreGhsas` in `.npmrc`:
    ```ini
+   # Replace with actual GHSA IDs when documenting false positives
    auditConfig.ignoreGhsas=GHSA-xxxx-xxxx-xxxx
    ```
 2. For CodeQL, dismiss the alert in GitHub with a detailed reason
