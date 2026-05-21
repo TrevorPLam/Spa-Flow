@@ -23,6 +23,14 @@ import { sendValidationError, sendNotFoundError, sendConflictError } from "../li
 
 const router = Router();
 
+/**
+ * Formats a locker record for API response
+ * Includes client name if provided for display purposes
+ *
+ * @param l - The locker record from the database
+ * @param clientName - Optional client name for display
+ * @returns Formatted locker object for API response
+ */
 function formatLocker(l: typeof lockersTable.$inferSelect, clientName?: string | null) {
   return {
     id: l.id,

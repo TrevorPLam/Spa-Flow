@@ -16,6 +16,13 @@ const ListProductsQueryParams = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+/**
+ * Formats a product record for API response
+ * Converts price string to float for consistent API format
+ *
+ * @param p - The product record from the database
+ * @returns Formatted product object for API response
+ */
 function formatProduct(p: typeof productsTable.$inferSelect) {
   return {
     id: p.id,

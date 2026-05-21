@@ -9,6 +9,15 @@ import { sendValidationError, sendNotFoundError } from "../lib/response-formatte
 
 const router = Router();
 
+/**
+ * Formats a waitlist entry for API response using pre-loaded client and room maps
+ * Used for batch operations to avoid N+1 queries
+ *
+ * @param w - The waitlist entry record from the database
+ * @param clientMap - Map of client IDs to client data (name, phone)
+ * @param roomMap - Map of room IDs to room names
+ * @returns Formatted waitlist entry for API response
+ */
 function formatEntry(w: typeof waitlistTable.$inferSelect, clientMap: Map<number, { name: string; phone: string | null }>, roomMap: Map<number, string>) {
   const client = clientMap.get(w.clientId);
   const room = w.assignedRoomId ? roomMap.get(w.assignedRoomId) : null;
@@ -27,6 +36,13 @@ function formatEntry(w: typeof waitlistTable.$inferSelect, clientMap: Map<number
   };
 }
 
+/**
+ * Formats a waitlist entry for API response with database lookups
+ * Used for single entry operations where pre-loading maps is not feasible
+ *
+ * @param w - The waitlist entry record from the database
+ * @returns Formatted waitlist entry for API response
+ */
 async function formatEntrySingle(w: typeof waitlistTable.$inferSelect) {
   const [client] = await db.select({ name: clientsTable.name, phone: clientsTable.phone })
     .from(clientsTable).where(eq(clientsTable.id, w.clientId));

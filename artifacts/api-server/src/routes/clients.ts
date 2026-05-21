@@ -25,6 +25,15 @@ import { sendValidationError, sendNotFoundError } from "../lib/response-formatte
 
 const router = Router();
 
+/**
+ * Formats a client record for API response
+ * Decrypts PII (DOB, address, document number) only for manager role
+ * Returns placeholder "[encrypted]" for non-managers
+ *
+ * @param c - The client record from the database
+ * @param isManager - Whether the requesting user has manager role
+ * @returns Formatted client object for API response
+ */
 function formatClient(c: typeof clientsTable.$inferSelect, isManager: boolean) {
   const dob = isManager ? maybeDecrypt(c.dobEncrypted, c.dobDek) : (c.dobEncrypted ? "[encrypted]" : null);
   const address = isManager ? maybeDecrypt(c.addressEncrypted, c.addressDek) : (c.addressEncrypted ? "[encrypted]" : null);

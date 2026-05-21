@@ -24,6 +24,14 @@ import { sendValidationError, sendNotFoundError, sendConflictError } from "../li
 
 const router = Router();
 
+/**
+ * Formats a room record for API response
+ * Includes client name if provided for display purposes
+ *
+ * @param r - The room record from the database
+ * @param clientName - Optional client name for display
+ * @returns Formatted room object for API response
+ */
 function formatRoom(r: typeof roomsTable.$inferSelect, clientName?: string | null) {
   return {
     id: r.id,
