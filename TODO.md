@@ -89,8 +89,8 @@
 
 ---
 
-## [ ] TASK-008: Extract Common Middleware Logic
-**Status:** Pending
+## [x] TASK-008: Extract Common Middleware Logic
+**Status:** Completed
 **Priority**: Low
 
 ### Related File Paths
@@ -140,29 +140,37 @@
 
 ### Subtasks
 
-#### TASK-008-A: Analyze Middleware Similarity
+#### ✅ TASK-008-A: Analyze Middleware Similarity
 **Target:** `artifacts/api-server/src/middleware/`
 **Action:** Compare correlationId.ts and requestId.ts line by line, identify common patterns: header extraction, UUID generation, header setting, next() call.
 
-#### TASK-008-B: Design Shared Utility
+#### ✅ TASK-008-B: Design Shared Utility
 **Target:** `artifacts/api-server/src/middleware/`
 **Action:** Design createIdMiddleware function that takes header name and request property name as parameters, returns middleware function following identified common pattern.
 
-#### TASK-008-C: Implement Shared Utility
+#### ✅ TASK-008-C: Implement Shared Utility
 **Target:** `artifacts/api-server/src/middleware/id-middleware.ts`
 **Action:** Implement createIdMiddleware factory function with proper TypeScript types, header extraction, UUID generation, header setting, and next() call.
 
-#### TASK-008-D: Refactor Correlation ID Middleware
+#### ✅ TASK-008-D: Refactor Correlation ID Middleware
 **Target:** `artifacts/api-server/src/middleware/correlationId.ts`
 **Action:** Rewrite correlationIdMiddleware to use createIdMiddleware('x-correlation-id', 'correlationId'), preserve existing functionality and type definitions.
 
-#### TASK-008-E: Refactor Request ID Middleware
+#### ✅ TASK-008-E: Refactor Request ID Middleware
 **Target:** `artifacts/api-server/src/middleware/requestId.ts`
 **Action:** Rewrite requestIdMiddleware to use createIdMiddleware('x-request-id', 'requestId'), preserve existing functionality and type definitions.
 
-#### TASK-008-F: Test Middleware Functionality
+#### ✅ TASK-008-F: Test Middleware Functionality
 **Target:** `artifacts/api-server/src/middleware/*.test.ts`
 **Action:** Run existing middleware tests to verify functionality preserved, test that both middleware still work correctly after refactoring.
+
+### Implementation Notes
+- Created `id-middleware.ts` with `createIdMiddleware` factory function
+- Factory function takes header name and request property name as parameters
+- Both middleware files refactored to use shared utility
+- Type declarations preserved in individual files (TypeScript doesn't support dynamic property extensions in global declarations)
+- All 11 middleware tests passed (correlationId: 5 tests, requestId: 6 tests)
+- Pre-existing typecheck errors in other files (lib/api-client-react, auth.test.ts, health.ts) are unrelated to this change
 
 ---
 
