@@ -3,6 +3,8 @@ import app from '../app';
 import { signToken } from '../lib/auth';
 import { db } from '@workspace/db';
 import { clientsTable, lockersTable, roomsTable, usersTable } from '@workspace/db/schema';
+import csrf from 'csrf';
+import { getEnv } from '../lib/env';
 
 export { cleanDatabase } from '../../../../lib/test-utils/src';
 
@@ -17,8 +19,14 @@ export async function createAuthenticatedRequest(role: 'STAFF' | 'MANAGER' = 'ST
   
   const token = await signToken(payload);
   
+  // Generate CSRF token for tests
+  const csrfTokens = new csrf();
+  const csrfToken = csrfTokens.create(getEnv().CSRF_SECRET);
+  
+  // Set both session cookie and CSRF cookie/token for supertest
   return {
-    Authorization: `Bearer ${token}`,
+    Cookie: `spaflow_session=${token}; _csrf=${csrfToken}`,
+    'x-csrf-token': csrfToken,
   };
 }
 
