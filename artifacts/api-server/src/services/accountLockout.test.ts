@@ -26,27 +26,20 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
 
   describe('recordFailedAttempt', () => {
     it('should increment failed attempts when below threshold', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      const mockSet = vi.fn().mockResolvedValue(undefined);
+      const mockWhereUpdate = vi.fn().mockResolvedValue(undefined);
+      const mockSet = vi.fn().mockReturnValue({
+        where: mockWhereUpdate,
+      } as any);
       
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ failedLoginAttempts: 2 }]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([{ failedLoginAttempts: 2 }]);
       
       mockUpdate.mockReturnValue({
         set: mockSet,
-        where: mockWhere,
       } as any);
-      
-      mockWhere.mockResolvedValue(undefined);
       
       await service.recordFailedAttempt(1);
       
@@ -60,27 +53,20 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should lock account when threshold is reached', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      const mockSet = vi.fn().mockResolvedValue(undefined);
+      const mockWhereUpdate = vi.fn().mockResolvedValue(undefined);
+      const mockSet = vi.fn().mockReturnValue({
+        where: mockWhereUpdate,
+      } as any);
       
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ failedLoginAttempts: 4 }]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([{ failedLoginAttempts: 4 }]);
       
       mockUpdate.mockReturnValue({
         set: mockSet,
-        where: mockWhere,
       } as any);
-      
-      mockWhere.mockResolvedValue(undefined);
       
       await service.recordFailedAttempt(1);
       
@@ -94,19 +80,11 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should throw error when user not found', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([]);
       
       await expect(service.recordFailedAttempt(999)).rejects.toThrow('User not found');
     });
@@ -114,19 +92,11 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
 
   describe('isLocked', () => {
     it('should return false when user has no lockout', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ lockedUntil: null }]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([{ lockedUntil: null }]);
       
       const isLocked = await service.isLocked(1);
       
@@ -134,25 +104,20 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should return false when lockout has expired', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      const mockSet = vi.fn().mockResolvedValue(undefined);
-      
-      mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
-      } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
+      const mockWhereUpdate = vi.fn().mockResolvedValue(undefined);
+      const mockSet = vi.fn().mockReturnValue({
+        where: mockWhereUpdate,
       } as any);
       
       const pastDate = new Date(Date.now() - 10000);
-      mockWhere.mockResolvedValue([{ lockedUntil: pastDate }]);
+      mockSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ lockedUntil: pastDate }]),
+        }),
+      } as any);
       
       mockUpdate.mockReturnValue({
         set: mockSet,
-        where: mockWhere,
       } as any);
       
       const isLocked = await service.isLocked(1);
@@ -162,20 +127,12 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should return true when account is locked and lockout has not expired', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
-      mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
-      } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
       const futureDate = new Date(Date.now() + 900000);
-      mockWhere.mockResolvedValue([{ lockedUntil: futureDate }]);
+      mockSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ lockedUntil: futureDate }]),
+        }),
+      } as any);
       
       const isLocked = await service.isLocked(1);
       
@@ -183,19 +140,11 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should return false when user not found', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([]);
       
       const isLocked = await service.isLocked(999);
       
@@ -205,24 +154,16 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
 
   describe('getLockoutStatus', () => {
     it('should return lockout status with remaining attempts', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            {
+              failedLoginAttempts: 2,
+              lockedUntil: null,
+            },
+          ]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([
-        {
-          failedLoginAttempts: 2,
-          lockedUntil: null,
-        },
-      ]);
       
       const status = await service.getLockoutStatus(1);
       
@@ -235,25 +176,17 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should return lockout status when locked', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
-      mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
-      } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
       const futureDate = new Date(Date.now() + 900000);
-      mockWhere.mockResolvedValue([
-        {
-          failedLoginAttempts: 5,
-          lockedUntil: futureDate,
-        },
-      ]);
+      mockSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            {
+              failedLoginAttempts: 5,
+              lockedUntil: futureDate,
+            },
+          ]),
+        }),
+      } as any);
       
       const status = await service.getLockoutStatus(1);
       
@@ -266,19 +199,11 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should throw error when user not found', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([]);
       
       await expect(service.getLockoutStatus(999)).rejects.toThrow('User not found');
     });
@@ -286,12 +211,13 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
 
   describe('resetAttempts', () => {
     it('should reset failed attempts and clear lockout', async () => {
-      const mockSet = vi.fn().mockResolvedValue(undefined);
-      const mockWhere = vi.fn().mockResolvedValue(undefined);
+      const mockWhereUpdate = vi.fn().mockResolvedValue(undefined);
+      const mockSet = vi.fn().mockReturnValue({
+        where: mockWhereUpdate,
+      });
       
       mockUpdate.mockReturnValue({
         set: mockSet,
-        where: mockWhere,
       } as any);
       
       await service.resetAttempts(1);
@@ -306,24 +232,16 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
 
   describe('edge cases', () => {
     it('should handle zero failed attempts', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            {
+              failedLoginAttempts: 0,
+              lockedUntil: null,
+            },
+          ]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([
-        {
-          failedLoginAttempts: 0,
-          lockedUntil: null,
-        },
-      ]);
       
       const status = await service.getLockoutStatus(1);
       
@@ -332,24 +250,16 @@ describe('AccountLockoutService', { tags: ['regression', 'integration'] }, () =>
     });
 
     it('should handle null timestamp fields', async () => {
-      const mockFrom = vi.fn().mockReturnThis();
-      const mockWhere = vi.fn().mockReturnThis();
-      
       mockSelect.mockReturnValue({
-        from: mockFrom,
-        where: mockWhere,
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            {
+              failedLoginAttempts: 3,
+              lockedUntil: null,
+            },
+          ]),
+        }),
       } as any);
-      
-      mockFrom.mockReturnValue({
-        where: mockWhere,
-      } as any);
-      
-      mockWhere.mockResolvedValue([
-        {
-          failedLoginAttempts: 3,
-          lockedUntil: null,
-        },
-      ]);
       
       const isLocked = await service.isLocked(1);
       

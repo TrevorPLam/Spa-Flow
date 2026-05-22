@@ -10,7 +10,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
   });
 
 
-  describe('GET /api/audit-logs', () => {
+  describe('GET /api/v1/audit-logs', () => {
     it('should return list of audit logs for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const user = await createTestUserInDb({ email: 'user@example.com', name: 'Test User' });
@@ -23,7 +23,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
         description: 'Created user test@example.com',
       });
 
-      const response = await api.get('/api/audit-logs').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('logs');
@@ -53,7 +53,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
         description: 'Created user test@example.com',
       });
 
-      const response = await api.get('/api/audit-logs').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.logs[0]).toHaveProperty('userName', 'Test User');
@@ -69,7 +69,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
         { userId: user.id, action: 'UPDATE_USER', resourceType: 'user', resourceId: 1, description: 'Updated user' },
       ]);
 
-      const response = await api.get('/api/audit-logs?action=CREATE').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs?action=CREATE').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.logs.length).toBeGreaterThanOrEqual(1);
@@ -86,7 +86,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
         { userId: user2.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 2, description: 'User 2 action' },
       ]);
 
-      const response = await api.get(`/api/audit-logs?userId=${user1.id}`).set(authHeaders);
+      const response = await api.get(`/api/v1/audit-logs?userId=${user1.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.logs.length).toBe(1);
@@ -107,7 +107,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
       }));
       await db.insert(auditLogsTable).values(logs);
 
-      const response = await api.get('/api/audit-logs?page=1&limit=10').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs?page=1&limit=10').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.logs.length).toBe(10);
@@ -117,7 +117,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/audit-logs');
+      const response = await api.get('/api/v1/audit-logs');
 
       expect(response.status).toBe(401);
     });
@@ -125,7 +125,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
     it('should return 403 for non-manager user', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/audit-logs').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs').set(authHeaders);
 
       expect(response.status).toBe(403);
     });
@@ -133,7 +133,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
     it('should return 400 for invalid query parameters', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.get('/api/audit-logs?page=invalid').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs?page=invalid').set(authHeaders);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -142,7 +142,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
     it('should return empty list when no audit logs exist', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.get('/api/audit-logs').set(authHeaders);
+      const response = await api.get('/api/v1/audit-logs').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.logs).toBeInstanceOf(Array);
@@ -161,7 +161,7 @@ describe('Audit Logs API', { tags: ['regression', 'integration'] }, () => {
         { userId: user2.id, action: 'CREATE_USER', resourceType: 'user', resourceId: 3, description: 'User 2 create' },
       ]);
 
-      const response = await api.get(`/api/audit-logs?action=CREATE&userId=${user1.id}`).set(authHeaders);
+      const response = await api.get(`/api/v1/audit-logs?action=CREATE&userId=${user1.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.logs.length).toBe(1);

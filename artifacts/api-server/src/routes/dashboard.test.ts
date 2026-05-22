@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, cleanDatabase } from '../test/test-helpers';
-import { db } from '@workspace/db';
+import { db, clientsTable } from '@workspace/db';
 import { transactionsTable, productsTable, rentalSessionsTable } from '@workspace/db/schema';
 
 describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
@@ -10,11 +10,11 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
   });
 
 
-  describe('GET /api/dashboard', () => {
+  describe('GET /api/v1/dashboard', () => {
     it('should return dashboard data for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/dashboard').set(authHeaders);
+      const response = await api.get('/api/v1/dashboard').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('lockerOccupancy');
@@ -31,7 +31,7 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
     it('should return locker occupancy with correct structure', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/dashboard').set(authHeaders);
+      const response = await api.get('/api/v1/dashboard').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.lockerOccupancy).toHaveProperty('total');
@@ -44,7 +44,7 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
     it('should return room occupancy with correct structure', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/dashboard').set(authHeaders);
+      const response = await api.get('/api/v1/dashboard').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.roomOccupancy).toHaveProperty('total');
@@ -55,14 +55,24 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/dashboard');
+      const response = await api.get('/api/v1/dashboard');
 
       expect(response.status).toBe(401);
     });
 
     it('should include recent transactions with client names', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
-      const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      
+      // Insert client directly in this test to ensure it exists
+      const [client] = await db.insert(clientsTable).values({
+        email: 'john@example.com',
+        phone: '555-0100',
+        memberId: 'MEM001',
+        name: 'John Doe',
+        membershipStatus: 'none',
+        dobEncrypted: null,
+        addressEncrypted: null,
+      }).returning();
 
       await db.insert(transactionsTable).values({
         clientId: client.id,
@@ -74,7 +84,7 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
         description: 'Locker rental',
       });
 
-      const response = await api.get('/api/dashboard').set(authHeaders);
+      const response = await api.get('/api/v1/dashboard').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.recentTransactions).toBeInstanceOf(Array);
@@ -94,7 +104,7 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
         category: 'accessory',
       });
 
-      const response = await api.get('/api/dashboard').set(authHeaders);
+      const response = await api.get('/api/v1/dashboard').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.lowStockProducts).toBeInstanceOf(Array);
@@ -103,7 +113,18 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
 
     it('should include active rentals with client names', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
-      const client = await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
+      
+      // Insert client directly in this test to ensure it exists
+      const [client] = await db.insert(clientsTable).values({
+        email: 'jane@example.com',
+        phone: '555-0101',
+        memberId: 'MEM002',
+        name: 'Jane Smith',
+        membershipStatus: 'none',
+        dobEncrypted: null,
+        addressEncrypted: null,
+      }).returning();
+      
       const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
 
       await db.insert(rentalSessionsTable).values({
@@ -116,7 +137,7 @@ describe('Dashboard API', { tags: ['regression', 'integration'] }, () => {
         expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
       });
 
-      const response = await api.get('/api/dashboard').set(authHeaders);
+      const response = await api.get('/api/v1/dashboard').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.activeRentals).toBeInstanceOf(Array);

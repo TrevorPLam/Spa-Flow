@@ -12,13 +12,13 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
   });
 
 
-  describe('GET /api/clients', () => {
+  describe('GET /api/v1/clients', () => {
     it('should return list of clients for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
 
-      const response = await api.get('/api/clients').set(authHeaders);
+      const response = await api.get('/api/v1/clients').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -29,21 +29,21 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.get('/api/clients').set(authHeaders);
+      const response = await api.get('/api/v1/clients').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/clients');
+      const response = await api.get('/api/v1/clients');
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('GET /api/clients/:id', () => {
+  describe('GET /api/v1/clients/:id', () => {
     it('should return client details for authenticated staff (PII masked)', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ 
@@ -53,7 +53,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         addressEncrypted: 'encrypted-address-data'
       });
 
-      const response = await api.get(`/api/clients/${client.id}`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id', client.id);
@@ -71,7 +71,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         addressEncrypted: 'encrypted-address-data'
       });
 
-      const response = await api.get(`/api/clients/${client.id}`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id', client.id);
@@ -83,7 +83,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 404 for non-existent client', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/clients/99999').set(authHeaders);
+      const response = await api.get('/api/v1/clients/99999').set(authHeaders);
 
       expect(response.status).toBe(404);
     });
@@ -91,13 +91,13 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.get(`/api/clients/${client.id}`);
+      const response = await api.get(`/api/v1/clients/${client.id}`);
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('POST /api/clients', () => {
+  describe('POST /api/v1/clients', () => {
     it('should create a new client for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const newClient = {
@@ -107,7 +107,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         name: 'New Client',
       };
 
-      const response = await api.post('/api/clients').set(authHeaders).send(newClient);
+      const response = await api.post('/api/v1/clients').set(authHeaders).send(newClient);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -122,7 +122,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         name: '', // Empty name
       };
 
-      const response = await api.post('/api/clients').set(authHeaders).send(invalidClient);
+      const response = await api.post('/api/v1/clients').set(authHeaders).send(invalidClient);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -134,19 +134,19 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         name: 'New Client',
       };
 
-      const response = await api.post('/api/clients').send(newClient);
+      const response = await api.post('/api/v1/clients').send(newClient);
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('PUT /api/clients/:id', () => {
+  describe('PUT /api/v1/clients/:id', () => {
     it('should update client for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
       const updateData = { name: 'John Updated', phone: '555-9999' };
-      const response = await api.put(`/api/clients/${client.id}`).set(authHeaders).send(updateData);
+      const response = await api.put(`/api/v1/clients/${client.id}`).set(authHeaders).send(updateData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('name', 'John Updated');
@@ -158,7 +158,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
       const updateData = { name: 'John Updated' };
-      const response = await api.put(`/api/clients/${client.id}`).set(authHeaders).send(updateData);
+      const response = await api.put(`/api/v1/clients/${client.id}`).set(authHeaders).send(updateData);
 
       expect(response.status).toBe(403);
     });
@@ -166,18 +166,18 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 404 for non-existent client', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.put('/api/clients/99999').set(authHeaders).send({ name: 'Updated' });
+      const response = await api.put('/api/v1/clients/99999').set(authHeaders).send({ name: 'Updated' });
 
       expect(response.status).toBe(404);
     });
   });
 
-  describe('DELETE /api/clients/:id', () => {
+  describe('DELETE /api/v1/clients/:id', () => {
     it('should delete client for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.delete(`/api/clients/${client.id}`).set(authHeaders);
+      const response = await api.delete(`/api/v1/clients/${client.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       
@@ -190,7 +190,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.delete(`/api/clients/${client.id}`).set(authHeaders);
+      const response = await api.delete(`/api/v1/clients/${client.id}`).set(authHeaders);
 
       expect(response.status).toBe(403);
     });
@@ -198,13 +198,13 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 404 for non-existent client', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.delete('/api/clients/99999').set(authHeaders);
+      const response = await api.delete('/api/v1/clients/99999').set(authHeaders);
 
       expect(response.status).toBe(404);
     });
   });
 
-  describe('GET /api/clients/:id/memberships', () => {
+  describe('GET /api/v1/clients/:id/memberships', () => {
     it('should return client memberships for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -215,7 +215,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       });
 
-      const response = await api.get(`/api/clients/${client.id}/memberships`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/memberships`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -224,13 +224,13 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.get(`/api/clients/${client.id}/memberships`);
+      const response = await api.get(`/api/v1/clients/${client.id}/memberships`);
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('GET /api/clients/:id/pii', () => {
+  describe('GET /api/v1/clients/:id/pii', () => {
     it('should return decrypted PII for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const client = await createTestClientInDb({ 
@@ -244,7 +244,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         documentNumberDek: 'encrypted-dek',
       });
 
-      const response = await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/pii`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id', client.id);
@@ -263,7 +263,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         dobDek: 'encrypted-dek',
       });
 
-      const response = await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/pii`).set(authHeaders);
 
       expect(response.status).toBe(403);
       expect(response.body).toHaveProperty('error');
@@ -272,7 +272,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.get(`/api/clients/${client.id}/pii`);
+      const response = await api.get(`/api/v1/clients/${client.id}/pii`);
 
       expect(response.status).toBe(401);
     });
@@ -280,7 +280,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 404 for non-existent client', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.get('/api/clients/99999/pii').set(authHeaders);
+      const response = await api.get('/api/v1/clients/99999/pii').set(authHeaders);
 
       expect(response.status).toBe(404);
     });
@@ -294,7 +294,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         dobDek: 'encrypted-dek',
       });
 
-      await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+      await api.get(`/api/v1/clients/${client.id}/pii`).set(authHeaders);
 
       // Verify audit log entry was created
       const auditLogs = await db.select().from(require('@workspace/db/schema').auditLogsTable)
@@ -306,7 +306,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     });
   });
 
-  describe('POST /api/clients/:id/memberships/renew', () => {
+  describe('POST /api/v1/clients/:id/memberships/renew', () => {
     it('should renew expired membership with payment', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({
@@ -322,7 +322,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         idempotencyKey: `renewal_${client.id}_${Date.now()}`,
       };
 
-      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+      const response = await api.post(`/api/v1/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
@@ -355,7 +355,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         idempotencyKey: `renewal_${client.id}_${Date.now()}`,
       };
 
-      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+      const response = await api.post(`/api/v1/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('type', 'one_time');
@@ -376,7 +376,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         idempotencyKey: `renewal_${client.id}_${Date.now()}`,
       };
 
-      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+      const response = await api.post(`/api/v1/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -391,7 +391,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         idempotencyKey: `renewal_99999_${Date.now()}`,
       };
 
-      const response = await api.post('/api/clients/99999/memberships/renew').set(authHeaders).send(renewalData);
+      const response = await api.post('/api/v1/clients/99999/memberships/renew').set(authHeaders).send(renewalData);
 
       expect(response.status).toBe(404);
     });
@@ -409,7 +409,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         idempotencyKey: `renewal_${client.id}_${Date.now()}`,
       };
 
-      const response = await api.post(`/api/clients/${client.id}/memberships/renew`).send(renewalData);
+      const response = await api.post(`/api/v1/clients/${client.id}/memberships/renew`).send(renewalData);
 
       expect(response.status).toBe(401);
     });
@@ -428,7 +428,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         idempotencyKey: `renewal_${client.id}_${Date.now()}`,
       };
 
-      await api.post(`/api/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
+      await api.post(`/api/v1/clients/${client.id}/memberships/renew`).set(authHeaders).send(renewalData);
 
       // Verify audit log entry was created
       const auditLogs = await db.select().from(require('@workspace/db/schema').auditLogsTable)
@@ -441,22 +441,22 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
   });
 
   describe('Contract Validation', () => {
-    it('should validate GET /api/clients response against OpenAPI spec', async () => {
+    it('should validate GET /api/v1/clients response against OpenAPI spec', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.get('/api/clients').set(authHeaders);
+      const response = await api.get('/api/v1/clients').set(authHeaders);
 
       expect(response.status).toBe(200);
       
-      const validation = await validateResponse('/api/clients', 'get', 200, response.body);
+      const validation = await validateResponse('/api/v1/clients', 'get', 200, response.body);
       expect(validation.valid).toBe(true);
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);
       }
     });
 
-    it('should validate POST /api/clients request against OpenAPI spec', async () => {
+    it('should validate POST /api/v1/clients request against OpenAPI spec', async () => {
       const newClient = {
         email: 'newclient@example.com',
         phone: '555-0123',
@@ -464,14 +464,14 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         name: 'New Client',
       };
 
-      const validation = await validateRequestBody('/api/clients', 'post', newClient);
+      const validation = await validateRequestBody('/api/v1/clients', 'post', newClient);
       expect(validation.valid).toBe(true);
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);
       }
     });
 
-    it('should validate POST /api/clients response against OpenAPI spec', async () => {
+    it('should validate POST /api/v1/clients response against OpenAPI spec', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const newClient = {
         email: 'newclient@example.com',
@@ -480,18 +480,18 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         name: 'New Client',
       };
 
-      const response = await api.post('/api/clients').set(authHeaders).send(newClient);
+      const response = await api.post('/api/v1/clients').set(authHeaders).send(newClient);
 
       expect(response.status).toBe(201);
       
-      const validation = await validateResponse('/api/clients', 'post', 201, response.body);
+      const validation = await validateResponse('/api/v1/clients', 'post', 201, response.body);
       expect(validation.valid).toBe(true);
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);
       }
     });
 
-    it('should validate GET /api/clients/:id response against OpenAPI spec', async () => {
+    it('should validate GET /api/v1/clients/:id response against OpenAPI spec', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ 
         name: 'John Doe', 
@@ -500,18 +500,18 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         addressEncrypted: 'encrypted-address-data'
       });
 
-      const response = await api.get(`/api/clients/${client.id}`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       
-      const validation = await validateResponse('/api/clients/:id', 'get', 200, response.body);
+      const validation = await validateResponse('/api/v1/clients/:id', 'get', 200, response.body);
       expect(validation.valid).toBe(true);
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);
       }
     });
 
-    it('should validate GET /api/clients/:id/pii response against OpenAPI spec', async () => {
+    it('should validate GET /api/v1/clients/:id/pii response against OpenAPI spec', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       const client = await createTestClientInDb({ 
         name: 'John Doe', 
@@ -520,11 +520,11 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         dobDek: 'encrypted-dek',
       });
 
-      const response = await api.get(`/api/clients/${client.id}/pii`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/pii`).set(authHeaders);
 
       expect(response.status).toBe(200);
       
-      const validation = await validateResponse('/api/clients/:id/pii', 'get', 200, response.body);
+      const validation = await validateResponse('/api/v1/clients/:id/pii', 'get', 200, response.body);
       expect(validation.valid).toBe(true);
       if (!validation.valid) {
         console.error('Contract validation errors:', validation.errors);
@@ -532,7 +532,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     });
   });
 
-  describe('GET /api/clients/:id/rentals/:sessionId/products', () => {
+  describe('GET /api/v1/clients/:id/rentals/:sessionId/products', () => {
     it('should return products purchased during a rental session', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -572,7 +572,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         sessionId: session.id,
       });
 
-      const response = await api.get(`/api/clients/${client.id}/rentals/${session.id}/products`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/rentals/${session.id}/products`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -597,7 +597,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
         amountPaid: '25.00',
       }).returning();
 
-      const response = await api.get(`/api/clients/${client.id}/rentals/${session.id}/products`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/rentals/${session.id}/products`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -607,7 +607,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 404 when client does not exist', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/clients/99999/rentals/1/products').set(authHeaders);
+      const response = await api.get('/api/v1/clients/99999/rentals/1/products').set(authHeaders);
 
       expect(response.status).toBe(404);
     });
@@ -616,13 +616,13 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.get(`/api/clients/${client.id}/rentals/99999/products`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients/${client.id}/rentals/99999/products`).set(authHeaders);
 
       expect(response.status).toBe(404);
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/clients/1/rentals/1/products');
+      const response = await api.get('/api/v1/clients/1/rentals/1/products');
 
       expect(response.status).toBe(401);
     });
@@ -634,7 +634,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com', membershipStatus: 'six_month' });
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com', membershipStatus: 'none' });
 
-      const response = await api.get('/api/clients?membershipStatus=six_month').set(authHeaders);
+      const response = await api.get('/api/v1/clients?membershipStatus=six_month').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.clients.length).toBe(1);
@@ -658,7 +658,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       });
 
       const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const response = await api.get(`/api/clients?startDate=${startDate}`).set(authHeaders);
+      const response = await api.get(`/api/v1/clients?startDate=${startDate}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.clients.length).toBe(1);
@@ -670,7 +670,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       await createTestClientInDb({ name: 'Active Member', email: 'active@example.com', membershipStatus: 'six_month' });
       await createTestClientInDb({ name: 'Non Member', email: 'non@example.com', membershipStatus: 'none' });
 
-      const response = await api.get('/api/clients?preset=active_members').set(authHeaders);
+      const response = await api.get('/api/v1/clients?preset=active_members').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.clients.length).toBe(1);
@@ -682,7 +682,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
 
-      const response = await api.get('/api/clients?search=John').set(authHeaders);
+      const response = await api.get('/api/v1/clients?search=John').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.clients.length).toBe(1);
@@ -694,7 +694,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
 
-      const response = await api.get('/api/clients?search=jane@example.com').set(authHeaders);
+      const response = await api.get('/api/v1/clients?search=jane@example.com').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.clients.length).toBe(1);
@@ -702,13 +702,13 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     });
   });
 
-  describe('GET /api/clients/suggest', () => {
+  describe('GET /api/v1/clients/suggest', () => {
     it('should return client suggestions for autocomplete', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
 
-      const response = await api.get('/api/clients/suggest?q=J').set(authHeaders);
+      const response = await api.get('/api/v1/clients/suggest?q=J').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -723,7 +723,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
       await createTestClientInDb({ name: 'Jack Brown', email: 'jack@example.com' });
 
-      const response = await api.get('/api/clients/suggest?q=J&limit=2').set(authHeaders);
+      const response = await api.get('/api/v1/clients/suggest?q=J&limit=2').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBeLessThanOrEqual(2);
@@ -732,18 +732,18 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     it('should return 400 for missing query parameter', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/clients/suggest').set(authHeaders);
+      const response = await api.get('/api/v1/clients/suggest').set(authHeaders);
 
       expect(response.status).toBe(400);
     });
   });
 
-  describe('GET /api/clients/export', () => {
+  describe('GET /api/v1/clients/export', () => {
     it('should export clients as CSV', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com', membershipStatus: 'six_month' });
 
-      const response = await api.get('/api/clients/export').set(authHeaders);
+      const response = await api.get('/api/v1/clients/export').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/csv');
@@ -756,7 +756,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       await createTestClientInDb({ name: 'John Doe', email: 'john@example.com', membershipStatus: 'six_month' });
       await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com', membershipStatus: 'none' });
 
-      const response = await api.get('/api/clients/export?membershipStatus=six_month').set(authHeaders);
+      const response = await api.get('/api/v1/clients/export?membershipStatus=six_month').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.text).toContain('John Doe');
@@ -764,7 +764,7 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/clients/export');
+      const response = await api.get('/api/v1/clients/export');
 
       expect(response.status).toBe(401);
     });

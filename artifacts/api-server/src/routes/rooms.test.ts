@@ -22,7 +22,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
   });
 
 
-  describe('POST /api/rooms/bulk-release', () => {
+  describe('POST /api/v1/rooms/bulk-release', () => {
     it('should release all expired rooms', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -33,7 +33,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       // Create a non-expired room
       await createTestRoomInDb({ name: 'R102', status: 'available' });
 
-      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({
+      const response = await api.post('/api/v1/rooms/bulk-release').set(authHeaders).send({
         operation: 'all_expired',
       });
 
@@ -53,7 +53,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       await createTestRoomInDb({ name: 'R102', status: 'occupied', clientId: client.id });
       await createTestRoomInDb({ name: 'R103', status: 'available' });
 
-      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({
+      const response = await api.post('/api/v1/rooms/bulk-release').set(authHeaders).send({
         operation: 'by_status',
         status: 'occupied',
       });
@@ -71,7 +71,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       const room2 = await createTestRoomInDb({ name: 'R102', status: 'occupied', clientId: client.id });
       await createTestRoomInDb({ name: 'R103', status: 'available' });
 
-      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({
+      const response = await api.post('/api/v1/rooms/bulk-release').set(authHeaders).send({
         operation: 'by_ids',
         resourceIds: [room1.id, room2.id],
       });
@@ -82,7 +82,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.post('/api/rooms/bulk-release').send({
+      const response = await api.post('/api/v1/rooms/bulk-release').send({
         operation: 'all_expired',
       });
 
@@ -91,19 +91,19 @@ describe('Rooms API', { tags: ['regression'] }, () => {
 
     it('should validate required operation field', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
-      const response = await api.post('/api/rooms/bulk-release').set(authHeaders).send({});
+      const response = await api.post('/api/v1/rooms/bulk-release').set(authHeaders).send({});
 
       expect(response.status).toBe(400);
     });
   });
 
-  describe('GET /api/rooms', () => {
+  describe('GET /api/v1/rooms', () => {
     it('should return list of rooms for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestRoomInDb({ name: 'R101' });
       await createTestRoomInDb({ name: 'R102' });
 
-      const response = await api.get('/api/rooms').set(authHeaders);
+      const response = await api.get('/api/v1/rooms').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -111,13 +111,13 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/rooms');
+      const response = await api.get('/api/v1/rooms');
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('POST /api/rooms/:id/assign', () => {
+  describe('POST /api/v1/rooms/:id/assign', () => {
     it('should assign room to client for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const room = await createTestRoomInDb({ name: 'R101', status: 'available' });
@@ -128,7 +128,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
         duration: 'HOURLY' as const,
       };
 
-      const response = await api.post(`/api/rooms/${room.id}/assign`).set(authHeaders).send(assignData);
+      const response = await api.post(`/api/v1/rooms/${room.id}/assign`).set(authHeaders).send(assignData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'occupied');
@@ -150,7 +150,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
         duration: 'HOURLY' as const,
       };
 
-      const response = await api.post(`/api/rooms/${room.id}/assign`).set(authHeaders).send(assignData);
+      const response = await api.post(`/api/v1/rooms/${room.id}/assign`).set(authHeaders).send(assignData);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -160,7 +160,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       const room = await createTestRoomInDb({ name: 'R101' });
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.post(`/api/rooms/${room.id}/assign`).send({
+      const response = await api.post(`/api/v1/rooms/${room.id}/assign`).send({
         clientId: client.id,
         duration: 'HOURLY',
       });
@@ -169,7 +169,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     });
   });
 
-  describe('POST /api/rooms/:id/release', () => {
+  describe('POST /api/v1/rooms/:id/release', () => {
     it('should release room for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -179,7 +179,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
         clientId: client.id,
       });
 
-      const response = await api.post(`/api/rooms/${room.id}/release`).set(authHeaders);
+      const response = await api.post(`/api/v1/rooms/${room.id}/release`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'available');
@@ -190,7 +190,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     it('should return 404 for non-existent room', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.post('/api/rooms/99999/release').set(authHeaders);
+      const response = await api.post('/api/v1/rooms/99999/release').set(authHeaders);
 
       expect(response.status).toBe(404);
     });
@@ -198,13 +198,13 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const room = await createTestRoomInDb({ name: 'R101' });
 
-      const response = await api.post(`/api/rooms/${room.id}/release`);
+      const response = await api.post(`/api/v1/rooms/${room.id}/release`);
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('POST /api/rooms/:id/renew', () => {
+  describe('POST /api/v1/rooms/:id/renew', () => {
     it('should renew room rental for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -217,7 +217,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
 
       const renewData = { duration: 'HOURLY' as const };
 
-      const response = await api.post(`/api/rooms/${room.id}/renew`).set(authHeaders).send(renewData);
+      const response = await api.post(`/api/v1/rooms/${room.id}/renew`).set(authHeaders).send(renewData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('expiresAt');
@@ -227,7 +227,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const room = await createTestRoomInDb({ name: 'R101', status: 'available' });
 
-      const response = await api.post(`/api/rooms/${room.id}/renew`).set(authHeaders).send({
+      const response = await api.post(`/api/v1/rooms/${room.id}/renew`).set(authHeaders).send({
         duration: 'HOURLY',
       });
 
@@ -237,7 +237,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const room = await createTestRoomInDb({ name: 'R101' });
 
-      const response = await api.post(`/api/rooms/${room.id}/renew`).send({
+      const response = await api.post(`/api/v1/rooms/${room.id}/renew`).send({
         duration: 'HOURLY',
       });
 
@@ -245,13 +245,13 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     });
   });
 
-  describe('GET /api/rooms/summary', () => {
+  describe('GET /api/v1/rooms/summary', () => {
     it('should return room summary for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestRoomInDb({ name: 'R101', status: 'available' });
       await createTestRoomInDb({ name: 'R102', status: 'occupied' });
 
-      const response = await api.get('/api/rooms/summary').set(authHeaders);
+      const response = await api.get('/api/v1/rooms/summary').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('total');
@@ -260,7 +260,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/rooms/summary');
+      const response = await api.get('/api/v1/rooms/summary');
 
       expect(response.status).toBe(401);
     });

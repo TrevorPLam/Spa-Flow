@@ -80,6 +80,42 @@ describe('env.ts', () => {
       process.env.DB_POOL_MAX = 'not-a-number';
       expect(() => validateDbEnv()).toThrow('Database environment validation failed');
     });
+
+    it('should throw error when DB_POOL_IDLE_TIMEOUT_MS is not a valid number', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/testdb';
+      process.env.DB_POOL_IDLE_TIMEOUT_MS = 'invalid';
+      expect(() => validateDbEnv()).toThrow('Database environment validation failed');
+    });
+
+    it('should throw error when DB_POOL_CONNECTION_TIMEOUT_MS is not a valid number', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/testdb';
+      process.env.DB_POOL_CONNECTION_TIMEOUT_MS = 'invalid';
+      expect(() => validateDbEnv()).toThrow('Database environment validation failed');
+    });
+
+    it('should throw error when DB_STATEMENT_TIMEOUT_MS is not a valid number', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/testdb';
+      process.env.DB_STATEMENT_TIMEOUT_MS = 'invalid';
+      expect(() => validateDbEnv()).toThrow('Database environment validation failed');
+    });
+
+    it('should throw error when DB_LOCK_TIMEOUT_MS is not a valid number', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/testdb';
+      process.env.DB_LOCK_TIMEOUT_MS = 'invalid';
+      expect(() => validateDbEnv()).toThrow('Database environment validation failed');
+    });
+
+    it('should throw error when DB_IDLE_IN_TRANSACTION_TIMEOUT_MS is not a valid number', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/testdb';
+      process.env.DB_IDLE_IN_TRANSACTION_TIMEOUT_MS = 'invalid';
+      expect(() => validateDbEnv()).toThrow('Database environment validation failed');
+    });
+
+    it('should throw error when timeout values are negative', () => {
+      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/testdb';
+      process.env.DB_POOL_IDLE_TIMEOUT_MS = '-1000';
+      expect(() => validateDbEnv()).toThrow('Database environment validation failed');
+    });
   });
 
   describe('getDbEnv', () => {

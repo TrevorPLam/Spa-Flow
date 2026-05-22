@@ -1,5 +1,5 @@
 // Database utilities
-export { cleanDatabase, setupTestDatabase } from './database';
+export { cleanDatabase, setupTestDatabase, withTransactionRollback } from './database';
 
 // Fixture factories
 export {
@@ -17,3 +17,12 @@ export {
   assertRecordExists,
   assertRecordNotExists,
 } from './assertions';
+
+// Drizzle ORM mock helpers
+export {
+  createMockSelect,
+  createMockUpdate,
+  createMockInsert,
+  createMockDelete,
+  extractUpdateMocks,
+} from './drizzle-mocks';

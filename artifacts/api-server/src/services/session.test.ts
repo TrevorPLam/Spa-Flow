@@ -1,45 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { sessionService } from "./session";
 import { db, refreshTokensTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { BCRYPT_ROUNDS } from "../lib/constants";
-import { createTestUserInDb } from "../test/test-helpers";
+import { createTestUserInDb, cleanDatabase } from "../test/test-helpers";
 
 describe("SessionService", { tags: ['regression', 'integration'] }, () => {
   let testUserId: number;
-  let testSessionIds: number[] = [];
 
   beforeEach(async () => {
+    // Clean database before each test - handles all cleanup automatically
+    await cleanDatabase();
+    
     // Create a test user in the database
     const testUser = await createTestUserInDb();
     testUserId = testUser.id;
-
-    // Clean up any existing test sessions for this user
-    await db
-      .delete(refreshTokensTable)
-      .where(eq(refreshTokensTable.userId, testUserId));
-  });
-
-  afterEach(async () => {
-    // Clean up test sessions (children before parents)
-    for (const sessionId of testSessionIds) {
-      try {
-        await db.delete(refreshTokensTable).where(eq(refreshTokensTable.id, sessionId));
-      } catch (e) {
-        // Ignore errors during cleanup
-      }
-    }
-    await db
-      .delete(refreshTokensTable)
-      .where(eq(refreshTokensTable.userId, testUserId));
-
-    // Clean up test user (parent after children)
-    try {
-      await db.delete(usersTable).where(eq(usersTable.id, testUserId));
-    } catch (e) {
-      // Ignore errors during cleanup
-    }
   });
 
   describe("listSessions", () => {
@@ -63,8 +39,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
       }).returning();
-
-      testSessionIds.push(session1[0].id, session2[0].id);
 
       const sessions = await sessionService.listSessions(testUserId);
       expect(sessions).toHaveLength(2);
@@ -94,8 +68,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Firefox",
       }).returning();
 
-      testSessionIds.push(activeSession[0].id, revokedSession[0].id);
-
       const sessions = await sessionService.listSessions(testUserId);
       expect(sessions).toHaveLength(1);
       expect(sessions[0].id).toBe(activeSession[0].id);
@@ -110,8 +82,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
-      testSessionIds.push(session[0].id);
-
       const sessions = await sessionService.listSessions(testUserId, tokenHash);
       expect(sessions).toHaveLength(1);
       expect(sessions[0].isCurrent).toBe(true);
@@ -124,8 +94,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
-
-      testSessionIds.push(session[0].id);
 
       const sessions = await sessionService.listSessions(testUserId, await bcrypt.hash("current-token", BCRYPT_ROUNDS));
       expect(sessions).toHaveLength(1);
@@ -142,7 +110,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const revoked = await sessionService.revokeSession(session[0].id, testUserId);
       expect(revoked).toBe(true);
@@ -172,7 +139,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const revoked = await sessionService.revokeSession(session[0].id, testUserId);
       expect(revoked).toBe(false);
@@ -183,10 +149,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         .from(refreshTokensTable)
         .where(eq(refreshTokensTable.id, session[0].id));
       expect(updatedSession.revokedAt).toBeNull();
-
-      // Clean up the other user's session
-      await db.delete(refreshTokensTable).where(eq(refreshTokensTable.id, session[0].id));
-      await db.delete(usersTable).where(eq(usersTable.id, otherUserId));
     });
   });
 
@@ -207,7 +169,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Safari",
       }).returning();
 
-      testSessionIds.push(session1[0].id, session2[0].id);
 
       const revokedCount = await sessionService.revokeAllSessions(testUserId);
       expect(revokedCount).toBe(2);
@@ -232,7 +193,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Safari",
       }).returning();
 
-      testSessionIds.push(session1[0].id, session2[0].id);
 
       const revokedCount = await sessionService.revokeAllSessions(testUserId, session1[0].id);
       expect(revokedCount).toBe(1);
@@ -269,7 +229,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const sessionId = await sessionService.getSessionIdForToken(token);
       expect(sessionId).toBe(session[0].id);
@@ -291,7 +250,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 Chrome",
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const sessionId = await sessionService.getSessionIdForToken(token);
       expect(sessionId).toBeNull();
@@ -307,7 +265,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const sessions = await sessionService.listSessions(testUserId);
       expect(sessions[0].userAgent).toContain("Chrome");
@@ -322,7 +279,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const sessions = await sessionService.listSessions(testUserId);
       expect(sessions[0].userAgent).toContain("Safari");
@@ -338,7 +294,6 @@ describe("SessionService", { tags: ['regression', 'integration'] }, () => {
         userAgent: null,
       }).returning();
 
-      testSessionIds.push(session[0].id);
 
       const sessions = await sessionService.listSessions(testUserId);
       expect(sessions[0].userAgent).toBe("Unknown Device");

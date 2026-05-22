@@ -22,7 +22,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
   });
 
 
-  describe('POST /api/lockers/bulk-release', () => {
+  describe('POST /api/v1/lockers/bulk-release', () => {
     it('should release all expired lockers', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -33,7 +33,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
       // Create a non-expired locker
       await createTestLockerInDb({ name: 'L102', status: 'available' });
 
-      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({
+      const response = await api.post('/api/v1/lockers/bulk-release').set(authHeaders).send({
         operation: 'all_expired',
       });
 
@@ -53,7 +53,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
       await createTestLockerInDb({ name: 'L102', status: 'occupied', clientId: client.id });
       await createTestLockerInDb({ name: 'L103', status: 'available' });
 
-      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({
+      const response = await api.post('/api/v1/lockers/bulk-release').set(authHeaders).send({
         operation: 'by_status',
         status: 'occupied',
       });
@@ -71,7 +71,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
       const locker2 = await createTestLockerInDb({ name: 'L102', status: 'occupied', clientId: client.id });
       await createTestLockerInDb({ name: 'L103', status: 'available' });
 
-      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({
+      const response = await api.post('/api/v1/lockers/bulk-release').set(authHeaders).send({
         operation: 'by_ids',
         resourceIds: [locker1.id, locker2.id],
       });
@@ -82,7 +82,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.post('/api/lockers/bulk-release').send({
+      const response = await api.post('/api/v1/lockers/bulk-release').send({
         operation: 'all_expired',
       });
 
@@ -91,19 +91,19 @@ describe('Lockers API', { tags: ['regression'] }, () => {
 
     it('should validate required operation field', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
-      const response = await api.post('/api/lockers/bulk-release').set(authHeaders).send({});
+      const response = await api.post('/api/v1/lockers/bulk-release').set(authHeaders).send({});
 
       expect(response.status).toBe(400);
     });
   });
 
-  describe('GET /api/lockers', () => {
+  describe('GET /api/v1/lockers', () => {
     it('should return list of lockers for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestLockerInDb({ name: 'L101' });
       await createTestLockerInDb({ name: 'L102' });
 
-      const response = await api.get('/api/lockers').set(authHeaders);
+      const response = await api.get('/api/v1/lockers').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -111,13 +111,13 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/lockers');
+      const response = await api.get('/api/v1/lockers');
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('POST /api/lockers/:id/assign', () => {
+  describe('POST /api/v1/lockers/:id/assign', () => {
     it('should assign locker to client for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
@@ -128,7 +128,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
         duration: 'HOURLY' as const,
       };
 
-      const response = await api.post(`/api/lockers/${locker.id}/assign`).set(authHeaders).send(assignData);
+      const response = await api.post(`/api/v1/lockers/${locker.id}/assign`).set(authHeaders).send(assignData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'occupied');
@@ -150,7 +150,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
         duration: 'HOURLY' as const,
       };
 
-      const response = await api.post(`/api/lockers/${locker.id}/assign`).set(authHeaders).send(assignData);
+      const response = await api.post(`/api/v1/lockers/${locker.id}/assign`).set(authHeaders).send(assignData);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -160,7 +160,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
       const locker = await createTestLockerInDb({ name: 'L101' });
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
 
-      const response = await api.post(`/api/lockers/${locker.id}/assign`).send({
+      const response = await api.post(`/api/v1/lockers/${locker.id}/assign`).send({
         clientId: client.id,
         duration: 'HOURLY',
       });
@@ -169,7 +169,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     });
   });
 
-  describe('POST /api/lockers/:id/release', () => {
+  describe('POST /api/v1/lockers/:id/release', () => {
     it('should release locker for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -179,7 +179,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
         clientId: client.id,
       });
 
-      const response = await api.post(`/api/lockers/${locker.id}/release`).set(authHeaders);
+      const response = await api.post(`/api/v1/lockers/${locker.id}/release`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'available');
@@ -190,7 +190,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     it('should return 404 for non-existent locker', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.post('/api/lockers/99999/release').set(authHeaders);
+      const response = await api.post('/api/v1/lockers/99999/release').set(authHeaders);
 
       expect(response.status).toBe(404);
     });
@@ -198,13 +198,13 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const locker = await createTestLockerInDb({ name: 'L101' });
 
-      const response = await api.post(`/api/lockers/${locker.id}/release`);
+      const response = await api.post(`/api/v1/lockers/${locker.id}/release`);
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('POST /api/lockers/:id/renew', () => {
+  describe('POST /api/v1/lockers/:id/renew', () => {
     it('should renew locker rental for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -217,7 +217,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
 
       const renewData = { duration: 'HOURLY' as const };
 
-      const response = await api.post(`/api/lockers/${locker.id}/renew`).set(authHeaders).send(renewData);
+      const response = await api.post(`/api/v1/lockers/${locker.id}/renew`).set(authHeaders).send(renewData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('expiresAt');
@@ -227,7 +227,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const locker = await createTestLockerInDb({ name: 'L101', status: 'available' });
 
-      const response = await api.post(`/api/lockers/${locker.id}/renew`).set(authHeaders).send({
+      const response = await api.post(`/api/v1/lockers/${locker.id}/renew`).set(authHeaders).send({
         duration: 'HOURLY',
       });
 
@@ -237,7 +237,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     it('should return 401 for unauthenticated request', async () => {
       const locker = await createTestLockerInDb({ name: 'L101' });
 
-      const response = await api.post(`/api/lockers/${locker.id}/renew`).send({
+      const response = await api.post(`/api/v1/lockers/${locker.id}/renew`).send({
         duration: 'HOURLY',
       });
 
@@ -245,13 +245,13 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     });
   });
 
-  describe('GET /api/lockers/summary', () => {
+  describe('GET /api/v1/lockers/summary', () => {
     it('should return locker summary for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       await createTestLockerInDb({ name: 'L101', status: 'available' });
       await createTestLockerInDb({ name: 'L102', status: 'occupied' });
 
-      const response = await api.get('/api/lockers/summary').set(authHeaders);
+      const response = await api.get('/api/v1/lockers/summary').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('total');
@@ -260,7 +260,7 @@ describe('Lockers API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/lockers/summary');
+      const response = await api.get('/api/v1/lockers/summary');
 
       expect(response.status).toBe(401);
     });

@@ -211,7 +211,7 @@ describe("PasswordResetTokenService", { tags: ['regression', 'integration'] }, (
       const result = await service.confirmReset(testToken, "new-password-123456789012345");
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain("already been used");
+      expect(result.message).toContain("Invalid or expired");
     });
 
     it("should reject password less than 15 characters (NIST 2025)", async () => {

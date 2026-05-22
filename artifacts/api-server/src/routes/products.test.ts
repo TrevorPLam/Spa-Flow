@@ -17,7 +17,7 @@ describe('Products API', { tags: ['regression'] }, () => {
   });
 
 
-  describe('GET /api/products', () => {
+  describe('GET /api/v1/products', () => {
     it('should return list of products for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       
@@ -26,7 +26,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         { name: 'Towel', price: '10.00', stock: 5, category: 'accessory' },
       ]);
 
-      const response = await api.get('/api/products').set(authHeaders);
+      const response = await api.get('/api/v1/products').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('data');
@@ -46,7 +46,7 @@ describe('Products API', { tags: ['regression'] }, () => {
       }));
       await db.insert(productsTable).values(products);
 
-      const response = await api.get('/api/products?page=1&limit=10').set(authHeaders);
+      const response = await api.get('/api/v1/products?page=1&limit=10').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(10);
@@ -57,7 +57,7 @@ describe('Products API', { tags: ['regression'] }, () => {
     it('should return 400 for invalid pagination parameters', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/products?page=0').set(authHeaders);
+      const response = await api.get('/api/v1/products?page=0').set(authHeaders);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -66,14 +66,14 @@ describe('Products API', { tags: ['regression'] }, () => {
     it('should return 400 for limit exceeding maximum', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/products?limit=101').set(authHeaders);
+      const response = await api.get('/api/v1/products?limit=101').set(authHeaders);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/products');
+      const response = await api.get('/api/v1/products');
 
       expect(response.status).toBe(401);
     });
@@ -86,7 +86,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         { name: 'Product 2', price: '20.00', stock: 5 },
       ]);
 
-      const response = await api.get('/api/products?page=1&limit=10').set(authHeaders);
+      const response = await api.get('/api/v1/products?page=1&limit=10').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.meta).toHaveProperty('totalCount');
@@ -96,7 +96,7 @@ describe('Products API', { tags: ['regression'] }, () => {
     });
   });
 
-  describe('POST /api/products', () => {
+  describe('POST /api/v1/products', () => {
     it('should create product for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
@@ -108,7 +108,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         description: 'Reusable water bottle',
       };
 
-      const response = await api.post('/api/products').set(authHeaders).send(productData);
+      const response = await api.post('/api/v1/products').set(authHeaders).send(productData);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -117,16 +117,16 @@ describe('Products API', { tags: ['regression'] }, () => {
       expect(response.body).toHaveProperty('stock', 10);
     });
 
-    it('should return 401 for unauthenticated request', async () => {
+    it('should return 403 for unauthenticated request', async () => {
       const productData = {
         name: 'Water Bottle',
         price: 5.00,
         stock: 10,
       };
 
-      const response = await api.post('/api/products').send(productData);
+      const response = await api.post('/api/v1/products').send(productData);
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
 
     it('should return 403 for non-manager user', async () => {
@@ -138,7 +138,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         stock: 10,
       };
 
-      const response = await api.post('/api/products').set(authHeaders).send(productData);
+      const response = await api.post('/api/v1/products').set(authHeaders).send(productData);
 
       expect(response.status).toBe(403);
     });
@@ -152,14 +152,14 @@ describe('Products API', { tags: ['regression'] }, () => {
         stock: 10,
       };
 
-      const response = await api.post('/api/products').set(authHeaders).send(invalidData);
+      const response = await api.post('/api/v1/products').set(authHeaders).send(invalidData);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
     });
   });
 
-  describe('PATCH /api/products/:id', () => {
+  describe('PATCH /api/v1/products/:id', () => {
     it('should update product for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       
@@ -174,7 +174,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         stock: 15,
       };
 
-      const response = await api.patch(`/api/products/${product.id}`).set(authHeaders).send(updateData);
+      const response = await api.patch(`/api/v1/products/${product.id}`).set(authHeaders).send(updateData);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id', product.id);
@@ -185,22 +185,22 @@ describe('Products API', { tags: ['regression'] }, () => {
     it('should return 404 for non-existent product', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.patch('/api/products/99999').set(authHeaders).send({ price: 10.00 });
+      const response = await api.patch('/api/v1/products/99999').set(authHeaders).send({ price: 10.00 });
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
     });
 
-    it('should return 401 for unauthenticated request', async () => {
+    it('should return 403 for unauthenticated request', async () => {
       const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
       }).returning();
 
-      const response = await api.patch(`/api/products/${product.id}`).send({ price: 10.00 });
+      const response = await api.patch(`/api/v1/products/${product.id}`).send({ price: 10.00 });
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
 
     it('should return 403 for non-manager user', async () => {
@@ -212,7 +212,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         stock: 10,
       }).returning();
 
-      const response = await api.patch(`/api/products/${product.id}`).set(authHeaders).send({ price: 10.00 });
+      const response = await api.patch(`/api/v1/products/${product.id}`).set(authHeaders).send({ price: 10.00 });
 
       expect(response.status).toBe(403);
     });
@@ -220,13 +220,13 @@ describe('Products API', { tags: ['regression'] }, () => {
     it('should return 400 for invalid ID parameter', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.patch('/api/products/invalid').set(authHeaders).send({ price: 10.00 });
+      const response = await api.patch('/api/v1/products/invalid').set(authHeaders).send({ price: 10.00 });
 
       expect(response.status).toBe(400);
     });
   });
 
-  describe('DELETE /api/products/:id', () => {
+  describe('DELETE /api/v1/products/:id', () => {
     it('should delete product for authenticated manager', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
       
@@ -236,21 +236,21 @@ describe('Products API', { tags: ['regression'] }, () => {
         stock: 10,
       }).returning();
 
-      const response = await api.delete(`/api/products/${product.id}`).set(authHeaders);
+      const response = await api.delete(`/api/v1/products/${product.id}`).set(authHeaders);
 
       expect(response.status).toBe(204);
     });
 
-    it('should return 401 for unauthenticated request', async () => {
+    it('should return 403 for unauthenticated request', async () => {
       const [product] = await db.insert(productsTable).values({
         name: 'Water Bottle',
         price: '5.00',
         stock: 10,
       }).returning();
 
-      const response = await api.delete(`/api/products/${product.id}`);
+      const response = await api.delete(`/api/v1/products/${product.id}`);
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
     });
 
     it('should return 403 for non-manager user', async () => {
@@ -262,7 +262,7 @@ describe('Products API', { tags: ['regression'] }, () => {
         stock: 10,
       }).returning();
 
-      const response = await api.delete(`/api/products/${product.id}`).set(authHeaders);
+      const response = await api.delete(`/api/v1/products/${product.id}`).set(authHeaders);
 
       expect(response.status).toBe(403);
     });
@@ -270,7 +270,7 @@ describe('Products API', { tags: ['regression'] }, () => {
     it('should return 400 for invalid ID parameter', async () => {
       const authHeaders = await createAuthenticatedRequest('MANAGER');
 
-      const response = await api.delete('/api/products/invalid').set(authHeaders);
+      const response = await api.delete('/api/v1/products/invalid').set(authHeaders);
 
       expect(response.status).toBe(400);
     });

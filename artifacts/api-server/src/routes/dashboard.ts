@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, lockersTable, roomsTable, transactionsTable, rentalSessionsTable, waitlistTable, clientsTable, productsTable } from "@workspace/db";
-import { sql, eq, gte, desc } from "drizzle-orm";
+import { sql, eq, gte, desc, inArray } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 import { apiLimiter } from "../middleware/rateLimit";
 import { LOCKER_TOTAL, ROOM_TOTAL } from "../lib/constants";
@@ -32,14 +32,14 @@ router.get("/dashboard", requireAuth, apiLimiter, async (req, res): Promise<void
   const clientIds = [...new Set(recentTxns.map(t => t.clientId))];
   const clientMap = new Map<number, string>();
   if (clientIds.length > 0) {
-    const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(sql`${clientsTable.id} = ANY(${clientIds})`);
+    const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(inArray(clientsTable.id, clientIds));
     clients.forEach(c => clientMap.set(c.id, c.name));
   }
 
   const rentalClientIds = [...new Set(activeRentals.map(r => r.clientId))];
   const rentalClientMap = new Map<number, string>();
   if (rentalClientIds.length > 0) {
-    const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(sql`${clientsTable.id} = ANY(${rentalClientIds})`);
+    const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable).where(inArray(clientsTable.id, rentalClientIds));
     clients.forEach(c => rentalClientMap.set(c.id, c.name));
   }
 

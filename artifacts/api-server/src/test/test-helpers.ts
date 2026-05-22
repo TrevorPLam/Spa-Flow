@@ -6,7 +6,7 @@ import { clientsTable, lockersTable, roomsTable, usersTable } from '@workspace/d
 import csrf from 'csrf';
 import { getEnv } from '../lib/env';
 
-export { cleanDatabase } from '@workspace/test-utils';
+export { cleanDatabase, withTransactionRollback } from '@workspace/test-utils';
 
 // Test helpers for API testing
 export async function createAuthenticatedRequest(role: 'STAFF' | 'MANAGER' = 'STAFF') {

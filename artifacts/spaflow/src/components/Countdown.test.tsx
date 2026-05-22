@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { Countdown } from './Countdown';
 
 describe('Countdown', { tags: ['regression'] }, () => {
@@ -129,7 +129,9 @@ describe('Countdown', { tags: ['regression'] }, () => {
       render(<Countdown expiresAt={futureDate} />);
 
       // Act
-      vi.advanceTimersByTime(10000); // Advance 10 seconds
+      act(() => {
+        vi.advanceTimersByTime(10000); // Advance 10 seconds
+      });
 
       // Assert
       const countdown = screen.getByTestId('text-countdown');

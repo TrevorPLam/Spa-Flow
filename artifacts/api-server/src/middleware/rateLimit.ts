@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request } from "express";
 import { logger } from "../lib/logger";
 import type { AuthRequest } from "../lib/auth";
@@ -51,7 +51,7 @@ export const apiLimiter = rateLimit({
   keyGenerator: (req: Request) => {
     // Extract user ID from JWT token for user-based limiting
     const user = (req as AuthRequest).user;
-    return user?.sub || req.ip || 'unknown'; // Fallback to IP if no user, then 'unknown'
+    return user?.sub || ipKeyGenerator(req) || 'unknown'; // Fallback to IP if no user, then 'unknown'
   },
   handler: (req, res) => {
     logger.warn({
@@ -84,7 +84,7 @@ export const checkinLimiter = rateLimit({
   keyGenerator: (req: Request) => {
     // Extract user ID from JWT token for user-based limiting
     const user = (req as AuthRequest).user;
-    return user?.sub || req.ip || 'unknown'; // Fallback to IP if no user, then 'unknown'
+    return user?.sub || ipKeyGenerator(req) || 'unknown'; // Fallback to IP if no user, then 'unknown'
   },
   handler: (req, res) => {
     logger.warn({
@@ -116,7 +116,7 @@ export const healthLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
     // Use IP address for health check limiting
-    return req.ip || 'unknown';
+    return ipKeyGenerator(req) || 'unknown';
   },
   handler: (req, res) => {
     logger.warn({
@@ -148,7 +148,7 @@ export const piiLimiter = rateLimit({
   keyGenerator: (req: Request) => {
     // Extract user ID from JWT token for user-based limiting
     const user = (req as AuthRequest).user;
-    return user?.sub || req.ip || 'unknown'; // Fallback to IP if no user, then 'unknown'
+    return user?.sub || ipKeyGenerator(req) || 'unknown'; // Fallback to IP if no user, then 'unknown'
   },
   handler: (req, res) => {
     logger.warn({

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { db, productsTable, transactionItemsTable, transactionsTable } from "@workspace/db";
+import { describe, it, expect, beforeEach } from "vitest";
+import { db, productsTable, transactionItemsTable, transactionsTable, clientsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
   getSalesVelocity,
@@ -9,13 +9,28 @@ import {
   getReorderPoints,
   getStockTurnover,
 } from "./inventory";
+import { cleanDatabase } from "../test/test-helpers";
 
 describe("Inventory Service", () => {
   let testProductId: number;
   let testTransactionId: number;
   let testTransactionItemId: number;
+  let testClientId: number;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    // Clean database before each test
+    await cleanDatabase();
+    
+    // Create a test client first (required for transactions foreign key)
+    const [client] = await db
+      .insert(clientsTable)
+      .values({
+        name: "Test Inventory Client",
+        email: "inventory-test@example.com",
+      })
+      .returning();
+    testClientId = client.id;
+    
     // Create a test product
     const [product] = await db
       .insert(productsTable)
@@ -38,7 +53,7 @@ describe("Inventory Service", () => {
         amount: "20.00",
         tax: "1.78",
         total: "21.78",
-        clientId: 1,
+        clientId: testClientId,
         description: "Test inventory transaction",
       })
       .returning();
@@ -55,13 +70,6 @@ describe("Inventory Service", () => {
       })
       .returning();
     testTransactionItemId = transactionItem.id;
-  });
-
-  afterAll(async () => {
-    // Cleanup test data
-    await db.delete(transactionItemsTable).where(eq(transactionItemsTable.id, testTransactionItemId));
-    await db.delete(transactionsTable).where(eq(transactionsTable.id, testTransactionId));
-    await db.delete(productsTable).where(eq(productsTable.id, testProductId));
   });
 
   describe("getSalesVelocity", () => {
