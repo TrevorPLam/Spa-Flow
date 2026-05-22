@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, clientsTable, lockersTable, roomsTable, rentalSessionsTable, transactionsTable, membershipsTable, productsTable } from "@workspace/db";
+import { db, clientsTable, lockersTable, roomsTable, rentalSessionsTable, transactionsTable, membershipsTable, productsTable, transactionItemsTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
@@ -213,7 +213,7 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
     // Create individual transaction records for each product and decrement stock
     for (const product of selectedProducts) {
       // Create product transaction
-      await tx.insert(transactionsTable).values({
+      const [productTxn] = await tx.insert(transactionsTable).values({
         clientId: client.id,
         amount: String(product.price),
         tax: "0",
@@ -222,6 +222,14 @@ router.post("/checkin", requireAuth, checkinLimiter, async (req, res): Promise<v
         squarePaymentId: result.paymentId,
         description: `Product: ${product.name}`,
         sessionId: session.id,
+      }).returning();
+
+      // Create transaction item linking product to transaction
+      await tx.insert(transactionItemsTable).values({
+        transactionId: productTxn.id,
+        productId: product.id,
+        quantity: 1,
+        unitPrice: String(product.price),
       });
 
       // Decrement product stock atomically

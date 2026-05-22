@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
-import { db } from '@workspace/db';
-import { productsTable } from '@workspace/db/schema';
+import { db, transactionItemsTable } from '@workspace/db';
+import { productsTable, transactionsTable } from '@workspace/db/schema';
 import { validateResponse, validateRequestBody } from '../test/contract-validator';
 import { encryptField } from '../lib/encryption';
+import { eq } from 'drizzle-orm';
 
 // Mock Square and Twilio
 vi.mock('../lib/square', () => ({
@@ -271,6 +272,32 @@ describe('Check-in API', { tags: ['regression'] }, () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('sessionId');
       expect(response.body).toHaveProperty('transactionId');
+
+      // Verify transaction_items were created
+      const productTransactions = await db
+        .select()
+        .from(transactionsTable)
+        .where(eq(transactionsTable.clientId, client.id));
+
+      const productTxns = productTransactions.filter(t => t.type === 'product');
+      expect(productTxns.length).toBe(2);
+
+      // Verify each product transaction has a transaction_item
+      for (const txn of productTxns) {
+        const items = await db
+          .select()
+          .from(transactionItemsTable)
+          .where(eq(transactionItemsTable.transactionId, txn.id));
+        expect(items.length).toBe(1);
+        expect(items[0].quantity).toBe(1);
+      }
+
+      // Verify stock was decremented
+      const updatedProducts = await db.select().from(productsTable);
+      const waterBottle = updatedProducts.find(p => p.name === 'Water Bottle');
+      const towel = updatedProducts.find(p => p.name === 'Towel');
+      expect(waterBottle?.stock).toBe(9);
+      expect(towel?.stock).toBe(4);
     });
 
     it('should return 409 when product is out of stock', async () => {
