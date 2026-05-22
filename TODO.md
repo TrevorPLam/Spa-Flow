@@ -73,8 +73,8 @@
 
 ---
 
-## [ ] TASK-999: Fix Waitlist Schema Missing Column
-**Status:** Pending
+## [x] TASK-999: Fix Waitlist Schema Missing Column
+**Status:** Complete
 **Priority:** High
 
 ### Related File Paths
@@ -89,11 +89,45 @@ Pre-existing test failures indicate that the waitlist_entries table is missing t
 - Generate and run database migration
 - Verify waitlist tests pass
 
+### Implementation Notes
+- Schema already had `currentLockerId` defined in waitlist.ts
+- Migration existed in `0004_unknown_speed_demon.sql` but hadn't been applied
+- Applied migration using `pnpm push` in lib/db package
+- Column now exists in database
+- Waitlist tests still have 16 failures, but these are pre-existing issues with missing API endpoints (DELETE /api/waitlist/:id, POST /api/waitlist/:id/confirm), not related to the column issue
+
 ### Depends On
 - None
 
 ### Blocks
-- Waitlist test suite (254 tests failing)
+- None (column issue resolved; remaining test failures are separate endpoint implementation issues)
+
+---
+
+## [ ] TASK-1000: Implement Missing Waitlist API Endpoints
+**Status:** Pending
+**Priority:** High
+
+### Related File Paths
+- `artifacts/api-server/src/routes/waitlist.ts`
+- `artifacts/api-server/src/routes/waitlist.test.ts`
+- `lib/api-spec/openapi.yaml`
+
+### Issue Description
+Waitlist tests are failing due to missing API endpoints: DELETE /api/waitlist/:id and POST /api/waitlist/:id/confirm. 16 tests are failing with 404 errors for these endpoints.
+
+### Definition of Done
+- Implement DELETE /api/waitlist/:id endpoint
+- Implement POST /api/waitlist/:id/confirm endpoint
+- Add proper error handling (400 for invalid input, 401 for unauthenticated)
+- Update waitlist tests to match actual behavior
+- All waitlist tests passing
+
+### Depends On
+- None
+
+### Blocks
+- Waitlist test suite (16 tests failing)
 
 ---
 
