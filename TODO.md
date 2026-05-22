@@ -104,30 +104,39 @@ Pre-existing test failures indicate that the waitlist_entries table is missing t
 
 ---
 
-## [ ] TASK-1000: Implement Missing Waitlist API Endpoints
-**Status:** Pending
+## [x] TASK-1000: Implement Missing Waitlist API Endpoints
+**Status:** Complete
 **Priority:** High
 
 ### Related File Paths
 - `artifacts/api-server/src/routes/waitlist.ts`
 - `artifacts/api-server/src/routes/waitlist.test.ts`
+- `artifacts/api-server/src/test/test-helpers.ts`
 - `lib/api-spec/openapi.yaml`
 
 ### Issue Description
-Waitlist tests are failing due to missing API endpoints: DELETE /api/waitlist/:id and POST /api/waitlist/:id/confirm. 16 tests are failing with 404 errors for these endpoints.
+Waitlist tests were failing due to incorrect test paths (missing /api/v1 prefix) and CSRF blocking before auth middleware could return 401. The endpoints were already implemented in waitlist.ts.
+
+### Implementation Notes
+- Endpoints were already implemented in waitlist.ts (DELETE /waitlist/:id, POST /waitlist/:id/confirm)
+- Fixed test paths to use /api/v1 prefix to match route mounting in app.ts
+- Replaced PostgreSQL ANY() syntax with Drizzle's inArray() for better compatibility
+- Added createUnauthenticatedRequest() helper to test-helpers.ts to provide CSRF tokens for unauthenticated tests
+- Updated all unauthenticated tests to use CSRF headers so auth middleware can run and return 401
+- All 16 waitlist tests now passing
 
 ### Definition of Done
-- Implement DELETE /api/waitlist/:id endpoint
-- Implement POST /api/waitlist/:id/confirm endpoint
-- Add proper error handling (400 for invalid input, 401 for unauthenticated)
-- Update waitlist tests to match actual behavior
-- All waitlist tests passing
+- ✅ DELETE /api/waitlist/:id endpoint working
+- ✅ POST /api/waitlist/:id/confirm endpoint working
+- ✅ Proper error handling (400 for invalid input, 401 for unauthenticated)
+- ✅ Updated waitlist tests to match actual behavior
+- ✅ All waitlist tests passing (16/16)
 
 ### Depends On
 - None
 
 ### Blocks
-- Waitlist test suite (16 tests failing)
+- None
 
 ---
 

@@ -83,3 +83,15 @@ export async function createTestUserInDb(userData?: Partial<typeof usersTable.$i
 }
 
 export const api = request(app);
+
+// Helper to create unauthenticated request headers with CSRF token
+// This allows auth middleware to run and return 401 instead of CSRF blocking first
+export async function createUnauthenticatedRequest() {
+  const csrfTokens = new csrf();
+  const csrfToken = csrfTokens.create(getEnv().CSRF_SECRET);
+  
+  return {
+    Cookie: `_csrf=${csrfToken}`,
+    'x-csrf-token': csrfToken,
+  };
+}

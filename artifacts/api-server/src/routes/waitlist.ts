@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, waitlistTable, clientsTable, roomsTable, lockersTable, rentalSessionsTable } from "@workspace/db";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { AddToWaitlistBody, RemoveFromWaitlistParams, ConfirmWaitlistAssignmentParams } from "@workspace/api-zod";
@@ -83,24 +83,20 @@ router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void>
   // Batch fetch client data
   const clientIds = [...new Set(entries.map(e => e.clientId))];
   const clientMap = new Map<number, { name: string; phone: string | null }>();
-  // Rationale: Using PostgreSQL ANY() operator for efficient array comparison in WHERE clause
-  // This is more performant than multiple OR conditions and is safely parameterized by Drizzle's sql template
   if (clientIds.length > 0) {
     const clients = await db.select({ id: clientsTable.id, name: clientsTable.name, phone: clientsTable.phone })
       .from(clientsTable)
-      .where(sql`${clientsTable.id} = ANY(${clientIds})`);
+      .where(inArray(clientsTable.id, clientIds));
     clients.forEach(c => clientMap.set(c.id, { name: c.name, phone: c.phone }));
   }
 
   // Batch fetch room data
   const roomIds = [...new Set(entries.map(e => e.assignedRoomId).filter((id): id is number => id !== null))];
   const roomMap = new Map<number, string>();
-  // Rationale: Using PostgreSQL ANY() operator for efficient array comparison in WHERE clause
-  // This is more performant than multiple OR conditions and is safely parameterized by Drizzle's sql template
   if (roomIds.length > 0) {
     const rooms = await db.select({ id: roomsTable.id, name: roomsTable.name })
       .from(roomsTable)
-      .where(sql`${roomsTable.id} = ANY(${roomIds})`);
+      .where(inArray(roomsTable.id, roomIds));
     rooms.forEach(r => roomMap.set(r.id, r.name));
   }
 
@@ -110,7 +106,7 @@ router.get("/waitlist", requireAuth, apiLimiter, async (req, res): Promise<void>
   if (lockerIds.length > 0) {
     const lockers = await db.select({ id: lockersTable.id, name: lockersTable.name })
       .from(lockersTable)
-      .where(sql`${lockersTable.id} = ANY(${lockerIds})`);
+      .where(inArray(lockersTable.id, lockerIds));
     lockers.forEach(l => lockerMap.set(l.id, l.name));
   }
 

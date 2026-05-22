@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { api } from '../test/test-helpers';
-import { createAuthenticatedRequest, createTestClientInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
+import { createAuthenticatedRequest, createUnauthenticatedRequest, createTestClientInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
 import { waitlistTable } from '@workspace/db/schema';
 
@@ -13,7 +13,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
     await cleanDatabase();
   });
 
-  describe('GET /api/waitlist', () => {
+  describe('GET /api/v1/waitlist', () => {
     it('should return list of active waitlist entries for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -24,7 +24,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         status: 'waiting',
       });
 
-      const response = await api.get('/api/waitlist').set(authHeaders);
+      const response = await api.get('/api/v1/waitlist').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -44,7 +44,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         { clientId: client.id, position: 3, status: 'expired' },
       ]);
 
-      const response = await api.get('/api/waitlist').set(authHeaders);
+      const response = await api.get('/api/v1/waitlist').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
@@ -53,13 +53,13 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/waitlist');
+      const response = await api.get('/api/v1/waitlist');
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('POST /api/waitlist', () => {
+  describe('POST /api/v1/waitlist', () => {
     it('should add client to waitlist for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -68,7 +68,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         clientId: client.id,
       };
 
-      const response = await api.post('/api/waitlist').set(authHeaders).send(waitlistData);
+      const response = await api.post('/api/v1/waitlist').set(authHeaders).send(waitlistData);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -84,7 +84,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         clientId: 99999,
       };
 
-      const response = await api.post('/api/waitlist').set(authHeaders).send(waitlistData);
+      const response = await api.post('/api/v1/waitlist').set(authHeaders).send(waitlistData);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
@@ -104,7 +104,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         clientId: client.id,
       };
 
-      const response = await api.post('/api/waitlist').set(authHeaders).send(waitlistData);
+      const response = await api.post('/api/v1/waitlist').set(authHeaders).send(waitlistData);
 
       expect(response.status).toBe(409);
       expect(response.body).toHaveProperty('error');
@@ -112,8 +112,9 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
 
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const headers = await createUnauthenticatedRequest();
 
-      const response = await api.post('/api/waitlist').send({ clientId: client.id });
+      const response = await api.post('/api/v1/waitlist').set(headers).send({ clientId: client.id });
 
       expect(response.status).toBe(401);
     });
@@ -125,13 +126,13 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         clientId: 'invalid',
       };
 
-      const response = await api.post('/api/waitlist').set(authHeaders).send(invalidData);
+      const response = await api.post('/api/v1/waitlist').set(authHeaders).send(invalidData);
 
       expect(response.status).toBe(400);
     });
   });
 
-  describe('DELETE /api/waitlist/:id', () => {
+  describe('DELETE /api/v1/waitlist/:id', () => {
     it('should remove waitlist entry for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -142,13 +143,14 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         status: 'waiting',
       }).returning();
 
-      const response = await api.delete(`/api/waitlist/${entry.id}`).set(authHeaders);
+      const response = await api.delete(`/api/v1/waitlist/${entry.id}`).set(authHeaders);
 
       expect(response.status).toBe(204);
     });
 
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const headers = await createUnauthenticatedRequest();
       
       const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
@@ -156,7 +158,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         status: 'waiting',
       }).returning();
 
-      const response = await api.delete(`/api/waitlist/${entry.id}`);
+      const response = await api.delete(`/api/v1/waitlist/${entry.id}`).set(headers);
 
       expect(response.status).toBe(401);
     });
@@ -164,13 +166,13 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
     it('should return 400 for invalid ID parameter', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.delete('/api/waitlist/invalid').set(authHeaders);
+      const response = await api.delete('/api/v1/waitlist/invalid').set(authHeaders);
 
       expect(response.status).toBe(400);
     });
   });
 
-  describe('POST /api/waitlist/:id/confirm', () => {
+  describe('POST /api/v1/waitlist/:id/confirm', () => {
     it('should confirm waitlist assignment for authenticated staff', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
@@ -183,7 +185,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         assignedRoomId: room.id,
       }).returning();
 
-      const response = await api.post(`/api/waitlist/${entry.id}/confirm`).set(authHeaders);
+      const response = await api.post(`/api/v1/waitlist/${entry.id}/confirm`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'confirmed');
@@ -192,7 +194,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
     it('should return 404 for non-existent waitlist entry', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.post('/api/waitlist/99999/confirm').set(authHeaders);
+      const response = await api.post('/api/v1/waitlist/99999/confirm').set(authHeaders);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
@@ -208,7 +210,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         status: 'waiting',
       }).returning();
 
-      const response = await api.post(`/api/waitlist/${entry.id}/confirm`).set(authHeaders);
+      const response = await api.post(`/api/v1/waitlist/${entry.id}/confirm`).set(authHeaders);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -216,6 +218,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
 
     it('should return 401 for unauthenticated request', async () => {
       const client = await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      const headers = await createUnauthenticatedRequest();
       
       const [entry] = await db.insert(waitlistTable).values({
         clientId: client.id,
@@ -223,7 +226,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
         status: 'assigned',
       }).returning();
 
-      const response = await api.post(`/api/waitlist/${entry.id}/confirm`);
+      const response = await api.post(`/api/v1/waitlist/${entry.id}/confirm`).set(headers);
 
       expect(response.status).toBe(401);
     });
@@ -231,7 +234,7 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
     it('should return 400 for invalid ID parameter', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.post('/api/waitlist/invalid/confirm').set(authHeaders);
+      const response = await api.post('/api/v1/waitlist/invalid/confirm').set(authHeaders);
 
       expect(response.status).toBe(400);
     });

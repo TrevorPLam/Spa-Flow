@@ -57,6 +57,13 @@
       "when": 1779359244991,
       "tag": "0007_medical_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779411381606,
+      "tag": "0008_long_gwen_stacy",
+      "breakpoints": true
     }
   ]
 }
