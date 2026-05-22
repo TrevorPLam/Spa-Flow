@@ -36,6 +36,8 @@ tags:
     description: Staff user management
   - name: audit
     description: Audit logging
+  - name: data-quality
+    description: Data quality management (manager only)
 
 paths:
   /healthz/live:
@@ -1775,6 +1777,194 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuditLogList"
 
+  # Data Quality
+  /data-quality/duplicates:
+    get:
+      operationId: getDuplicates
+      tags: [data-quality]
+      summary: Get potential duplicate clients (manager only)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: minConfidence
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+            default: 0.7
+      responses:
+        "200":
+          description: Duplicate candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  duplicates:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DuplicateCandidate"
+        "403":
+          description: Manager access required
+
+  /data-quality/anomalies:
+    get:
+      operationId: getAnomalies
+      tags: [data-quality]
+      summary: Get data anomalies (manager only)
+      responses:
+        "200":
+          description: Data anomalies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  anomalies:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AnomalyResult"
+        "403":
+          description: Manager access required
+
+  /data-quality/validate:
+    post:
+      operationId: validateClient
+      tags: [data-quality]
+      summary: Validate a client's data (manager only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientId]
+              properties:
+                clientId:
+                  type: integer
+      responses:
+        "200":
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientId:
+                    type: integer
+                  validation:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ValidationResult"
+        "403":
+          description: Manager access required
+        "404":
+          description: Client not found
+
+  /data-quality/validate/bulk:
+    post:
+      operationId: bulkValidateClients
+      tags: [data-quality]
+      summary: Validate multiple clients in bulk (manager only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientIds]
+              properties:
+                clientIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/ValidationResult"
+        "403":
+          description: Manager access required
+
+  /data-quality/merge:
+    post:
+      operationId: mergeClients
+      tags: [data-quality]
+      summary: Merge a duplicate client into a primary client (manager only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [primaryId, duplicateId]
+              properties:
+                primaryId:
+                  type: integer
+                duplicateId:
+                  type: integer
+      responses:
+        "200":
+          description: Merge result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: "#/components/schemas/MergeResult"
+        "403":
+          description: Manager access required
+
+  /clients/{id}/merge:
+    post:
+      operationId: mergeClientInto
+      tags: [clients]
+      summary: Merge a duplicate client into this client (manager only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [duplicateId]
+              properties:
+                duplicateId:
+                  type: integer
+      responses:
+        "200":
+          description: Merge result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: "#/components/schemas/MergeResult"
+        "403":
+          description: Manager access required
+        "404":
+          description: Client not found
+
 components:
   securitySchemes:
     bearerAuth:
@@ -3124,3 +3314,65 @@ components:
           type: integer
         limit:
           type: integer
+
+    # Data Quality Schemas
+    DuplicateCandidate:
+      type: object
+      required: [primaryId, duplicateId, confidence, reason, matchingFields]
+      properties:
+        primaryId:
+          type: integer
+        duplicateId:
+          type: integer
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        reason:
+          type: string
+        matchingFields:
+          type: array
+          items:
+            type: string
+
+    AnomalyResult:
+      type: object
+      required: [clientId, type, description, severity]
+      properties:
+        clientId:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high]
+
+    ValidationResult:
+      type: object
+      required: [field, valid, value]
+      properties:
+        field:
+          type: string
+        valid:
+          type: boolean
+        error:
+          type: string
+        value:
+          type: ["string", "null"]
+
+    MergeResult:
+      type: object
+      required: [primaryId, duplicateId, sessionsMerged, transactionsMerged, success]
+      properties:
+        primaryId:
+          type: integer
+        duplicateId:
+          type: integer
+        sessionsMerged:
+          type: integer
+        transactionsMerged:
+          type: integer
+        success:
+          type: boolean

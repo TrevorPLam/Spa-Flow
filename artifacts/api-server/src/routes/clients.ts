@@ -22,7 +22,7 @@ import {
 import { nanoid } from "nanoid";
 import { apiLimiter, piiLimiter } from "../middleware/rateLimit";
 import { withCache, buildCacheKey, cacheDel, cacheDelPattern } from "../lib/cache";
-import { logTransactionError } from "../lib/logger";
+import { logTransactionError, logger } from "../lib/logger";
 import { DEFAULT_PAGE_SIZE, MEMBERSHIP_ONE_TIME_COST, MEMBERSHIP_SIX_MONTH_COST } from "../lib/constants";
 import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
 import { processSquarePayment } from "../lib/square";
@@ -705,6 +705,54 @@ router.get("/clients/:id/pii", requireAuth, piiLimiter, async (req, res): Promis
     address,
     documentNumber,
   });
+});
+
+/**
+ * POST /clients/:id/merge
+ * Merge a duplicate client into this client
+ * Requires MANAGER role
+ * Moves rental sessions and transactions from duplicate to primary
+ * Archives the duplicate client
+ */
+router.post("/clients/:id/merge", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const params = GetClientParams.safeParse(req.params);
+  if (!params.success) {
+    sendValidationError(res, params.error.message);
+    return;
+  }
+
+  const { duplicateId } = req.body;
+
+  if (!duplicateId || typeof duplicateId !== "number") {
+    sendValidationError(res, "duplicateId is required and must be a number");
+    return;
+  }
+
+  if (params.data.id === duplicateId) {
+    sendValidationError(res, "Cannot merge a client with itself");
+    return;
+  }
+
+  const actingUser = (req as AuthRequest).user!;
+
+  // Require MANAGER role for merge operations
+  if (actingUser.role !== "MANAGER") {
+    res.status(403).json({ error: "Client merge requires manager role" });
+    return;
+  }
+
+  try {
+    const { mergeClients } = await import("../services/data-quality");
+    const result = await mergeClients(params.data.id, duplicateId, parseInt(actingUser.sub));
+
+    res.json({ result });
+  } catch (error) {
+    logger.error({ error, primaryId: params.data.id, duplicateId, userId: actingUser.sub }, "Failed to merge clients");
+    res.status(500).json({ 
+      error: "Failed to merge clients",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
 });
 
 export default router;
