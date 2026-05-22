@@ -3,6 +3,14 @@ import { db, transactionsTable, lockersTable, roomsTable, rentalSessionsTable, c
 import { sql, gte, lte, and, eq } from "drizzle-orm";
 import { requireManager } from "../lib/auth";
 import { apiLimiter } from "../middleware/rateLimit";
+import {
+  getSalesVelocity,
+  getLowStockPrediction,
+  getCategoryPerformance,
+  getSeasonalDemand,
+  getReorderPoints,
+  getStockTurnover,
+} from "../services/inventory";
 
 const router = Router();
 
@@ -970,6 +978,214 @@ router.get("/reports/analytics/discounts", requireManager, apiLimiter, async (re
       },
     ],
     totalTransactions: totalCount,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get sales velocity report for products
+ * Manager-only endpoint for inventory management
+ */
+router.get("/reports/inventory/sales-velocity", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  const salesVelocity = await getSalesVelocity(start, end);
+
+  res.json({
+    data: salesVelocity,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get low stock predictions based on sales trends
+ * Manager-only endpoint for inventory planning
+ */
+router.get("/reports/inventory/low-stock-prediction", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  const predictions = await getLowStockPrediction(start, end);
+
+  res.json({
+    data: predictions,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get product performance by category
+ * Manager-only endpoint for category analysis
+ */
+router.get("/reports/inventory/category-performance", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  const categoryPerformance = await getCategoryPerformance(start, end);
+
+  res.json({
+    data: categoryPerformance,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get seasonal demand analysis
+ * Manager-only endpoint for seasonal pattern identification
+ */
+router.get("/reports/inventory/seasonal-demand", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setFullYear(defaultStartDate.getFullYear() - 1);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  const seasonalDemand = await getSeasonalDemand(start, end);
+
+  res.json({
+    data: seasonalDemand,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get reorder point calculations
+ * Manager-only endpoint for inventory replenishment planning
+ */
+router.get("/reports/inventory/reorder-points", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate, leadTimeDays = "7", safetyStockDays = "3" } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  const leadTime = parseInt(leadTimeDays as string, 10);
+  const safetyStock = parseInt(safetyStockDays as string, 10);
+
+  if (isNaN(leadTime) || isNaN(safetyStock) || leadTime < 0 || safetyStock < 0) {
+    res.status(400).json({ error: "Invalid lead time or safety stock days. Must be positive integers" });
+    return;
+  }
+
+  const reorderPoints = await getReorderPoints(start, end, leadTime, safetyStock);
+
+  res.json({
+    data: reorderPoints,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+    leadTimeDays: leadTime,
+    safetyStockDays: safetyStock,
+  });
+});
+
+/**
+ * Get stock turnover rate analysis
+ * Manager-only endpoint for inventory efficiency metrics
+ */
+router.get("/reports/inventory/stock-turnover", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  const stockTurnover = await getStockTurnover(start, end);
+
+  res.json({
+    data: stockTurnover,
     startDate: start.toISOString(),
     endDate: end.toISOString(),
   });
