@@ -14,6 +14,7 @@ import { validateEnv } from "./lib/env";
 import { pool } from "@workspace/db";
 import { closeCache } from "./lib/cache";
 import { initSentry } from "./lib/sentry";
+import { initializeWebSocketServer, closeAllConnections } from "./lib/websocket";
 import type { Server } from "http";
 
 // Validate environment variables at startup
@@ -60,6 +61,9 @@ export async function gracefulShutdown(signal: string): Promise<void> {
   }, SHUTDOWN_TIMEOUT_MS);
 
   try {
+    // Close WebSocket connections
+    closeAllConnections();
+
     // Close HTTP server to stop accepting new connections
     if (server) {
       await new Promise<void>((resolve, reject) => {
@@ -109,6 +113,9 @@ const server: Server = app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Initialize WebSocket server after HTTP server is listening
+  initializeWebSocketServer(server);
 });
 
 // Handle SIGTERM (sent by process managers like Kubernetes, Docker, PM2)

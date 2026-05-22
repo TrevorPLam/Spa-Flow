@@ -143,8 +143,8 @@
 
 ---
 
-## [ ] TASK-044: Implement WebSocket Server Setup
-**Status:** Pending
+## [x] TASK-044: Implement WebSocket Server Setup
+**Status:** Complete
 **Priority:** Critical
 
 ### Related File Paths
@@ -197,18 +197,51 @@
 #### TASK-044-A: Add WebSocket Dependencies
 **Target:** `artifacts/api-server/package.json`
 **Action:** Add ws package for WebSocket server implementation.
+**Status:** ✅ Complete
 
 #### TASK-044-B: Create WebSocket Server
 **Target:** `artifacts/api-server/src/lib/websocket.ts` (new)
 **Action:** Implement WebSocket server with JWT authentication, connection management, broadcast function, event types for updates.
+**Status:** ✅ Complete
 
 #### TASK-044-C: Integrate WebSocket with Express
 **Target:** `artifacts/api-server/src/app.ts`
 **Action:** Attach WebSocket server to Express HTTP server, handle upgrade requests, pass HTTP server to WebSocket.
+**Status:** ✅ Complete
 
 #### TASK-044-D: Add Tests for WebSocket
 **Target:** `artifacts/api-server/src/lib/websocket.test.ts` (new)
 **Action:** Write tests for WebSocket authentication, message broadcasting, connection management, reconnection logic.
+**Status:** ✅ Complete
+
+---
+
+## [ ] TASK-080: Fix Pre-existing Test Failures in session.test.ts
+**Status:** Pending
+**Priority:** Medium
+
+### Related File Paths
+- `artifacts/api-server/src/services/session.test.ts`
+
+### Definition of Done
+- Fix foreign key constraint violations in session.test.ts
+- All session tests passing
+
+### Issue Description
+Pre-existing test failures in session.test.ts due to foreign key constraint violations:
+- Tests attempt to insert refresh_tokens with non-existent user_id values
+- Error: `insert or update on table "refresh_tokens" violates foreign key constraint "refresh_tokens_user_id_users_id_fk"`
+- Affects tests: parseUserAgent tests and other session-related tests
+
+### Rules to Follow
+- Ensure test data setup creates required users before creating refresh tokens
+- Use proper test data cleanup
+
+### Depends On
+- None
+
+### Blocks
+- None
 
 ---
 
