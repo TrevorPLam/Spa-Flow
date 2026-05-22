@@ -478,13 +478,14 @@ export const GetClientPiiResponse = zod.object({
  * @summary List all lockers
  */
 export const ListLockersQueryParams = zod.object({
-  "status": zod.enum(['available', 'occupied', 'reserved']).optional()
+  "status": zod.enum(['available', 'occupied', 'reserved', 'maintenance']).optional()
 })
 
 export const ListLockersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "status": zod.enum(['available', 'occupied', 'reserved']),
+  "status": zod.enum(['available', 'occupied', 'reserved', 'maintenance']),
+  "maintenanceNotes": zod.string().nullish(),
   "clientId": zod.number().nullish(),
   "clientName": zod.string().nullish(),
   "sessionId": zod.number().nullish(),
@@ -501,7 +502,8 @@ export const GetLockersOccupancyResponse = zod.object({
   "total": zod.number(),
   "available": zod.number(),
   "occupied": zod.number(),
-  "reserved": zod.number()
+  "reserved": zod.number(),
+  "maintenance": zod.number()
 })
 
 
@@ -633,13 +635,14 @@ export const BulkReleaseLockersResponse = zod.object({
  * @summary List all private rooms
  */
 export const ListRoomsQueryParams = zod.object({
-  "status": zod.enum(['available', 'occupied', 'reserved']).optional()
+  "status": zod.enum(['available', 'occupied', 'reserved', 'maintenance']).optional()
 })
 
 export const ListRoomsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "status": zod.enum(['available', 'occupied', 'reserved']),
+  "status": zod.enum(['available', 'occupied', 'reserved', 'maintenance']),
+  "maintenanceNotes": zod.string().nullish(),
   "clientId": zod.number().nullish(),
   "clientName": zod.string().nullish(),
   "sessionId": zod.number().nullish(),
@@ -656,7 +659,8 @@ export const GetRoomsOccupancyResponse = zod.object({
   "total": zod.number(),
   "available": zod.number(),
   "occupied": zod.number(),
-  "reserved": zod.number()
+  "reserved": zod.number(),
+  "maintenance": zod.number()
 })
 
 
@@ -1053,13 +1057,15 @@ export const GetDashboardResponse = zod.object({
   "total": zod.number(),
   "available": zod.number(),
   "occupied": zod.number(),
-  "reserved": zod.number()
+  "reserved": zod.number(),
+  "maintenance": zod.number()
 }),
   "roomOccupancy": zod.object({
   "total": zod.number(),
   "available": zod.number(),
   "occupied": zod.number(),
-  "reserved": zod.number()
+  "reserved": zod.number(),
+  "maintenance": zod.number()
 }),
   "todayRevenue": zod.number(),
   "activeClients": zod.number(),

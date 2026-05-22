@@ -13,4 +13,5 @@ export const ListRoomsStatus = {
   available: 'available',
   occupied: 'occupied',
   reserved: 'reserved',
+  maintenance: 'maintenance',
 } as const;

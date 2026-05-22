@@ -71,6 +71,13 @@
       "when": 1779412538995,
       "tag": "0009_fuzzy_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779432381900,
+      "tag": "0010_kind_stingray",
+      "breakpoints": true
     }
   ]
 }

@@ -4,12 +4,13 @@ import { z } from "zod";
 import { clientsTable } from "./clients";
 import { rentalSessionsTable } from "./rental_sessions";
 
-export const resourceStatusEnum = pgEnum("resource_status", ["available", "occupied", "reserved"]);
+export const resourceStatusEnum = pgEnum("resource_status", ["available", "occupied", "reserved", "maintenance"]);
 
 export const lockersTable = pgTable("lockers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   status: resourceStatusEnum("status").notNull().default("available"),
+  maintenanceNotes: text("maintenance_notes"),
   // ON DELETE RESTRICT: Prevents client deletion if they have an active locker assignment
   clientId: integer("client_id").references(() => clientsTable.id, { onDelete: "restrict" }),
   // ON DELETE RESTRICT: Prevents session deletion if a locker references it

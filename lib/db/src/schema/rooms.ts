@@ -12,6 +12,7 @@ export const roomsTable = pgTable("rooms", {
   name: text("name").notNull().unique(),
   status: resourceStatusEnum("status").notNull().default("available"),
   qualityTier: roomQualityTierEnum("quality_tier").notNull().default("standard"),
+  maintenanceNotes: text("maintenance_notes"),
   // ON DELETE RESTRICT: Prevents client deletion if they have an active room assignment
   clientId: integer("client_id").references(() => clientsTable.id, { onDelete: "restrict" }),
   // ON DELETE RESTRICT: Prevents session deletion if a room references it

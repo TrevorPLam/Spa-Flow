@@ -39,6 +39,7 @@ function formatRoom(r: typeof roomsTable.$inferSelect, clientName?: string | nul
     id: r.id,
     name: r.name,
     status: r.status,
+    maintenanceNotes: r.maintenanceNotes ?? null,
     clientId: r.clientId,
     clientName: clientName ?? null,
     sessionId: r.sessionId,
@@ -57,7 +58,7 @@ router.get("/rooms", requireAuth, apiLimiter, async (req, res): Promise<void> =>
   const { status } = parsed.data;
   // Type guard: status is validated by Zod schema to be one of these values
   // This assertion is safe because ListRoomsQueryParams already validates the status enum
-  const where = status ? eq(roomsTable.status, status as "available" | "occupied" | "reserved") : undefined;
+  const where = status ? eq(roomsTable.status, status as "available" | "occupied" | "reserved" | "maintenance") : undefined;
   const rooms = await db.select().from(roomsTable).where(where).orderBy(roomsTable.id);
 
   const clientIds = [...new Set(rooms.filter(r => r.clientId).map(r => r.clientId!))];
@@ -81,11 +82,12 @@ router.get("/rooms/occupancy", requireAuth, apiLimiter, async (req, res): Promis
     count: sql<number>`count(*)::int`,
   }).from(roomsTable).groupBy(roomsTable.status);
 
-  const result = { total: ROOM_TOTAL, available: 0, occupied: 0, reserved: 0 };
+  const result = { total: ROOM_TOTAL, available: 0, occupied: 0, reserved: 0, maintenance: 0 };
   stats.forEach(s => {
     if (s.status === "available") result.available = s.count;
     else if (s.status === "occupied") result.occupied = s.count;
     else if (s.status === "reserved") result.reserved = s.count;
+    else if (s.status === "maintenance") result.maintenance = s.count;
   });
   res.json(result);
 });
@@ -117,6 +119,10 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
     return;
   }
   if (room.status !== "available") {
+    if (room.status === "maintenance") {
+      sendConflictError(res, "Room is under maintenance and cannot be assigned");
+      return;
+    }
     sendConflictError(res, "Room is not available");
     return;
   }

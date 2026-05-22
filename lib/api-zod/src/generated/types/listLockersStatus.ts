@@ -13,4 +13,5 @@ export const ListLockersStatus = {
   available: 'available',
   occupied: 'occupied',
   reserved: 'reserved',
+  maintenance: 'maintenance',
 } as const;

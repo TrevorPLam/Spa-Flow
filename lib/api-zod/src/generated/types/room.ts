@@ -12,6 +12,8 @@ export interface Room {
   name: string;
   status: RoomStatus;
   /** @nullable */
+  maintenanceNotes?: string | null;
+  /** @nullable */
   clientId?: number | null;
   /** @nullable */
   clientName?: string | null;

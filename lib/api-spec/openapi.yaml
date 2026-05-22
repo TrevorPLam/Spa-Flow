@@ -632,7 +632,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [available, occupied, reserved]
+            enum: [available, occupied, reserved, maintenance]
       responses:
         "200":
           description: List of lockers
@@ -780,7 +780,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [available, occupied, reserved]
+            enum: [available, occupied, reserved, maintenance]
       responses:
         "200":
           description: List of rooms
@@ -2419,7 +2419,9 @@ components:
           type: string
         status:
           type: string
-          enum: [available, occupied, reserved]
+          enum: [available, occupied, reserved, maintenance]
+        maintenanceNotes:
+          type: ["string", "null"]
         clientId:
           type: ["integer", "null"]
         clientName:
@@ -2443,7 +2445,9 @@ components:
           type: string
         status:
           type: string
-          enum: [available, occupied, reserved]
+          enum: [available, occupied, reserved, maintenance]
+        maintenanceNotes:
+          type: ["string", "null"]
         clientId:
           type: ["integer", "null"]
         clientName:
@@ -2498,7 +2502,7 @@ components:
 
     OccupancySummary:
       type: object
-      required: [total, available, occupied, reserved]
+      required: [total, available, occupied, reserved, maintenance]
       properties:
         total:
           type: integer
@@ -2507,6 +2511,8 @@ components:
         occupied:
           type: integer
         reserved:
+          type: integer
+        maintenance:
           type: integer
 
     AssignResourceInput:

@@ -38,6 +38,7 @@ function formatLocker(l: typeof lockersTable.$inferSelect, clientName?: string |
     id: l.id,
     name: l.name,
     status: l.status,
+    maintenanceNotes: l.maintenanceNotes ?? null,
     clientId: l.clientId,
     clientName: clientName ?? null,
     sessionId: l.sessionId,
@@ -56,7 +57,7 @@ router.get("/lockers", requireAuth, apiLimiter, async (req, res): Promise<void> 
   const { status } = parsed.data;
   // Type guard: status is validated by Zod schema to be one of these values
   // This assertion is safe because ListLockersQueryParams already validates the status enum
-  const where = status ? eq(lockersTable.status, status as "available" | "occupied" | "reserved") : undefined;
+  const where = status ? eq(lockersTable.status, status as "available" | "occupied" | "reserved" | "maintenance") : undefined;
   const lockers = await db.select().from(lockersTable).where(where).orderBy(lockersTable.id);
 
   // Get client names for occupied lockers
@@ -77,11 +78,12 @@ router.get("/lockers/occupancy", requireAuth, apiLimiter, async (req, res): Prom
     count: sql<number>`count(*)::int`,
   }).from(lockersTable).groupBy(lockersTable.status);
 
-  const result = { total: LOCKER_TOTAL, available: 0, occupied: 0, reserved: 0 };
+  const result = { total: LOCKER_TOTAL, available: 0, occupied: 0, reserved: 0, maintenance: 0 };
   stats.forEach(s => {
     if (s.status === "available") result.available = s.count;
     else if (s.status === "occupied") result.occupied = s.count;
     else if (s.status === "reserved") result.reserved = s.count;
+    else if (s.status === "maintenance") result.maintenance = s.count;
   });
   res.json(result);
 });
@@ -150,6 +152,9 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
         throw new Error("LOCKER_NOT_FOUND");
       }
       if (locker.status !== "available") {
+        if (locker.status === "maintenance") {
+          throw new Error("LOCKER_IN_MAINTENANCE");
+        }
         throw new Error("LOCKER_NOT_AVAILABLE");
       }
 
@@ -194,6 +199,10 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
       }
       if (error.message === "LOCKER_NOT_AVAILABLE") {
         sendConflictError(res, "Locker is not available");
+        return;
+      }
+      if (error.message === "LOCKER_IN_MAINTENANCE") {
+        sendConflictError(res, "Locker is under maintenance and cannot be assigned");
         return;
       }
     }

@@ -462,12 +462,15 @@ export const LockerStatus = {
   available: 'available',
   occupied: 'occupied',
   reserved: 'reserved',
+  maintenance: 'maintenance',
 } as const;
 
 export interface Locker {
   id: number;
   name: string;
   status: LockerStatus;
+  /** @nullable */
+  maintenanceNotes?: string | null;
   /** @nullable */
   clientId?: number | null;
   /** @nullable */
@@ -487,12 +490,15 @@ export const RoomStatus = {
   available: 'available',
   occupied: 'occupied',
   reserved: 'reserved',
+  maintenance: 'maintenance',
 } as const;
 
 export interface Room {
   id: number;
   name: string;
   status: RoomStatus;
+  /** @nullable */
+  maintenanceNotes?: string | null;
   /** @nullable */
   clientId?: number | null;
   /** @nullable */
@@ -556,6 +562,7 @@ export interface OccupancySummary {
   available: number;
   occupied: number;
   reserved: number;
+  maintenance: number;
 }
 
 export type AssignResourceInputMembershipType = typeof AssignResourceInputMembershipType[keyof typeof AssignResourceInputMembershipType];
@@ -1268,6 +1275,7 @@ export const ListLockersStatus = {
   available: 'available',
   occupied: 'occupied',
   reserved: 'reserved',
+  maintenance: 'maintenance',
 } as const;
 
 export type ListRoomsParams = {
@@ -1281,6 +1289,7 @@ export const ListRoomsStatus = {
   available: 'available',
   occupied: 'occupied',
   reserved: 'reserved',
+  maintenance: 'maintenance',
 } as const;
 
 export type ListLowStockProducts200 = {

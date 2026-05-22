@@ -12,6 +12,8 @@ export interface Locker {
   name: string;
   status: LockerStatus;
   /** @nullable */
+  maintenanceNotes?: string | null;
+  /** @nullable */
   clientId?: number | null;
   /** @nullable */
   clientName?: string | null;

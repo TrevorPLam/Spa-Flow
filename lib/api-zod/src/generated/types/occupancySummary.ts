@@ -11,4 +11,5 @@ export interface OccupancySummary {
   available: number;
   occupied: number;
   reserved: number;
+  maintenance: number;
 }
