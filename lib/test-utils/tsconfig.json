@@ -1,17 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["node"]
   },
-  "include": ["src"],
-  "references": [
-    {
-      "path": "../db"
-    }
-  ]
+  "include": ["src"]
 }

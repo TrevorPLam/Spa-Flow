@@ -8,13 +8,19 @@
 
 ---
 
-## [ ] TASK-055: Fix Typecheck Errors
-**Status:** Pending
+## [x] TASK-055: Fix Typecheck Errors
+**Status:** Complete
 **Priority:** High
 
 ### Related File Paths
 - `artifacts/api-server/package.json`
 - `lib/test-utils/`
+- `artifacts/api-server/src/test/setup.ts`
+- `artifacts/api-server/src/test/test-helpers.ts`
+- `lib/test-utils/tsconfig.json`
+- `lib/db/tsconfig.json`
+- `lib/api-zod/tsconfig.json`
+- `artifacts/api-server/tsconfig.json`
 
 ### Definition of Done
 - Install missing @types/swagger-ui-express dependency
@@ -26,15 +32,46 @@
 - Verify minimum release age for new dependencies (A2)
 - Run typecheck after fixes
 
+### Implementation Notes
+- Added @types/swagger-ui-express@^4.1.7 to api-server devDependencies
+- Fixed test-utils imports to use workspace package (@workspace/test-utils) instead of source paths
+- Removed composite mode from lib packages (test-utils, db, api-zod) to simplify build
+- Added @workspace/test-utils as dependency to api-server
+- Enabled strict mode and forceConsistentCasingInFileNames in all lib packages
+- Removed project references from api-server tsconfig since not using composite mode
+
 ### Subtasks
 
-#### TASK-055-A: Install Missing Swagger UI Types
+#### ✅ TASK-055-A: Install Missing Swagger UI Types
 **Target:** `artifacts/api-server/package.json`
 **Action:** Add @types/swagger-ui-express to devDependencies, run pnpm install.
 
-#### TASK-055-B: Fix lib/test-utils Build Output
+#### ✅ TASK-055-B: Fix lib/test-utils Build Output
 **Target:** `lib/test-utils/`
 **Action:** Investigate and fix missing dist/index.d.ts output file, ensure build script runs correctly.
+
+---
+
+## [ ] TASK-056: Fix Spaflow Typecheck Error
+**Status:** Pending
+**Priority:** Medium
+
+### Related File Paths
+- `artifacts/spaflow/src/hooks/use-websocket.ts`
+
+### Definition of Done
+- Remove unused `getAccessToken` variable or use it
+- Typecheck passes without errors
+
+### Rules to Follow
+- Remove unused variables or add underscore prefix if intentionally unused
+- Run typecheck after fix
+
+### Subtasks
+
+#### TASK-056-A: Remove Unused Variable
+**Target:** `artifacts/spaflow/src/hooks/use-websocket.ts`
+**Action:** Remove unused `getAccessToken` function or mark with underscore prefix.
 
 ---
 

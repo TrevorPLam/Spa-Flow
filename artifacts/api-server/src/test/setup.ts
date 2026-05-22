@@ -1,4 +1,4 @@
-import { cleanDatabase as cleanDb } from '../../../../lib/test-utils/src';
+import { cleanDatabase as cleanDb } from '@workspace/test-utils';
 import { seedTestData } from './seed';
 import { resetEnv } from '../lib/env';
 
@@ -36,4 +36,4 @@ export {
   createTestRoom,
   createTestUser,
   createTestMembership,
-} from '../../../../lib/test-utils/src';
+} from '@workspace/test-utils';
