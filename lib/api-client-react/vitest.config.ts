@@ -14,6 +14,12 @@ export default defineConfig({
         '**/*.config.ts',
         'src/generated/',
       ],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
+      },
     },
   },
 });

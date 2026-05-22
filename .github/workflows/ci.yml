@@ -7,13 +7,16 @@ on:
     branches: [main]
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -22,13 +25,13 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -48,11 +51,11 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: github/codeql-action/init@7f47f2e7fe1fffd164e6b1ec4f3f5d0a5d3ae0c0 # v3.28.5
         with:
           languages: javascript-typescript
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@7f47f2e7fe1fffd164e6b1ec4f3f5d0a5d3ae0c0 # v3.28.5
         with:
           category: "/language:javascript-typescript"
 
@@ -61,8 +64,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [security-scan, codeql]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -71,13 +74,13 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -89,8 +92,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -99,14 +102,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup build cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/dist
@@ -115,7 +118,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-build-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -127,8 +130,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -137,14 +140,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup vitest cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/spaflow/node_modules/.vite
@@ -152,7 +155,7 @@ jobs:
           key: ${{ runner.os }}-vitest-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-vitest-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -167,10 +170,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -179,14 +182,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup package-specific cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/node_modules/.cache
@@ -195,7 +198,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pkg-cache-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-pkg-cache-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -217,10 +220,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -229,14 +232,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup package-specific cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/node_modules/.cache
@@ -246,7 +249,7 @@ jobs:
             ${{ runner.os }}-pkg-cache-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-pkg-cache-
       - name: Setup vitest cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/spaflow/node_modules/.vite
@@ -254,7 +257,7 @@ jobs:
           key: ${{ runner.os }}-vitest-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-vitest-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -276,8 +279,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -286,14 +289,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup package-specific cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/node_modules/.cache
@@ -303,7 +306,7 @@ jobs:
             ${{ runner.os }}-pkg-cache-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-pkg-cache-
       - name: Setup vitest cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/spaflow/node_modules/.vite
@@ -312,13 +315,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vitest-
       - name: Setup performance baseline cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: .performance-baseline.json
           key: ${{ runner.os }}-perf-baseline-${{ github.base_ref || 'main' }}
           restore-keys: |
             ${{ runner.os }}-perf-baseline-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -328,7 +331,7 @@ jobs:
         continue-on-error: true
       - name: Upload API Performance Metrics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: api-performance-metrics
           path: artifacts/api-server/test-results/
@@ -338,7 +341,7 @@ jobs:
         continue-on-error: true
       - name: Upload Frontend Performance Metrics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: frontend-performance-metrics
           path: artifacts/spaflow/test-results/
@@ -356,10 +359,10 @@ jobs:
     needs: [component-tests, contract-tests]
     if: always() && (needs.component-tests.result == 'success' || needs.contract-tests.result == 'success')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -368,14 +371,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup package-specific cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/node_modules/.cache
@@ -385,7 +388,7 @@ jobs:
             ${{ runner.os }}-pkg-cache-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-pkg-cache-
       - name: Setup vitest cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/spaflow/node_modules/.vite
@@ -393,7 +396,7 @@ jobs:
           key: ${{ runner.os }}-vitest-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-vitest-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -459,10 +462,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -471,14 +474,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup package-specific cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/node_modules/.cache
@@ -489,13 +492,13 @@ jobs:
             ${{ runner.os }}-pkg-cache-
       - name: Cache Playwright browsers
         id: cache-playwright
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-playwright-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -514,9 +517,9 @@ jobs:
         run: cd scripts && pnpm run seed
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
-          JWT_SECRET: test-secret-for-e2e-ci
-          ENCRYPTION_KEY: test-encryption-key-32-chars-long
-          CSRF_SECRET: test-csrf-secret-32-chars-long
+          JWT_SECRET: ${{ secrets.E2E_JWT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.E2E_ENCRYPTION_KEY }}
+          CSRF_SECRET: ${{ secrets.E2E_CSRF_SECRET }}
       - name: Start API Server
         run: |
           cd artifacts/api-server
@@ -526,9 +529,9 @@ jobs:
           ../../scripts/wait-for-server.sh http://localhost:5000/health 12 5
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
-          JWT_SECRET: test-secret-for-e2e-ci
-          ENCRYPTION_KEY: test-encryption-key-32-chars-long
-          CSRF_SECRET: test-csrf-secret-32-chars-long
+          JWT_SECRET: ${{ secrets.E2E_JWT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.E2E_ENCRYPTION_KEY }}
+          CSRF_SECRET: ${{ secrets.E2E_CSRF_SECRET }}
           NODE_ENV: test
       - name: Start Frontend Server
         run: |
@@ -561,7 +564,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
       - name: Upload blob report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: artifacts/spaflow/blob-report/
@@ -579,8 +582,8 @@ jobs:
     needs: e2e-tests
     if: always() && needs.e2e-tests.result != 'cancelled'
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -589,19 +592,19 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install
       - name: Download blob reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.9
         with:
           path: all-blob-reports
           pattern: blob-report-*
@@ -609,7 +612,7 @@ jobs:
       - name: Merge reports
         run: cd artifacts/spaflow && npx playwright merge-reports --reporter html ../all-blob-reports
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: playwright-report
           path: artifacts/spaflow/playwright-report/
@@ -621,8 +624,8 @@ jobs:
     needs: build
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -631,13 +634,13 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -667,8 +670,8 @@ jobs:
     needs: [build, smoke-load-tests]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -677,13 +680,13 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -717,8 +720,8 @@ jobs:
     needs: typecheck
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -727,14 +730,14 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       - name: Setup stryker cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: |
             artifacts/api-server/.stryker-tmp
@@ -742,7 +745,7 @@ jobs:
           key: ${{ runner.os }}-stryker-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-stryker-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -751,7 +754,7 @@ jobs:
         run: cd artifacts/api-server && pnpm run test:mutation:ci
       - name: Upload Mutation Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: mutation-report
           path: artifacts/api-server/reports/mutation/
@@ -763,8 +766,8 @@ jobs:
     needs: [component-tests, contract-tests, e2e-tests]
     if: always() && (needs.component-tests.result == 'success' || needs.contract-tests.result == 'success' || needs.e2e-tests.result == 'success')
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v4.2.2
+      - uses: pnpm/action-setup@a8027d16a4f928f2e3b8a3ad6ffd10c8b2902c3b # v4.0.0
         with:
           version: 9
       - name: Get pnpm store directory
@@ -773,20 +776,20 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
       - name: Setup pnpm cache
-        uses: actions/cache@v5
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v5.0.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.1.0
         with:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install
       - name: Download Playwright Test Results
         if: always()
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.9
         with:
           pattern: playwright-report
           path: artifacts/spaflow/playwright-report
@@ -805,7 +808,7 @@ jobs:
         continue-on-error: true
       - name: Upload Flakiness Reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: flakiness-reports
           path: |
@@ -818,7 +821,7 @@ jobs:
         continue-on-error: true
       - name: Upload Flakiness Dashboard
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
         with:
           name: flakiness-dashboard
           path: artifacts/flakiness-dashboard.html
