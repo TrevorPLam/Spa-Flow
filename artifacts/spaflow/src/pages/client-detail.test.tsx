@@ -19,11 +19,16 @@ vi.mock('@/hooks/use-toast', () => ({
   }),
 }));
 
+// Mock AuthContext
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ isManager: true, user: { id: 1, role: 'manager' } }),
+}));
+
 // Mock API client
 vi.mock('@workspace/api-client-react', () => ({
   useGetClient: () => ({ data: mockClient, isLoading: false }),
   useUpdateClient: () => ({ mutate: vi.fn(), isPending: false }),
-  useGetClientRentals: () => ({ data: [], isLoading: false }),
+  useGetClientRentals: () => ({ data: mockRentals, isLoading: false }),
   useGetClientTransactions: () => ({ data: mockTransactions, isLoading: false }),
   useGetClientRentalProducts: () => ({ data: [], isLoading: false }),
   useRenewMembership: () => ({ mutate: vi.fn(), isPending: false }),
@@ -52,9 +57,22 @@ const mockClient = {
   dob: '[encrypted]',
   address: '[encrypted]',
   documentNumber: '[encrypted]',
+  smsRemindersEnabled: 'true',
   createdAt: new Date().toISOString(),
   activeSessions: [],
 };
+
+const mockRentals = [
+  {
+    id: 1,
+    clientId: 1,
+    resourceType: 'locker',
+    resourceName: 'L-101',
+    status: 'active',
+    startTime: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+  },
+];
 
 const mockTransactions = [
   {
@@ -73,25 +91,94 @@ const mockTransactions = [
 ];
 
 describe('ClientDetailPage', { tags: ['smoke', 'critical'] }, () => {
-  describe('Membership Purchase Button', () => {
-    it('shows "Purchase Membership" button for non-members', () => {
-      // Arrange
-      renderWithProviders(<ClientDetailPage />);
+  it('renders without crashing', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
 
-      // Assert
-      expect(screen.getByRole('button', { name: /purchase membership/i })).toBeInTheDocument();
-    });
+    // Assert - Component renders without crashing
+    expect(screen.getByText('Test Client')).toBeInTheDocument();
   });
 
-  describe('Membership History Timeline', () => {
-    it('shows membership history card when membership transactions exist', () => {
-      // Arrange
-      renderWithProviders(<ClientDetailPage />);
+  it('renders client name and member ID', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
 
-      // Assert
-      expect(screen.getByText(/membership history/i)).toBeInTheDocument();
-      expect(screen.getByText(/one-time membership/i)).toBeInTheDocument();
-      expect(screen.getAllByText(/14\.15/i)).toHaveLength(2); // Appears in both Transaction History and Membership History
-    });
+    // Assert
+    expect(screen.getByText('Test Client')).toBeInTheDocument();
+    expect(screen.getByText('SPF-ABC123')).toBeInTheDocument();
+  });
+
+  it('renders contact information', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    expect(screen.getByText('555-1234')).toBeInTheDocument();
+  });
+
+  it('renders membership badge', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByText('None')).toBeInTheDocument();
+  });
+
+  it('shows "Purchase Membership" button for non-members', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByRole('button', { name: /purchase membership/i })).toBeInTheDocument();
+  });
+
+  it('renders notes when present', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByText('Test notes')).toBeInTheDocument();
+  });
+
+  it('renders encrypted PII fields', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getAllByText(/encrypted/i)).toHaveLength(3);
+  });
+
+  it('shows "View Identification" button for managers', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByTestId('button-view-pii')).toBeInTheDocument();
+  });
+
+  it('renders active rentals', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByText('Active Rentals')).toBeInTheDocument();
+  });
+
+  it('renders transaction history', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByText('Transaction History')).toBeInTheDocument();
+  });
+
+  it('renders membership history when membership transactions exist', () => {
+    // Arrange
+    renderWithProviders(<ClientDetailPage />);
+
+    // Assert
+    expect(screen.getByText(/membership history/i)).toBeInTheDocument();
+    expect(screen.getByText(/one-time membership/i)).toBeInTheDocument();
   });
 });

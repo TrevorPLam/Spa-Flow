@@ -76,7 +76,7 @@ router.get("/transactions", requireAuth, apiLimiter, async (req, res): Promise<v
   const clientMap = new Map<number, string>();
   if (clientIds.length > 0) {
     const clients = await db.select({ id: clientsTable.id, name: clientsTable.name }).from(clientsTable)
-      .where(sql`${clientsTable.id} = ANY(${clientIds})`);
+      .where(inArray(clientsTable.id, clientIds));
     clients.forEach(c => clientMap.set(c.id, c.name));
   }
 
@@ -90,6 +90,7 @@ router.get("/transactions", requireAuth, apiLimiter, async (req, res): Promise<v
       tax: parseFloat(t.tax),
       total: parseFloat(t.total),
       type: t.type,
+      status: t.status,
       squarePaymentId: t.squarePaymentId,
       description: t.description,
       createdAt: t.createdAt,

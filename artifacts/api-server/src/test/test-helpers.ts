@@ -30,11 +30,15 @@ export async function createAuthenticatedRequest(role: 'STAFF' | 'MANAGER' = 'ST
   };
 }
 
+// Counter for unique test data generation
+let testCounter = 0;
+
 export async function createTestClientInDb(clientData?: Partial<typeof clientsTable.$inferInsert>) {
+  testCounter++;
   const client: typeof clientsTable.$inferInsert = {
-    email: clientData?.email || `test-${Date.now()}@example.com`,
+    email: clientData?.email || `test-${testCounter}@example.com`,
     phone: clientData?.phone || '555-0100',
-    memberId: clientData?.memberId || `MEM${Date.now()}`,
+    memberId: clientData?.memberId || `MEM${testCounter}`,
     name: clientData?.name || 'Test Client',
     membershipStatus: clientData?.membershipStatus || 'none',
     dobEncrypted: clientData?.dobEncrypted ?? null,

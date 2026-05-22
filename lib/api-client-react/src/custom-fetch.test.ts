@@ -358,4 +358,297 @@ describe('custom-fetch', () => {
       expect(error.cause).toBe(cause);
     });
   });
+
+  describe('customFetch - additional branch coverage', () => {
+    it('should handle string error response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers({ 'content-type': 'text/plain' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('Server error occurred'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.message).toContain('Server error occurred');
+        }
+      }
+    });
+
+    it('should handle error response with message field', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('{"message":"Invalid input"}'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.message).toContain('Invalid input');
+        }
+      }
+    });
+
+    it('should handle error response with error_description field', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('{"error_description":"Token expired"}'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.message).toContain('Token expired');
+        }
+      }
+    });
+
+    it('should handle error response with error field', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('{"error":"Access denied"}'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.message).toContain('Access denied');
+        }
+      }
+    });
+
+    it('should handle empty JSON response body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve(''),
+      } as Response);
+      global.fetch = mockFetch;
+
+      const result = await customFetch('https://api.example.com/test');
+      expect(result).toBeNull();
+    });
+
+    it('should handle error response with no body (204)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 204,
+        statusText: 'No Content',
+        headers: new Headers({ 'content-length': '0' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve(''),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.data).toBeNull();
+        }
+      }
+    });
+
+    it('should handle error response with non-JSON media type (blob fallback)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers({ 'content-type': 'image/png' }),
+        url: 'https://api.example.com/test',
+        blob: () => Promise.resolve(new Blob(['test data'])),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.data).toBeInstanceOf(Blob);
+        }
+      }
+    });
+
+    it('should handle error response with empty text body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers({ 'content-type': 'text/plain' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve(''),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.data).toBeNull();
+        }
+      }
+    });
+
+    it('should handle error response with JSON-like text that fails to parse', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: new Headers({ 'content-type': 'text/plain' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('{invalid json}'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.data).toBe('{invalid json}');
+        }
+      }
+    });
+
+    it('should infer text response type when media type is null', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('plain text'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      const result = await customFetch('https://api.example.com/test', {
+        responseType: 'auto',
+      } as CustomFetchOptions);
+      expect(result).toBe('plain text');
+    });
+
+    it('should throw TypeError for blob response type when blob is not supported', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'content-type': 'application/octet-stream' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('binary data'),
+        blob: undefined,
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(
+        customFetch('https://api.example.com/test', {
+          responseType: 'blob',
+        } as CustomFetchOptions)
+      ).rejects.toThrow('Blob responses are not supported');
+    });
+
+    it('should handle HEAD request with no body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve(''),
+      } as Response);
+      global.fetch = mockFetch;
+
+      const result = await customFetch('https://api.example.com/test', {
+        method: 'HEAD',
+      } as CustomFetchOptions);
+      expect(result).toBeNull();
+    });
+
+    it('should handle response with null body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve(''),
+        body: null,
+      } as Response);
+      global.fetch = mockFetch;
+
+      const result = await customFetch('https://api.example.com/test');
+      expect(result).toBeNull();
+    });
+
+    it('should handle error response with text media type', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: new Headers({ 'content-type': 'text/plain' }),
+        url: 'https://api.example.com/test',
+        text: () => Promise.resolve('Error message'),
+      } as Response);
+      global.fetch = mockFetch;
+
+      await expect(customFetch('https://api.example.com/test')).rejects.toThrow(ApiError);
+      
+      try {
+        await customFetch('https://api.example.com/test');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        if (error instanceof ApiError) {
+          expect(error.data).toBe('Error message');
+        }
+      }
+    });
+  });
 });

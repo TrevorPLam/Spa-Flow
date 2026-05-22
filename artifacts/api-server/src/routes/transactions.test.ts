@@ -25,7 +25,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
         description: 'Locker rental',
       });
 
-      const response = await api.get('/api/transactions').set(authHeaders);
+      const response = await api.get('/api/v1/transactions').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('transactions');
@@ -51,7 +51,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
         { clientId: client2.id, amount: '50.00', tax: '4.44', total: '54.44', type: 'product', squarePaymentId: 'sq-2', description: 'Product purchase' },
       ]);
 
-      const response = await api.get(`/api/transactions?clientId=${client1.id}`).set(authHeaders);
+      const response = await api.get(`/api/v1/transactions?clientId=${client1.id}`).set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions.length).toBe(1);
@@ -74,7 +74,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
       }));
       await db.insert(transactionsTable).values(transactions);
 
-      const response = await api.get('/api/transactions?page=1&limit=10').set(authHeaders);
+      const response = await api.get('/api/v1/transactions?page=1&limit=10').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions.length).toBe(10);
@@ -84,7 +84,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
     });
 
     it('should return 401 for unauthenticated request', async () => {
-      const response = await api.get('/api/transactions');
+      const response = await api.get('/api/v1/transactions');
 
       expect(response.status).toBe(401);
     });
@@ -92,7 +92,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
     it('should return 400 for invalid query parameters', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/transactions?page=invalid').set(authHeaders);
+      const response = await api.get('/api/v1/transactions?page=invalid').set(authHeaders);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error');
@@ -101,7 +101,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
     it('should return empty list when no transactions exist', async () => {
       const authHeaders = await createAuthenticatedRequest('STAFF');
 
-      const response = await api.get('/api/transactions').set(authHeaders);
+      const response = await api.get('/api/v1/transactions').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions).toBeInstanceOf(Array);
@@ -123,7 +123,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
         description: 'Locker rental',
       });
 
-      const response = await api.get('/api/transactions').set(authHeaders);
+      const response = await api.get('/api/v1/transactions').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions[0]).toHaveProperty('clientName', 'John Doe');
@@ -185,7 +185,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
       });
 
       // Filter by towels category
-      const response = await api.get('/api/transactions?productCategory=towels').set(authHeaders);
+      const response = await api.get('/api/v1/transactions?productCategory=towels').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions.length).toBe(1);
@@ -206,7 +206,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
         description: 'Locker rental',
       });
 
-      const response = await api.get('/api/transactions?productCategory=nonexistent').set(authHeaders);
+      const response = await api.get('/api/v1/transactions?productCategory=nonexistent').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions.length).toBe(0);
@@ -221,7 +221,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
         { clientId: client.id, amount: '50.00', tax: '4.44', total: '54.44', type: 'product', squarePaymentId: 'sq-2', description: 'Product purchase' },
       ]);
 
-      const response = await api.get('/api/transactions?type=locker_rental').set(authHeaders);
+      const response = await api.get('/api/v1/transactions?type=locker_rental').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions.length).toBe(1);
@@ -237,7 +237,7 @@ describe('Transactions API', { tags: ['regression', 'integration'] }, () => {
         { clientId: client.id, amount: '50.00', tax: '4.44', total: '54.44', type: 'product', squarePaymentId: 'sq-2', description: 'Product purchase', status: 'pending' },
       ]);
 
-      const response = await api.get('/api/transactions?status=completed').set(authHeaders);
+      const response = await api.get('/api/v1/transactions?status=completed').set(authHeaders);
 
       expect(response.status).toBe(200);
       expect(response.body.transactions.length).toBe(1);

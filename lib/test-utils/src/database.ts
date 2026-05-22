@@ -1,26 +1,16 @@
 import { db } from '@workspace/db';
 import * as schema from '@workspace/db/schema';
+import { sql } from 'drizzle-orm';
 
 /**
  * Clean all database tables in dependency order to avoid foreign key violations
  * Uses transactions for isolation when running in parallel
  */
 export async function cleanDatabase() {
-  // Delete in order of dependencies to avoid foreign key violations
-  // Uses transactions for isolation when running in parallel
+  // Use TRUNCATE with CASCADE to reset sequences and avoid foreign key violations
+  // This is more efficient than DELETE and resets auto-increment sequences
   await db.transaction(async (tx) => {
-    await tx.delete(schema.auditLogsTable);
-    await tx.delete(schema.refreshTokensTable);
-    await tx.delete(schema.passwordResetTokensTable);
-    await tx.delete(schema.waitlistTable);
-    await tx.delete(schema.transactionsTable);
-    await tx.delete(schema.rentalSessionsTable);
-    await tx.delete(schema.membershipsTable);
-    await tx.delete(schema.productsTable);
-    await tx.delete(schema.roomsTable);
-    await tx.delete(schema.lockersTable);
-    await tx.delete(schema.clientsTable);
-    await tx.delete(schema.usersTable);
+    await tx.execute(sql`TRUNCATE TABLE audit_logs, refresh_tokens, password_reset_tokens, waitlist_entries, transactions, rental_sessions, memberships, products, rooms, lockers, clients, users CASCADE`);
   });
 }
 
