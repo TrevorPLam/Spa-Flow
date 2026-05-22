@@ -14,8 +14,10 @@
     "migrate:apply": "drizzle-kit migrate --config ./drizzle.config.ts",
     "migrate:rollback": "drizzle-kit migrate --config ./drizzle.config.ts --custom",
     "test": "vitest run",
+    "test:fast": "vitest run --no-coverage",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:changed": "vitest run --changed"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

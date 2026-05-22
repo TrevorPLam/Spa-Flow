@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createUnauthenticatedRequest, createTestClientInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
@@ -9,9 +9,6 @@ describe('Waitlist API', { tags: ['regression'] }, () => {
     await cleanDatabase();
   });
 
-  afterEach(async () => {
-    await cleanDatabase();
-  });
 
   describe('GET /api/v1/waitlist', () => {
     it('should return list of active waitlist entries for authenticated staff', async () => {

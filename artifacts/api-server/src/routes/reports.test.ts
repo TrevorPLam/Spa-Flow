@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
@@ -9,9 +9,6 @@ describe('Reports API', { tags: ['regression', 'integration'] }, () => {
     await cleanDatabase();
   });
 
-  afterEach(async () => {
-    await cleanDatabase();
-  });
 
   describe('GET /api/v1/reports/revenue/membership', () => {
     it('should return revenue by membership type for manager', async () => {

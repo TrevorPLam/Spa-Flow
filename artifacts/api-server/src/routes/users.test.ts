@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestUserInDb, cleanDatabase } from '../test/test-helpers';
 
@@ -7,9 +7,6 @@ describe('Users API', { tags: ['smoke', 'critical'] }, () => {
     await cleanDatabase();
   });
 
-  afterEach(async () => {
-    await cleanDatabase();
-  });
 
   describe('GET /api/users', () => {
     it('should return list of users for authenticated manager', async () => {

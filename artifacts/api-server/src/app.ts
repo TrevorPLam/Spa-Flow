@@ -40,7 +40,7 @@ const csrfProtectionMiddleware = (req: Request, res: Response, next: NextFunctio
   }
 
   // For state-changing requests, validate CSRF token
-  const token = req.headers['x-csrf-token'] as string || req.body._csrf;
+  const token = req.headers['x-csrf-token'] as string || req.body?._csrf;
   const cookieToken = req.cookies[CSRF_COOKIE_NAME];
 
   if (!token || !cookieToken) {

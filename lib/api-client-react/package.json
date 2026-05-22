@@ -8,8 +8,10 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:fast": "vitest run --no-coverage",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:changed": "vitest run --changed"
   },
   "dependencies": {
     "@tanstack/react-query": "catalog:"

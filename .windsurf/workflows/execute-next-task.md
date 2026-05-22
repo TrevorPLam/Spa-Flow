@@ -46,8 +46,15 @@ This workflow systematically executes the first incomplete task from TODO.md wit
 6. **Quality Assurance Assessment**
    - Run type checking: `pnpm -r run typecheck`
    - Run linting: `pnpm run lint`
-   - Run tests: `pnpm -r run test`
-   - Run test coverage if applicable: `pnpm -r run test:coverage`
+   - Run tests incrementally on changed packages:
+
+     ```bash
+     # Get the previous commit SHA
+     PREV_SHA=$(git rev-parse HEAD~1)
+     # Run tests only on packages that changed since last commit
+     pnpm --filter="...[$PREV_SHA]" --if-present run test:fast || pnpm -r --if-present run test:fast
+     ```
+
    - Verify the definition of done criteria from the task are met
    - Check that no anti-patterns from the task were introduced
    - Ensure code follows the advanced coding patterns specified

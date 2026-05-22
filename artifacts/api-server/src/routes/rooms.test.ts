@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestRoomInDb, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
 import { broadcast } from '../lib/websocket';
@@ -21,9 +21,6 @@ describe('Rooms API', { tags: ['regression'] }, () => {
     vi.clearAllMocks();
   });
 
-  afterEach(async () => {
-    await cleanDatabase();
-  });
 
   describe('POST /api/rooms/bulk-release', () => {
     it('should release all expired rooms', async () => {

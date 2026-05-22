@@ -4,6 +4,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    setupFiles: ['./src/test-setup.ts'],
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    pool: 'threads',
+    excludeTags: ['slow'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

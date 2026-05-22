@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestClientInDb, createTestLockerInDb, createTestRoomInDb, cleanDatabase } from '../test/test-helpers';
 import { db } from '@workspace/db';
@@ -20,9 +20,6 @@ describe('Check-in API', { tags: ['regression'] }, () => {
     await cleanDatabase();
   });
 
-  afterEach(async () => {
-    await cleanDatabase();
-  });
 
   describe('POST /api/checkin', () => {
     it('should process check-in with locker assignment for authenticated staff', async () => {

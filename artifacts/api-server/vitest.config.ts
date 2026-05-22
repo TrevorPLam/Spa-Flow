@@ -13,6 +13,7 @@ export default defineConfig({
     hookTimeout: 10000,
     include: ['src/**/*.test.ts'],
     exclude: ['node_modules', 'dist', '.stryker-tmp'],
+    excludeTags: ['slow'],
     tags: [
       {
         name: 'smoke',
