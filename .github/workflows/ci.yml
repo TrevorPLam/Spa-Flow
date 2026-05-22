@@ -311,6 +311,13 @@ jobs:
           key: ${{ runner.os }}-vitest-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-vitest-
+      - name: Setup performance baseline cache
+        uses: actions/cache@v5
+        with:
+          path: .performance-baseline.json
+          key: ${{ runner.os }}-perf-baseline-${{ github.base_ref || 'main' }}
+          restore-keys: |
+            ${{ runner.os }}-perf-baseline-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -336,6 +343,12 @@ jobs:
           name: frontend-performance-metrics
           path: artifacts/spaflow/test-results/
           retention-days: 90
+      - name: Check Performance Regression
+        if: always()
+        run: |
+          echo "Performance regression check would compare current metrics against baseline"
+          echo "If performance degrades by more than 20%, the check would fail"
+          echo "This is a placeholder for future implementation with historical data"
 
   coverage-report:
     name: Coverage Report
