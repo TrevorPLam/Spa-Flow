@@ -215,7 +215,7 @@ React's useEffect runs asynchronously after renderHook returns, making it imposs
 
 ## Task 12: Fix Session Test Data Isolation
 
-- [ ] **ID:** T12 | **Status:** Pending
+- [x] **ID:** T12 | **Status:** Complete
 
 **Related file paths:**
 - `artifacts/api-server/src/services/session.test.ts`
@@ -227,6 +227,12 @@ React's useEffect runs asynchronously after renderHook returns, making it imposs
 - Tests use dynamically created user IDs
 - Database cleanup verified between tests
 - Test isolation confirmed
+
+**Implementation notes:**
+- Task was already complete - hardcoded user IDs had already been replaced with testUserId
+- All 17 session tests passing
+- Tests use createTestUserInDb() consistently
+- cleanDatabase() from lib/test-utils handles cleanup
 
 **Out of scope:**
 - Changing session service implementation
@@ -271,7 +277,7 @@ Test data factory pattern, database transaction rollback for isolation, fixture 
 
 ## Task 13: Regenerate Zod Schemas from OpenAPI
 
-- [ ] **ID:** T13 | **Status:** Pending
+- [x] **ID:** T13 | **Status:** Complete
 
 **Related file paths:**
 - `lib/api-spec/openapi.yaml`
@@ -286,6 +292,13 @@ Test data factory pattern, database transaction rollback for isolation, fixture 
 - All generated files up-to-date
 - Codegen runs without errors
 - CI contract test passes
+
+**Implementation notes:**
+- Fixed pre-existing TypeScript error in custom-fetch.test.ts (missing Response properties)
+- Regenerated Zod schemas and API client via orval
+- Updated test data to include disk_space check (required by OpenAPI spec)
+- Removed @flaky tag from test (failure was deterministic, not flaky)
+- All 9 Zod schema validation tests passing
 
 **Out of scope:**
 - Modifying OpenAPI spec structure
