@@ -145,11 +145,11 @@ None.
 
 ### Subtasks
 
-- [ ] **T10.1** – `artifacts/api-server/stryker.conf.js` – Set `mutate: ['src/lib/auth.ts']` (only one file). Set `vitest: { run: '--run' }` if needed.
-- [ ] **T10.2** – Run `cd artifacts/api-server && pnpm run test:mutation` locally. If it succeeds, proceed to T10.3; if fails, go to T10.4.
+- [x] **T10.1** – `artifacts/api-server/stryker.conf.js` – Set `mutate: ['src/lib/auth.ts']` (only one file). Set `vitest: { run: '--run' }` if needed.
+- [x] **T10.2** – Run `cd artifacts/api-server && pnpm run test:mutation` locally. If it succeeds, proceed to T10.3; if fails, go to T10.4.
 - [ ] **T10.3** (success path) – `.github/workflows/ci.yml` – Keep `mutation-tests` job but add `if: github.ref == 'refs/heads/main'` to run only on main, not every push.
-- [ ] **T10.4** (failure path) – `.github/workflows/ci.yml` – Comment out or delete the entire `mutation-tests` job.
-- [ ] **T10.5** – `docs/mutation-testing.md` – Add a note that mutation testing is currently disabled due to Vitest runner incompatibility, and when it will be re-evaluated.
+- [x] **T10.4** (failure path) – `.github/workflows/ci.yml` – Comment out or delete the entire `mutation-tests` job.
+- [x] **T10.5** – `docs/mutation-testing.md` – Add a note that mutation testing is currently disabled due to Vitest runner incompatibility, and when it will be re-evaluated.
 
 ---
 
