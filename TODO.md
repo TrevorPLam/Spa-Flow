@@ -8,8 +8,38 @@
 
 ---
 
-## [ ] TASK-045: Add Deployment Automation
+## [ ] TASK-055: Fix Typecheck Errors
 **Status:** Pending
+**Priority:** High
+
+### Related File Paths
+- `artifacts/api-server/package.json`
+- `lib/test-utils/`
+
+### Definition of Done
+- Install missing @types/swagger-ui-express dependency
+- Fix lib/test-utils build output issue
+- Typecheck passes without errors
+
+### Rules to Follow
+- Use pnpm for dependency management
+- Verify minimum release age for new dependencies (A2)
+- Run typecheck after fixes
+
+### Subtasks
+
+#### TASK-055-A: Install Missing Swagger UI Types
+**Target:** `artifacts/api-server/package.json`
+**Action:** Add @types/swagger-ui-express to devDependencies, run pnpm install.
+
+#### TASK-055-B: Fix lib/test-utils Build Output
+**Target:** `lib/test-utils/`
+**Action:** Investigate and fix missing dist/index.d.ts output file, ensure build script runs correctly.
+
+---
+
+## [x] TASK-045: Add Deployment Automation
+**Status:** Complete
 **Priority:** Critical
 
 ### Related File Paths

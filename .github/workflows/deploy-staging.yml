@@ -1,0 +1,120 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (git SHA or tag)'
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.spaflow.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm run test:fast
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Run smoke tests
+        run: |
+          cd artifacts/api-server
+          pnpm run start &
+          chmod +x ../../scripts/wait-for-server.sh
+          ../../scripts/wait-for-server.sh http://localhost:5000/health 12 5
+          pnpm run test -- --tags-filter="smoke"
+
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+          ENCRYPTION_KEY: ${{ secrets.STAGING_ENCRYPTION_KEY }}
+          CSRF_SECRET: ${{ secrets.STAGING_CSRF_SECRET }}
+          SQUARE_ACCESS_TOKEN: ${{ secrets.STAGING_SQUARE_ACCESS_TOKEN }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.STAGING_TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.STAGING_TWILIO_AUTH_TOKEN }}
+          REDIS_URL: ${{ secrets.STAGING_REDIS_URL }}
+          SENTRY_DSN: ${{ secrets.STAGING_SENTRY_DSN }}
+          RESEND_API_KEY: ${{ secrets.STAGING_RESEND_API_KEY }}
+          TAX_RATE: ${{ secrets.STAGING_TAX_RATE || '8.875' }}
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_PORT || 22 }}
+          script: |
+            cd /var/www/spaflow
+            git fetch origin
+            git checkout ${{ github.sha }}
+            chmod +x scripts/deploy.sh
+            ./scripts/deploy.sh staging ${{ github.sha }}
+
+      - name: Health check
+        run: |
+          max_attempts=30
+          attempt=0
+          while [[ $attempt -lt $max_attempts ]]; do
+            if curl -f -s https://staging.spaflow.example.com/health > /dev/null; then
+              echo "Health check passed"
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            echo "Health check attempt $attempt/$max_attempts failed"
+            sleep 10
+          done
+          echo "Health check failed after $max_attempts attempts"
+          exit 1
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "Deployment to staging successful"
+          # Add notification integration here (Slack, email, etc.)
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "Deployment to staging failed"
+          # Add notification integration here (Slack, email, etc.)
