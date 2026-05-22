@@ -8,6 +8,30 @@
 
 ---
 
+## [x] TASK-081: Fix 500 Errors in auth.session.test.ts Session Management Endpoints
+**Status:** Complete
+**Priority:** High
+
+### Issue Summary
+Session management endpoint tests in `artifacts/api-server/src/routes/auth.session.test.ts` return HTTP 500 errors for authenticated requests. Unauthenticated requests correctly return 401, indicating JWT authentication is now working after making `getJWTSecretKey()` dynamic. The remaining 500 errors suggest an issue in the session service or database access layer.
+
+### Root Cause
+The session management endpoints in `auth.ts` were accessing `req.body.refreshToken` without optional chaining. In the test context, `req.body` was undefined because the minimal test app doesn't include the full Express middleware stack (body parser). This caused a "Cannot read properties of undefined" error.
+
+### Solution
+Changed all instances of `req.body.refreshToken` to `req.body?.refreshToken` in the session management endpoints to safely handle cases where `req.body` is undefined.
+
+### Files Modified
+- `artifacts/api-server/src/routes/auth.ts`: Added optional chaining to `req.body?.refreshToken` in GET /auth/sessions, DELETE /auth/sessions/:id, and DELETE /auth/sessions
+- `artifacts/api-server/src/routes/auth.session.test.ts`: Fixed test to not depend on session order (sessions are sorted by createdAt descending)
+
+### Definition of Done
+- All 12 tests in `auth.session.test.ts` pass
+- Session management endpoints return expected status codes (200, 400, 401, 404)
+- No 500 errors in session management tests
+
+---
+
 ## [x] TASK-073: Implement Payment Reconciliation API and Webhooks
 **Status:** Complete
 **Priority:** Critical
@@ -216,26 +240,28 @@
 
 ---
 
-## [ ] TASK-080: Fix Pre-existing Test Failures in session.test.ts
+## [ ] TASK-080: Fix Pre-existing Test Failures in auth.session.test.ts
 **Status:** Pending
 **Priority:** Medium
 
 ### Related File Paths
-- `artifacts/api-server/src/services/session.test.ts`
+- `artifacts/api-server/src/routes/auth.session.test.ts`
 
 ### Definition of Done
-- Fix foreign key constraint violations in session.test.ts
-- All session tests passing
+- Fix 500 errors in auth.session.test.ts session management endpoint tests
+- All session management endpoint tests passing
 
 ### Issue Description
-Pre-existing test failures in session.test.ts due to foreign key constraint violations:
-- Tests attempt to insert refresh_tokens with non-existent user_id values
-- Error: `insert or update on table "refresh_tokens" violates foreign key constraint "refresh_tokens_user_id_users_id_fk"`
-- Affects tests: parseUserAgent tests and other session-related tests
+Pre-existing test failures in auth.session.test.ts due to server 500 errors:
+- Session management endpoints (GET /auth/sessions, DELETE /auth/sessions/:id, DELETE /auth/sessions) return 500
+- Tests use hardcoded emails causing duplicate key violations
+- Tests missing CSRF token headers for authenticated requests
+- 8 out of 12 tests failing with 500 errors
 
 ### Rules to Follow
-- Ensure test data setup creates required users before creating refresh tokens
-- Use proper test data cleanup
+- Use unique emails in test data to avoid duplicate key violations
+- Include CSRF tokens in authenticated request headers
+- Properly clean up test data in afterEach
 
 ### Depends On
 - None

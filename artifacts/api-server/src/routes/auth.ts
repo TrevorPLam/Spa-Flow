@@ -7,12 +7,12 @@ import { accountLockoutService } from "../services/accountLockout";
 import { authAuditLogger } from "../services/authAuditLogger";
 import { passwordResetTokenService } from "../services/passwordReset";
 import { sessionService } from "../services/session";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, usersTable, refreshTokensTable } from "@workspace/db";
+import { eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { logger } from "../lib/logger";
 import bcrypt from "bcryptjs";
-import { sendValidationError, sendInternalError, sendNotFoundError } from "../lib/response-formatters";
+import { sendValidationError, sendNotFoundError } from "../lib/response-formatters";
 
 const router = Router();
 
@@ -243,95 +243,98 @@ router.post("/auth/password-reset/confirm", async (req, res): Promise<void> => {
 // Session Management Endpoints
 
 router.get("/auth/sessions", requireAuth, async (req, res): Promise<void> => {
-  const user = (req as AuthRequest).user!;
-  const userId = parseInt(user.sub);
+  try {
+    const user = (req as AuthRequest).user!;
+    const userId = parseInt(user.sub);
 
-  // Get the current refresh token from the request to mark it as current
-  const refreshToken = req.body.refreshToken || req.query.refreshToken;
-  let currentTokenHash: string | undefined;
+    // Get the current refresh token from the request to mark it as current
+    const refreshToken = req.body?.refreshToken || req.query.refreshToken;
+    let currentTokenHash: string | undefined;
 
-  if (refreshToken && typeof refreshToken === 'string') {
-    // Get all non-revoked tokens to find the current one
-    let refreshTokensTable: any;
-    let isNull: any;
-    try {
-      const dbModule = await import("@workspace/db");
-      const drizzleModule = await import("drizzle-orm");
-      refreshTokensTable = dbModule.refreshTokensTable;
-      isNull = drizzleModule.isNull;
-    } catch (error) {
-      logger.error({ error }, "Failed to import database modules");
-      sendInternalError(res, "Internal server error");
-      return;
-    }
-    const tokens = await db
-      .select({ tokenHash: refreshTokensTable.tokenHash })
-      .from(refreshTokensTable)
-      .where(isNull(refreshTokensTable.revokedAt));
+    if (refreshToken && typeof refreshToken === 'string') {
+      // Get all non-revoked tokens to find the current one
+      const tokens = await db
+        .select({ tokenHash: refreshTokensTable.tokenHash })
+        .from(refreshTokensTable)
+        .where(isNull(refreshTokensTable.revokedAt));
 
-    for (const token of tokens) {
-      const isValid = await bcrypt.compare(refreshToken, token.tokenHash);
-      if (isValid) {
-        currentTokenHash = token.tokenHash;
-        break;
+      for (const token of tokens) {
+        const isValid = await bcrypt.compare(refreshToken, token.tokenHash);
+        if (isValid) {
+          currentTokenHash = token.tokenHash;
+          break;
+        }
       }
     }
-  }
 
-  const sessions = await sessionService.listSessions(userId, currentTokenHash);
-  res.json({ sessions });
+    const sessions = await sessionService.listSessions(userId, currentTokenHash);
+    res.json({ sessions });
+  } catch (error) {
+    logger.error({ error }, "Error listing sessions");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.delete("/auth/sessions/:id", requireAuth, async (req, res): Promise<void> => {
-  const user = (req as AuthRequest).user!;
-  const userId = parseInt(user.sub);
-  const sessionIdParam = req.params.id;
-  const sessionId = parseInt(Array.isArray(sessionIdParam) ? sessionIdParam[0] : sessionIdParam);
+  try {
+    const user = (req as AuthRequest).user!;
+    const userId = parseInt(user.sub);
+    const sessionIdParam = req.params.id;
+    const sessionId = parseInt(Array.isArray(sessionIdParam) ? sessionIdParam[0] : sessionIdParam);
 
-  if (isNaN(sessionId)) {
-    res.status(400).json({ error: "Invalid session ID" });
-    return;
+    if (isNaN(sessionId)) {
+      res.status(400).json({ error: "Invalid session ID" });
+      return;
+    }
+
+    // Get current session ID to prevent revoking current session
+    const refreshToken = req.body?.refreshToken || req.query.refreshToken;
+    let currentSessionId: number | undefined;
+    if (refreshToken && typeof refreshToken === 'string') {
+      const sessionId = await sessionService.getSessionIdForToken(refreshToken);
+      currentSessionId = sessionId ?? undefined;
+    }
+
+    // Prevent revoking current session
+    if (currentSessionId && sessionId === currentSessionId) {
+      sendValidationError(res, "Cannot revoke current session via API. Use logout instead.");
+      return;
+    }
+
+    const revoked = await sessionService.revokeSession(sessionId, userId);
+
+    if (!revoked) {
+      sendNotFoundError(res, "Session not found");
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error({ error }, "Error revoking session");
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  // Get current session ID to prevent revoking current session
-  const refreshToken = req.body.refreshToken || req.query.refreshToken;
-  let currentSessionId: number | undefined;
-  if (refreshToken && typeof refreshToken === 'string') {
-    const sessionId = await sessionService.getSessionIdForToken(refreshToken);
-    currentSessionId = sessionId ?? undefined;
-  }
-
-  // Prevent revoking current session
-  if (currentSessionId && sessionId === currentSessionId) {
-    sendValidationError(res, "Cannot revoke current session via API. Use logout instead.");
-    return;
-  }
-
-  const revoked = await sessionService.revokeSession(sessionId, userId);
-
-  if (!revoked) {
-    sendNotFoundError(res, "Session not found");
-    return;
-  }
-
-  res.json({ success: true });
 });
 
 router.delete("/auth/sessions", requireAuth, async (req, res): Promise<void> => {
-  const user = (req as AuthRequest).user!;
-  const userId = parseInt(user.sub);
+  try {
+    const user = (req as AuthRequest).user!;
+    const userId = parseInt(user.sub);
 
-  // Get the current session ID to keep it active
-  const refreshToken = req.body.refreshToken || req.query.refreshToken;
-  let currentSessionId: number | undefined;
+    // Get the current session ID to keep it active
+    const refreshToken = req.body?.refreshToken || req.query.refreshToken;
+    let currentSessionId: number | undefined;
 
-  if (refreshToken && typeof refreshToken === 'string') {
-    const sessionId = await sessionService.getSessionIdForToken(refreshToken);
-    currentSessionId = sessionId ?? undefined;
+    if (refreshToken && typeof refreshToken === 'string') {
+      const sessionId = await sessionService.getSessionIdForToken(refreshToken);
+      currentSessionId = sessionId ?? undefined;
+    }
+
+    const revokedCount = await sessionService.revokeAllSessions(userId, currentSessionId);
+    res.json({ success: true, revokedCount });
+  } catch (error) {
+    logger.error({ error }, "Error revoking all sessions");
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  const revokedCount = await sessionService.revokeAllSessions(userId, currentSessionId);
-  res.json({ success: true, revokedCount });
 });
 
 export default router;

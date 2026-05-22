@@ -11,7 +11,11 @@ import { createHash } from "crypto";
 import { createAuthErrorResponse, AuthErrorCodes } from "./authErrors";
 import { BCRYPT_ROUNDS, AUTH_COOKIE_MAX_AGE_MS, TIMING_SAFE_LOGIN_DELAY_MAX_MS } from "./constants";
 
-const JWT_SECRET_KEY = new TextEncoder().encode(getEnv().JWT_SECRET);
+// Compute JWT secret key dynamically to support test environment changes
+function getJWTSecretKey(): Uint8Array {
+  return new TextEncoder().encode(getEnv().JWT_SECRET);
+}
+
 const JWT_EXPIRY = getEnv().JWT_EXPIRY;
 const REFRESH_TOKEN_EXPIRY_DAYS = getEnv().REFRESH_TOKEN_EXPIRY_DAYS;
 const COOKIE_NAME = getEnv().COOKIE_NAME;
@@ -89,12 +93,12 @@ export async function signToken(payload: AuthPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(JWT_EXPIRY)
-    .sign(JWT_SECRET_KEY);
+    .sign(getJWTSecretKey());
 }
 
 export async function verifyToken(token: string): Promise<AuthPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
+    const { payload } = await jwtVerify(token, getJWTSecretKey());
     // Use runtime validation with type guard instead of unsafe assertion
     if (isValidAuthPayload(payload)) {
       return payload;

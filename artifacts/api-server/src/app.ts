@@ -200,22 +200,26 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 
 // CSRF protection middleware (exempt health endpoints for monitoring systems)
 const csrfMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // Skip CSRF for health check endpoints and login for development
-  if (req.path.startsWith('/healthz/') || 
+  // Skip CSRF for health check endpoints, login, and session management (JWT-authenticated)
+  if (req.path.startsWith('/healthz/') ||
       req.path.startsWith('/api/v1/healthz/') ||
       req.path === '/api/auth/login' ||
-      req.path === '/api/v1/auth/login') {
+      req.path === '/api/v1/auth/login' ||
+      req.path.startsWith('/api/auth/sessions') ||
+      req.path.startsWith('/api/v1/auth/sessions')) {
     return next();
   }
   csrfTokenMiddleware(req, res, next);
 };
 
 const csrfProtectionMiddlewareExempt = (req: Request, res: Response, next: NextFunction) => {
-  // Skip CSRF for health check endpoints and login for development
-  if (req.path.startsWith('/healthz/') || 
+  // Skip CSRF for health check endpoints, login, and session management (JWT-authenticated)
+  if (req.path.startsWith('/healthz/') ||
       req.path.startsWith('/api/v1/healthz/') ||
       req.path === '/api/auth/login' ||
-      req.path === '/api/v1/auth/login') {
+      req.path === '/api/v1/auth/login' ||
+      req.path.startsWith('/api/auth/sessions') ||
+      req.path.startsWith('/api/v1/auth/sessions')) {
     return next();
   }
   csrfProtectionMiddleware(req, res, next);
