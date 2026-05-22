@@ -1913,8 +1913,8 @@ Page object pattern, test data factories, browser-agnostic testing, parallel tes
 
 ---
 
-## [ ] TASK-066: Add Missing Lint Script
-**Status:** Pending
+## [x] TASK-066: Add Missing Lint Script
+**Status:** Complete
 **Priority:** Low
 
 ### Related File Paths
@@ -1924,6 +1924,12 @@ Page object pattern, test data factories, browser-agnostic testing, parallel tes
 - Add `lint` script to root package.json
 - Script should run ESLint across all packages
 - Script should be consistent with AGENTS.md quality commands
+
+### Implementation notes:
+- Added lint script: `"lint": "pnpm -r --if-present run lint"`
+- Also added format, test, and test:coverage scripts for consistency with AGENTS.md quality commands
+- Verified lint script executes successfully across all packages (9 of 10 workspace projects)
+- Scripts now match the quality commands listed in AGENTS.md
 
 ### Out of Scope
 - Adding new lint rules
@@ -1956,11 +1962,11 @@ Page object pattern, test data factories, browser-agnostic testing, parallel tes
 
 ### Subtasks
 
-#### TASK-066-A: Add Lint Script to Root Package.json
+#### TASK-066-A: Add Lint Script to Root Package.json ✅
 **Target:** `package.json`
 **Action:** Add `"lint": "pnpm -r --if-present run lint"` to scripts section.
 
-#### TASK-066-B: Verify Lint Script Works
+#### TASK-066-B: Verify Lint Script Works ✅
 **Target:** Manual verification
 **Action:** Run `pnpm run lint` and verify it executes correctly across all packages.
 
@@ -2019,6 +2025,59 @@ Page object pattern, test data factories, browser-agnostic testing, parallel tes
 #### TASK-067-C: Test Pre-push Hook
 **Target:** Manual verification
 **Action:** Test pre-push hook by introducing a type error and verifying push is rejected.
+
+---
+
+## [ ] TASK-068: Fix Pre-existing Typecheck Errors in Spaflow Test Files
+**Status:** Pending
+**Priority:** Medium
+
+### Related File Paths
+- `artifacts/spaflow/src/pages/*.test.tsx`
+- `artifacts/spaflow/src/components/ui/*.test.tsx`
+
+### Definition of Done
+- All TypeScript errors in spaflow test files resolved
+- `pnpm run typecheck` passes for all packages
+- No unused imports or variables
+- Type assertions match actual types
+
+### Out of Scope
+- Changing test logic or assertions
+- Modifying production code
+
+### Rules to Follow
+- Fix type errors without changing test behavior
+- Remove unused imports and variables
+- Use proper type assertions
+- Follow TypeScript strict mode rules
+
+### Advanced Coding Pattern
+- Type-safe test mocking
+- Proper test data typing
+
+### Anti-Patterns
+- Using `@ts-ignore` to bypass errors
+- Removing tests instead of fixing them
+- Breaking test functionality
+
+### Imports/Exports
+- Test file fixes only
+- No production code changes
+
+### Depends On
+- None
+
+### Blocks
+- Typecheck passing
+- Pre-push hook functionality
+
+### Issue Context
+Discovered during TASK-066 QA: spaflow package has 43+ TypeScript errors in test files including:
+- Missing `vi` imports in component tests
+- Unused variables (screen, fireEvent, waitFor, userEvent, mockMutateAsync)
+- Type mismatches in mock data (null vs expected object types, missing properties)
+- Missing beforeEach imports
 
 ---
 
