@@ -21,6 +21,7 @@ import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError } from "../lib/logger";
 import { LOCKER_TOTAL, SESSION_DURATION_MS, EXTENSION_DURATION_MS, EXTENSION_SURCHARGE_DIVISOR } from "../lib/constants";
 import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
+import { broadcast, WebSocketEventType } from "../lib/websocket";
 
 const router = Router();
 
@@ -209,6 +210,23 @@ router.post("/lockers/:id/assign", requireAuth, apiLimiter, async (req, res): Pr
     description: `Assigned locker ${session.locker.name} to client ${client.name}`,
   });
 
+  // Broadcast locker status change
+  broadcast({
+    type: WebSocketEventType.LOCKER_STATUS_CHANGE,
+    data: {
+      resourceType: "locker",
+      resourceId: session.locker.id,
+      resourceName: session.locker.name,
+      status: "occupied",
+      clientId: client.id,
+      clientName: client.name,
+      sessionId: session.session.id,
+      startTime,
+      expiresAt,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
   res.json({
     id: session.session.id,
     clientId: session.session.clientId,
@@ -268,6 +286,23 @@ router.post("/lockers/:id/release", requireAuth, apiLimiter, async (req, res): P
     resourceType: "locker",
     resourceId: locker.id,
     description: `Released locker ${locker.name}`,
+  });
+
+  // Broadcast locker status change
+  broadcast({
+    type: WebSocketEventType.LOCKER_STATUS_CHANGE,
+    data: {
+      resourceType: "locker",
+      resourceId: locker.id,
+      resourceName: locker.name,
+      status: "available",
+      clientId: null,
+      clientName: null,
+      sessionId: null,
+      startTime: null,
+      expiresAt: null,
+    },
+    timestamp: new Date().toISOString(),
   });
 
   const [session] = sessionId
@@ -462,6 +497,23 @@ router.post("/lockers/bulk-release", requireAuth, apiLimiter, async (req, res): 
         resourceType: "locker",
         resourceId: locker.id,
         description: `Bulk released locker ${locker.name} (operation: ${operation})`,
+      });
+
+      // Broadcast locker status change
+      broadcast({
+        type: WebSocketEventType.LOCKER_STATUS_CHANGE,
+        data: {
+          resourceType: "locker",
+          resourceId: locker.id,
+          resourceName: locker.name,
+          status: "available",
+          clientId: null,
+          clientName: null,
+          sessionId: null,
+          startTime: null,
+          expiresAt: null,
+        },
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       failed.push({ resourceId: locker.id, reason: error instanceof Error ? error.message : "Unknown error" });

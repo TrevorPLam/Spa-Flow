@@ -22,6 +22,7 @@ import { apiLimiter } from "../middleware/rateLimit";
 import { logTransactionError, logger } from "../lib/logger";
 import { ROOM_TOTAL, SESSION_DURATION_MS, EXTENSION_DURATION_MS, EXTENSION_SURCHARGE_DIVISOR, WAITLIST_CONFIRM_MS } from "../lib/constants";
 import { sendValidationError, sendNotFoundError, sendConflictError } from "../lib/response-formatters";
+import { broadcast, WebSocketEventType } from "../lib/websocket";
 
 const router = Router();
 
@@ -206,6 +207,23 @@ router.post("/rooms/:id/assign", requireAuth, apiLimiter, async (req, res): Prom
     description: `Assigned room ${room.name} to client ${client.name}`,
   });
 
+  // Broadcast room status change
+  broadcast({
+    type: WebSocketEventType.ROOM_STATUS_CHANGE,
+    data: {
+      resourceType: "room",
+      resourceId: room.id,
+      resourceName: room.name,
+      status: "occupied",
+      clientId: client.id,
+      clientName: client.name,
+      sessionId: session.id,
+      startTime,
+      expiresAt,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
   res.json({
     id: session.id,
     clientId: session.clientId,
@@ -282,6 +300,23 @@ router.post("/rooms/:id/release", requireAuth, apiLimiter, async (req, res): Pro
     resourceType: "room",
     resourceId: room.id,
     description: `Released room ${room.name}`,
+  });
+
+  // Broadcast room status change
+  broadcast({
+    type: WebSocketEventType.ROOM_STATUS_CHANGE,
+    data: {
+      resourceType: "room",
+      resourceId: room.id,
+      resourceName: room.name,
+      status: "available",
+      clientId: null,
+      clientName: null,
+      sessionId: null,
+      startTime: null,
+      expiresAt: null,
+    },
+    timestamp: new Date().toISOString(),
   });
 
   const [session] = sessionId
@@ -471,6 +506,23 @@ router.post("/rooms/bulk-release", requireAuth, apiLimiter, async (req, res): Pr
         resourceId: room.id,
         description: `Bulk released room ${room.name} (operation: ${operation})`,
       });
+
+      // Broadcast room status change
+      broadcast({
+        type: WebSocketEventType.ROOM_STATUS_CHANGE,
+        data: {
+          resourceType: "room",
+          resourceId: room.id,
+          resourceName: room.name,
+          status: "available",
+          clientId: null,
+          clientName: null,
+          sessionId: null,
+          startTime: null,
+          expiresAt: null,
+        },
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
       failed.push({ resourceId: room.id, reason: error instanceof Error ? error.message : "Unknown error" });
       logTransactionError("bulk room release", error, { roomId: room.id, operation });
@@ -513,6 +565,22 @@ export async function assignNextWaitlistEntry(roomId: number): Promise<void> {
     sql`UPDATE waitlist_entries SET status = 'assigned', assigned_room_id = ${roomId}, assigned_at = NOW(), confirm_by = ${confirmBy} WHERE id = ${entry!.id}`
   );
   await db.update(roomsTable).set({ status: "reserved" }).where(eq(roomsTable.id, roomId));
+
+  // Broadcast waitlist update
+  broadcast({
+    type: WebSocketEventType.WAITLIST_UPDATE,
+    data: {
+      resourceType: "room",
+      resourceId: roomId,
+      waitlistEntryId: entry!.id,
+      clientId: entry!.client_id,
+      clientName: entry!.client_name,
+      status: "assigned",
+      assignedAt: new Date().toISOString(),
+      confirmBy: confirmBy.toISOString(),
+    },
+    timestamp: new Date().toISOString(),
+  });
 
   if (entry!.client_phone) {
     await sendSms(entry.client_phone, WAITLIST_ROOM_MSG);

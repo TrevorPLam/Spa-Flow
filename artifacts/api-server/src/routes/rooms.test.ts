@@ -1,10 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { api } from '../test/test-helpers';
 import { createAuthenticatedRequest, createTestRoomInDb, createTestClientInDb, cleanDatabase } from '../test/test-helpers';
+import { broadcast } from '../lib/websocket';
+
+// Mock the broadcast function
+vi.mock('../lib/websocket', () => ({
+  broadcast: vi.fn(),
+  WebSocketEventType: {
+    LOCKER_STATUS_CHANGE: 'LOCKER_STATUS_CHANGE',
+    ROOM_STATUS_CHANGE: 'ROOM_STATUS_CHANGE',
+    WAITLIST_UPDATE: 'WAITLIST_UPDATE',
+    SESSION_EXPIRED: 'SESSION_EXPIRED',
+    RESOURCE_RELEASED: 'RESOURCE_RELEASED',
+  },
+}));
 
 describe('Rooms API', { tags: ['regression'] }, () => {
   beforeEach(async () => {
     await cleanDatabase();
+    vi.clearAllMocks();
   });
 
   afterEach(async () => {
@@ -31,6 +45,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       expect(response.body).toHaveProperty('totalReleased');
       expect(response.body).toHaveProperty('failed');
       expect(response.body.totalReleased).toBeGreaterThan(0);
+      expect(broadcast).toHaveBeenCalled();
     });
 
     it('should release rooms by status', async () => {
@@ -48,6 +63,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
 
       expect(response.status).toBe(200);
       expect(response.body.totalReleased).toBe(2);
+      expect(broadcast).toHaveBeenCalled();
     });
 
     it('should release rooms by IDs', async () => {
@@ -65,6 +81,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
 
       expect(response.status).toBe(200);
       expect(response.body.totalReleased).toBe(2);
+      expect(broadcast).toHaveBeenCalled();
     });
 
     it('should return 401 for unauthenticated request', async () => {
@@ -119,6 +136,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'occupied');
       expect(response.body).toHaveProperty('currentClientId', client.id);
+      expect(broadcast).toHaveBeenCalled();
     });
 
     it('should return 400 when assigning already occupied room', async () => {
@@ -169,6 +187,7 @@ describe('Rooms API', { tags: ['regression'] }, () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'available');
       expect(response.body).not.toHaveProperty('currentClientId');
+      expect(broadcast).toHaveBeenCalled();
     });
 
     it('should return 404 for non-existent room', async () => {
