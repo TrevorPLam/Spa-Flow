@@ -5,11 +5,15 @@ import { logger } from "../lib/logger";
 import { assignNextWaitlistEntry } from "../routes/rooms";
 import { logCacheStats } from "../lib/cache";
 import { reconciliationService } from "../services/reconciliation";
+import { checkAndSendExpirationReminders } from "../services/notifications";
 
 // Every 5 minutes: expire rental sessions and resources whose time has lapsed
 cron.schedule("*/5 * * * *", async () => {
   try {
     const now = new Date();
+
+    // Check for sessions expiring soon and send SMS reminders
+    await checkAndSendExpirationReminders();
 
     // Expire overdue sessions
     const expiredSessions = await db

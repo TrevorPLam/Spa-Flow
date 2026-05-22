@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ClientMembershipStatus } from './clientMembershipStatus';
+import type { ClientSmsRemindersEnabled } from './clientSmsRemindersEnabled';
 import type { RentalSession } from './rentalSession';
 
 export interface Client {
@@ -22,6 +23,8 @@ export interface Client {
   membershipExpiresAt?: Date | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  smsRemindersEnabled?: ClientSmsRemindersEnabled;
   /** @nullable */
   dob?: string | null;
   /** @nullable */

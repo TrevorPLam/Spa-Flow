@@ -2268,6 +2268,9 @@ components:
           format: date-time
         notes:
           type: ["string", "null"]
+        smsRemindersEnabled:
+          type: ["string", "null"]
+          enum: ["true", "false"]
         # PII fields - only decrypted for MANAGER role
         dob:
           type: ["string", "null"]
@@ -2343,6 +2346,9 @@ components:
           enum: [none, one_time, six_month]
         notes:
           type: string
+        smsRemindersEnabled:
+          type: string
+          enum: ["true", "false"]
 
     ClientList:
       type: object

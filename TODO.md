@@ -246,14 +246,19 @@
 
 ---
 
-## [ ] TASK-053: Add Automated Expiration Notifications
-**Status:** Pending
+## [x] TASK-053: Add Automated Expiration Notifications
+**Status:** Completed
 **Priority:** Medium
 
 ### Related File Paths
 - `artifacts/api-server/src/jobs/cron.ts`
 - `artifacts/api-server/src/lib/sms.ts`
 - `lib/db/src/schema/clients.ts`
+- `artifacts/api-server/src/services/notifications.ts` (new)
+- `artifacts/api-server/src/lib/env.ts`
+- `artifacts/spaflow/src/pages/client-detail.tsx`
+- `artifacts/api-server/src/routes/clients.ts`
+- `lib/api-spec/openapi.yaml`
 
 ### Definition of Done
 - Expiration reminder at 30 minutes before session ends
@@ -299,35 +304,47 @@
 ### Blocks
 - None
 
+### Implementation Notes
+- Added `smsRemindersEnabled` field to clients schema (text type with "true"/"false" enum, default "true")
+- Created migration via `pnpm push` in lib/db
+- Added `REMINDER_MINUTES_BEFORE` env var (comma-separated string, default "30,15")
+- Created notification service with opt-in filtering, quiet hours respect (9 PM - 8 AM), and audit logging
+- Integrated reminder check into existing 5-minute cron job
+- Added toggle switch in client detail page with visual status indicator
+- Added GET /clients/:id/notifications endpoint (manager-only) for notification history
+- Updated OpenAPI spec with smsRemindersEnabled field in Client and ClientUpdate schemas
+- Regenerated API client and Zod schemas via codegen
+- Typecheck passes; tests are basic integration tests (full E2E testing requires Twilio configuration)
+
 ---
 
 ### Subtasks
 
-#### TASK-053-A: Add SMS Opt-In to Client Schema
+#### ✅ TASK-053-A: Add SMS Opt-In to Client Schema
 **Target:** `lib/db/src/schema/clients.ts`
 **Action:** Add smsRemindersEnabled boolean field to clientsTable with default true, create migration.
 
-#### TASK-053-B: Add Reminder Timing Configuration
+#### ✅ TASK-053-B: Add Reminder Timing Configuration
 **Target:** `artifacts/api-server/src/lib/env.ts`
 **Action:** Add REMINDER_MINUTES_BEFORE array to envSchema (e.g., [30, 15]), configure default values.
 
-#### TASK-053-C: Create Notification Service
+#### ✅ TASK-053-C: Create Notification Service
 **Target:** `artifacts/api-server/src/services/notifications.ts` (new)
 **Action:** Create service to check expiring sessions, filter by opt-in, send SMS reminders, log delivery status.
 
-#### TASK-053-D: Add Reminder Cron Job
+#### ✅ TASK-053-D: Add Reminder Cron Job
 **Target:** `artifacts/api-server/src/jobs/cron.ts`
 **Action:** Add cron job to run every 5 minutes, check for sessions expiring within reminder window, trigger notifications.
 
-#### TASK-053-E: Add Opt-In Toggle to Client Detail
+#### ✅ TASK-053-E: Add Opt-In Toggle to Client Detail
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Add toggle switch for SMS reminders preference, update client on change, show current preference status.
 
-#### TASK-053-F: Add Notification History
+#### ✅ TASK-053-F: Add Notification History
 **Target:** `artifacts/api-server/src/routes/clients.ts`
 **Action:** Add GET /clients/:id/notifications endpoint to show notification history, include delivery status and timestamps.
 
-#### TASK-053-G: Add Tests for Notifications
+#### ✅ TASK-053-G: Add Tests for Notifications
 **Target:** `artifacts/api-server/src/services/notifications.test.ts` (new)
 **Action:** Write tests for reminder timing, opt-in filtering, SMS sending, delivery logging.
 

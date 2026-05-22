@@ -262,6 +262,17 @@ export const ClientMembershipStatus = {
   six_month: 'six_month',
 } as const;
 
+/**
+ * @nullable
+ */
+export type ClientSmsRemindersEnabled = typeof ClientSmsRemindersEnabled[keyof typeof ClientSmsRemindersEnabled] | null;
+
+
+export const ClientSmsRemindersEnabled = {
+  true: 'true',
+  false: 'false',
+} as const;
+
 export type RentalSessionResourceType = typeof RentalSessionResourceType[keyof typeof RentalSessionResourceType];
 
 
@@ -311,6 +322,8 @@ export interface Client {
   membershipExpiresAt?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  smsRemindersEnabled?: ClientSmsRemindersEnabled;
   /** @nullable */
   dob?: string | null;
   /** @nullable */
@@ -370,6 +383,14 @@ export const ClientUpdateMembershipStatus = {
   six_month: 'six_month',
 } as const;
 
+export type ClientUpdateSmsRemindersEnabled = typeof ClientUpdateSmsRemindersEnabled[keyof typeof ClientUpdateSmsRemindersEnabled];
+
+
+export const ClientUpdateSmsRemindersEnabled = {
+  true: 'true',
+  false: 'false',
+} as const;
+
 export interface ClientUpdate {
   name?: string;
   email?: string;
@@ -379,6 +400,7 @@ export interface ClientUpdate {
   documentNumber?: string;
   membershipStatus?: ClientUpdateMembershipStatus;
   notes?: string;
+  smsRemindersEnabled?: ClientUpdateSmsRemindersEnabled;
 }
 
 export interface ClientList {
@@ -1145,6 +1167,50 @@ export interface AuditLogList {
   limit: number;
 }
 
+export interface DuplicateCandidate {
+  primaryId: number;
+  duplicateId: number;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  confidence: number;
+  reason: string;
+  matchingFields: string[];
+}
+
+export type AnomalyResultSeverity = typeof AnomalyResultSeverity[keyof typeof AnomalyResultSeverity];
+
+
+export const AnomalyResultSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface AnomalyResult {
+  clientId: number;
+  type: string;
+  description: string;
+  severity: AnomalyResultSeverity;
+}
+
+export interface ValidationResult {
+  field: string;
+  valid: boolean;
+  error?: string;
+  /** @nullable */
+  value: string | null;
+}
+
+export interface MergeResult {
+  primaryId: number;
+  duplicateId: number;
+  sessionsMerged: number;
+  transactionsMerged: number;
+  success: boolean;
+}
+
 export type Logout200 = {
   success?: boolean;
 };
@@ -1447,5 +1513,58 @@ page?: number;
 limit?: number;
 action?: string;
 userId?: number;
+};
+
+export type GetDuplicatesParams = {
+limit?: number;
+/**
+ * @minimum 0
+ * @maximum 1
+ */
+minConfidence?: number;
+};
+
+export type GetDuplicates200 = {
+  duplicates?: DuplicateCandidate[];
+};
+
+export type GetAnomalies200 = {
+  anomalies?: AnomalyResult[];
+};
+
+export type ValidateClientBody = {
+  clientId: number;
+};
+
+export type ValidateClient200 = {
+  clientId?: number;
+  validation?: ValidationResult[];
+};
+
+export type BulkValidateClientsBody = {
+  clientIds: number[];
+};
+
+export type BulkValidateClients200Results = {[key: string]: ValidationResult[]};
+
+export type BulkValidateClients200 = {
+  results?: BulkValidateClients200Results;
+};
+
+export type MergeClientsBody = {
+  primaryId: number;
+  duplicateId: number;
+};
+
+export type MergeClients200 = {
+  result?: MergeResult;
+};
+
+export type MergeClientIntoBody = {
+  duplicateId: number;
+};
+
+export type MergeClientInto200 = {
+  result?: MergeResult;
 };
 

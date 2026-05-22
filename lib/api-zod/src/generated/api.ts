@@ -214,6 +214,7 @@ export const ListClientsResponse = zod.object({
   "membershipStatus": zod.enum(['none', 'one_time', 'six_month']),
   "membershipExpiresAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
+  "smsRemindersEnabled": zod.enum(['true', 'false']).nullish(),
   "dob": zod.string().nullish(),
   "address": zod.string().nullish(),
   "documentNumber": zod.string().nullish(),
@@ -269,6 +270,7 @@ export const GetClientResponse = zod.object({
   "membershipStatus": zod.enum(['none', 'one_time', 'six_month']),
   "membershipExpiresAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
+  "smsRemindersEnabled": zod.enum(['true', 'false']).nullish(),
   "dob": zod.string().nullish(),
   "address": zod.string().nullish(),
   "documentNumber": zod.string().nullish(),
@@ -304,7 +306,8 @@ export const UpdateClientBody = zod.object({
   "address": zod.string().optional(),
   "documentNumber": zod.string().optional(),
   "membershipStatus": zod.enum(['none', 'one_time', 'six_month']).optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "smsRemindersEnabled": zod.enum(['true', 'false']).optional()
 })
 
 export const UpdateClientResponse = zod.object({
@@ -316,6 +319,7 @@ export const UpdateClientResponse = zod.object({
   "membershipStatus": zod.enum(['none', 'one_time', 'six_month']),
   "membershipExpiresAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
+  "smsRemindersEnabled": zod.enum(['true', 'false']).nullish(),
   "dob": zod.string().nullish(),
   "address": zod.string().nullish(),
   "documentNumber": zod.string().nullish(),
@@ -1575,6 +1579,126 @@ export const ListAuditLogsResponse = zod.object({
   "total": zod.number(),
   "page": zod.number(),
   "limit": zod.number()
+})
+
+
+/**
+ * @summary Get potential duplicate clients (manager only)
+ */
+export const getDuplicatesQueryLimitDefault = 100;
+export const getDuplicatesQueryMinConfidenceDefault = 0.7;
+export const getDuplicatesQueryMinConfidenceMin = 0;
+export const getDuplicatesQueryMinConfidenceMax = 1;
+
+
+
+export const GetDuplicatesQueryParams = zod.object({
+  "limit": zod.coerce.number().default(getDuplicatesQueryLimitDefault),
+  "minConfidence": zod.coerce.number().min(getDuplicatesQueryMinConfidenceMin).max(getDuplicatesQueryMinConfidenceMax).default(getDuplicatesQueryMinConfidenceDefault)
+})
+
+export const getDuplicatesResponseDuplicatesItemConfidenceMin = 0;
+export const getDuplicatesResponseDuplicatesItemConfidenceMax = 1;
+
+
+
+export const GetDuplicatesResponse = zod.object({
+  "duplicates": zod.array(zod.object({
+  "primaryId": zod.number(),
+  "duplicateId": zod.number(),
+  "confidence": zod.number().min(getDuplicatesResponseDuplicatesItemConfidenceMin).max(getDuplicatesResponseDuplicatesItemConfidenceMax),
+  "reason": zod.string(),
+  "matchingFields": zod.array(zod.string())
+})).optional()
+})
+
+
+/**
+ * @summary Get data anomalies (manager only)
+ */
+export const GetAnomaliesResponse = zod.object({
+  "anomalies": zod.array(zod.object({
+  "clientId": zod.number(),
+  "type": zod.string(),
+  "description": zod.string(),
+  "severity": zod.enum(['low', 'medium', 'high'])
+})).optional()
+})
+
+
+/**
+ * @summary Validate a client's data (manager only)
+ */
+export const ValidateClientBody = zod.object({
+  "clientId": zod.number()
+})
+
+export const ValidateClientResponse = zod.object({
+  "clientId": zod.number().optional(),
+  "validation": zod.array(zod.object({
+  "field": zod.string(),
+  "valid": zod.boolean(),
+  "error": zod.string().optional(),
+  "value": zod.string().nullable()
+})).optional()
+})
+
+
+/**
+ * @summary Validate multiple clients in bulk (manager only)
+ */
+export const BulkValidateClientsBody = zod.object({
+  "clientIds": zod.array(zod.number())
+})
+
+export const BulkValidateClientsResponse = zod.object({
+  "results": zod.record(zod.string(), zod.array(zod.object({
+  "field": zod.string(),
+  "valid": zod.boolean(),
+  "error": zod.string().optional(),
+  "value": zod.string().nullable()
+}))).optional()
+})
+
+
+/**
+ * @summary Merge a duplicate client into a primary client (manager only)
+ */
+export const MergeClientsBody = zod.object({
+  "primaryId": zod.number(),
+  "duplicateId": zod.number()
+})
+
+export const MergeClientsResponse = zod.object({
+  "result": zod.object({
+  "primaryId": zod.number(),
+  "duplicateId": zod.number(),
+  "sessionsMerged": zod.number(),
+  "transactionsMerged": zod.number(),
+  "success": zod.boolean()
+}).optional()
+})
+
+
+/**
+ * @summary Merge a duplicate client into this client (manager only)
+ */
+export const MergeClientIntoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MergeClientIntoBody = zod.object({
+  "duplicateId": zod.number()
+})
+
+export const MergeClientIntoResponse = zod.object({
+  "result": zod.object({
+  "primaryId": zod.number(),
+  "duplicateId": zod.number(),
+  "sessionsMerged": zod.number(),
+  "transactionsMerged": zod.number(),
+  "success": zod.boolean()
+}).optional()
 })
 
 

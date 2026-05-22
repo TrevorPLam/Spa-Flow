@@ -22,11 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw, ChevronDown, ChevronRight, Clock, MessageSquare } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +42,7 @@ const editSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   notes: z.string().optional(),
+  smsRemindersEnabled: z.boolean().optional(),
 });
 
 const renewalSchema = z.object({
@@ -118,7 +120,7 @@ export default function ClientDetailPage() {
 
   const form = useForm<EditForm>({
     resolver: zodResolver(editSchema),
-    defaultValues: { name: "", email: "", phone: "", notes: "" },
+    defaultValues: { name: "", email: "", phone: "", notes: "", smsRemindersEnabled: true },
   });
 
   const renewalForm = useForm<RenewalForm>({
@@ -155,6 +157,7 @@ export default function ClientDetailPage() {
       email: client.email ?? "",
       phone: client.phone ?? "",
       notes: client.notes ?? "",
+      smsRemindersEnabled: client.smsRemindersEnabled === "true",
     });
     setShowEdit(true);
   }
@@ -167,6 +170,7 @@ export default function ClientDetailPage() {
         email: values.email || undefined,
         phone: values.phone || undefined,
         notes: values.notes || undefined,
+        smsRemindersEnabled: values.smsRemindersEnabled ? "true" : "false",
       },
     }, {
       onSuccess: () => {
@@ -276,6 +280,12 @@ export default function ClientDetailPage() {
               {client.email && <div><span className="text-muted-foreground">Email:</span> {client.email}</div>}
               {client.phone && <div><span className="text-muted-foreground">Phone:</span> {client.phone}</div>}
               {!client.email && !client.phone && <p className="text-muted-foreground">No contact info</p>}
+              <div className="flex items-center gap-2 pt-2">
+                <MessageSquare size={14} className={client.smsRemindersEnabled === "true" ? "text-green-600" : "text-muted-foreground"} />
+                <span className="text-muted-foreground">
+                  SMS Reminders: {client.smsRemindersEnabled === "true" ? "Enabled" : "Disabled"}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
@@ -451,6 +461,20 @@ export default function ClientDetailPage() {
                   <FormLabel>Notes</FormLabel>
                   <FormControl><Textarea data-testid="input-edit-notes" {...field} /></FormControl>
                   <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="smsRemindersEnabled" render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">SMS Reminders</FormLabel>
+                    <p className="text-sm text-muted-foreground">Receive session expiration reminders via text message</p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )} />
               <DialogFooter>

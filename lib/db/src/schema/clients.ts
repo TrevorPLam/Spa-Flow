@@ -13,6 +13,7 @@ export const clientsTable = pgTable("clients", {
   membershipStatus: membershipStatusEnum("membership_status").notNull().default("none"),
   membershipExpiresAt: timestamp("membership_expires_at", { withTimezone: true }),
   notes: text("notes"),
+  smsRemindersEnabled: text("sms_reminders_enabled").notNull().default("true"),
   // Encrypted PII fields (stored as base64-encoded ciphertext JSON)
   dobEncrypted: text("dob_encrypted"),      // date of birth
   addressEncrypted: text("address_encrypted"),

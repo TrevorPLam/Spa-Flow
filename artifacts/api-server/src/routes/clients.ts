@@ -755,4 +755,66 @@ router.post("/clients/:id/merge", requireAuth, apiLimiter, async (req, res): Pro
   }
 });
 
+/**
+ * GET /clients/:id/notifications
+ * Get notification history for a client
+ * Requires MANAGER role
+ */
+router.get("/clients/:id/notifications", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const params = GetClientParams.safeParse(req.params);
+  if (!params.success) {
+    sendValidationError(res, params.error.message);
+    return;
+  }
+
+  const actingUser = (req as AuthRequest).user!;
+
+  // Require MANAGER role for notification history
+  if (actingUser.role !== "MANAGER") {
+    res.status(403).json({ error: "Notification history requires manager role" });
+    return;
+  }
+
+  try {
+    const { auditLogsTable } = await import("@workspace/db");
+    const { desc } = await import("drizzle-orm");
+
+    const notifications = await db
+      .select({
+        id: auditLogsTable.id,
+        action: auditLogsTable.action,
+        resourceType: auditLogsTable.resourceType,
+        resourceId: auditLogsTable.resourceId,
+        description: auditLogsTable.description,
+        createdAt: auditLogsTable.createdAt,
+      })
+      .from(auditLogsTable)
+      .where(
+        and(
+          eq(auditLogsTable.resourceType, "rental_session"),
+          sql`${auditLogsTable.action} IN ('SMS_REMINDER_SENT', 'SMS_REMINDER_FAILED')`
+        )
+      )
+      .orderBy(desc(auditLogsTable.createdAt))
+      .limit(50);
+
+    // Filter notifications related to this client's sessions
+    const clientSessions = await db
+      .select({ id: rentalSessionsTable.id })
+      .from(rentalSessionsTable)
+      .where(eq(rentalSessionsTable.clientId, params.data.id));
+
+    const clientSessionIds = new Set(clientSessions.map(s => s.id));
+    const clientNotifications = notifications.filter(n => n.resourceId && clientSessionIds.has(n.resourceId));
+
+    res.json({ notifications: clientNotifications });
+  } catch (error) {
+    logger.error({ error, clientId: params.data.id }, "Failed to fetch notification history");
+    res.status(500).json({
+      error: "Failed to fetch notification history",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 export default router;

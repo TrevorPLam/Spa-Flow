@@ -96,6 +96,11 @@ const envSchema = z.object({
   // DEFAULT_PAGE_SIZE: Default number of items per page for paginated endpoints
   // Recommended: 20 items for optimal performance and UX
   DEFAULT_PAGE_SIZE: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().min(1).max(100)).default(20),
+
+  // SMS Reminder Configuration
+  // REMINDER_MINUTES_BEFORE: Comma-separated list of minutes before session expiration to send reminders
+  // Recommended: 30, 15 (send reminders at 30 and 15 minutes before expiration)
+  REMINDER_MINUTES_BEFORE: z.string().default("30,15"),
 });
 
 export type Env = z.infer<typeof envSchema>;

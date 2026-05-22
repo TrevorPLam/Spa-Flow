@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ClientUpdateMembershipStatus } from './clientUpdateMembershipStatus';
+import type { ClientUpdateSmsRemindersEnabled } from './clientUpdateSmsRemindersEnabled';
 
 export interface ClientUpdate {
   name?: string;
@@ -16,4 +17,5 @@ export interface ClientUpdate {
   documentNumber?: string;
   membershipStatus?: ClientUpdateMembershipStatus;
   notes?: string;
+  smsRemindersEnabled?: ClientUpdateSmsRemindersEnabled;
 }

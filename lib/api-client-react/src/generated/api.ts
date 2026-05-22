@@ -28,6 +28,8 @@ import type {
   AvgTransactionReport,
   BulkReleaseBody,
   BulkReleaseResult,
+  BulkValidateClients200,
+  BulkValidateClientsBody,
   CheckInInput,
   CheckInResult,
   Client,
@@ -38,10 +40,13 @@ import type {
   ConversionRateReport,
   Dashboard,
   DiscountAnalyticsReport,
+  GetAnomalies200,
   GetAvgTransactionValueParams,
   GetClientTransactionsParams,
   GetConversionRateParams,
   GetDiscountAnalyticsParams,
+  GetDuplicates200,
+  GetDuplicatesParams,
   GetLockerUtilizationParams,
   GetPeakHoursParams,
   GetReconciliationHistory200,
@@ -66,6 +71,10 @@ import type {
   Logout200,
   Membership,
   MembershipInput,
+  MergeClientInto200,
+  MergeClientIntoBody,
+  MergeClients200,
+  MergeClientsBody,
   MessageResponse,
   OccupancySummary,
   PasswordResetConfirmInput,
@@ -102,6 +111,8 @@ import type {
   UserInput,
   UserUpdate,
   UtilizationReport,
+  ValidateClient200,
+  ValidateClientBody,
   WaitlistEntry,
   WaitlistInput
 } from './api.schemas';
@@ -5298,4 +5309,450 @@ export function useListAuditLogs<TData = Awaited<ReturnType<typeof listAuditLogs
 
 
 
+
+export const getGetDuplicatesUrl = (params?: GetDuplicatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/data-quality/duplicates?${stringifiedParams}` : `/api/v1/data-quality/duplicates`
+}
+
+/**
+ * @summary Get potential duplicate clients (manager only)
+ */
+export const getDuplicates = async (params?: GetDuplicatesParams, options?: RequestInit): Promise<GetDuplicates200> => {
+
+  return customFetch<GetDuplicates200>(getGetDuplicatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDuplicatesQueryKey = (params?: GetDuplicatesParams,) => {
+    return [
+    `/api/v1/data-quality/duplicates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDuplicatesQueryOptions = <TData = Awaited<ReturnType<typeof getDuplicates>>, TError = ErrorType<void>>(params?: GetDuplicatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDuplicates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDuplicatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDuplicates>>> = ({ signal }) => getDuplicates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDuplicates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDuplicatesQueryResult = NonNullable<Awaited<ReturnType<typeof getDuplicates>>>
+export type GetDuplicatesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get potential duplicate clients (manager only)
+ */
+
+export function useGetDuplicates<TData = Awaited<ReturnType<typeof getDuplicates>>, TError = ErrorType<void>>(
+ params?: GetDuplicatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDuplicates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDuplicatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAnomaliesUrl = () => {
+
+
+
+
+  return `/api/v1/data-quality/anomalies`
+}
+
+/**
+ * @summary Get data anomalies (manager only)
+ */
+export const getAnomalies = async ( options?: RequestInit): Promise<GetAnomalies200> => {
+
+  return customFetch<GetAnomalies200>(getGetAnomaliesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnomaliesQueryKey = () => {
+    return [
+    `/api/v1/data-quality/anomalies`
+    ] as const;
+    }
+
+
+export const getGetAnomaliesQueryOptions = <TData = Awaited<ReturnType<typeof getAnomalies>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnomalies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnomaliesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnomalies>>> = ({ signal }) => getAnomalies({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnomalies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnomaliesQueryResult = NonNullable<Awaited<ReturnType<typeof getAnomalies>>>
+export type GetAnomaliesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get data anomalies (manager only)
+ */
+
+export function useGetAnomalies<TData = Awaited<ReturnType<typeof getAnomalies>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnomalies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnomaliesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getValidateClientUrl = () => {
+
+
+
+
+  return `/api/v1/data-quality/validate`
+}
+
+/**
+ * @summary Validate a client's data (manager only)
+ */
+export const validateClient = async (validateClientBody: ValidateClientBody, options?: RequestInit): Promise<ValidateClient200> => {
+
+  return customFetch<ValidateClient200>(getValidateClientUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      validateClientBody,)
+  }
+);}
+
+
+
+
+export const getValidateClientMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateClient>>, TError,{data: BodyType<ValidateClientBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof validateClient>>, TError,{data: BodyType<ValidateClientBody>}, TContext> => {
+
+const mutationKey = ['validateClient'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof validateClient>>, {data: BodyType<ValidateClientBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  validateClient(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ValidateClientMutationResult = NonNullable<Awaited<ReturnType<typeof validateClient>>>
+    export type ValidateClientMutationBody = BodyType<ValidateClientBody>
+    export type ValidateClientMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate a client's data (manager only)
+ */
+export const useValidateClient = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateClient>>, TError,{data: BodyType<ValidateClientBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof validateClient>>,
+        TError,
+        {data: BodyType<ValidateClientBody>},
+        TContext
+      > => {
+      return useMutation(getValidateClientMutationOptions(options));
+    }
+
+export const getBulkValidateClientsUrl = () => {
+
+
+
+
+  return `/api/v1/data-quality/validate/bulk`
+}
+
+/**
+ * @summary Validate multiple clients in bulk (manager only)
+ */
+export const bulkValidateClients = async (bulkValidateClientsBody: BulkValidateClientsBody, options?: RequestInit): Promise<BulkValidateClients200> => {
+
+  return customFetch<BulkValidateClients200>(getBulkValidateClientsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkValidateClientsBody,)
+  }
+);}
+
+
+
+
+export const getBulkValidateClientsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkValidateClients>>, TError,{data: BodyType<BulkValidateClientsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkValidateClients>>, TError,{data: BodyType<BulkValidateClientsBody>}, TContext> => {
+
+const mutationKey = ['bulkValidateClients'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkValidateClients>>, {data: BodyType<BulkValidateClientsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkValidateClients(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkValidateClientsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkValidateClients>>>
+    export type BulkValidateClientsMutationBody = BodyType<BulkValidateClientsBody>
+    export type BulkValidateClientsMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate multiple clients in bulk (manager only)
+ */
+export const useBulkValidateClients = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkValidateClients>>, TError,{data: BodyType<BulkValidateClientsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkValidateClients>>,
+        TError,
+        {data: BodyType<BulkValidateClientsBody>},
+        TContext
+      > => {
+      return useMutation(getBulkValidateClientsMutationOptions(options));
+    }
+
+export const getMergeClientsUrl = () => {
+
+
+
+
+  return `/api/v1/data-quality/merge`
+}
+
+/**
+ * @summary Merge a duplicate client into a primary client (manager only)
+ */
+export const mergeClients = async (mergeClientsBody: MergeClientsBody, options?: RequestInit): Promise<MergeClients200> => {
+
+  return customFetch<MergeClients200>(getMergeClientsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mergeClientsBody,)
+  }
+);}
+
+
+
+
+export const getMergeClientsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeClients>>, TError,{data: BodyType<MergeClientsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof mergeClients>>, TError,{data: BodyType<MergeClientsBody>}, TContext> => {
+
+const mutationKey = ['mergeClients'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof mergeClients>>, {data: BodyType<MergeClientsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  mergeClients(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MergeClientsMutationResult = NonNullable<Awaited<ReturnType<typeof mergeClients>>>
+    export type MergeClientsMutationBody = BodyType<MergeClientsBody>
+    export type MergeClientsMutationError = ErrorType<void>
+
+    /**
+ * @summary Merge a duplicate client into a primary client (manager only)
+ */
+export const useMergeClients = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeClients>>, TError,{data: BodyType<MergeClientsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof mergeClients>>,
+        TError,
+        {data: BodyType<MergeClientsBody>},
+        TContext
+      > => {
+      return useMutation(getMergeClientsMutationOptions(options));
+    }
+
+export const getMergeClientIntoUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/clients/${id}/merge`
+}
+
+/**
+ * @summary Merge a duplicate client into this client (manager only)
+ */
+export const mergeClientInto = async (id: number,
+    mergeClientIntoBody: MergeClientIntoBody, options?: RequestInit): Promise<MergeClientInto200> => {
+
+  return customFetch<MergeClientInto200>(getMergeClientIntoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mergeClientIntoBody,)
+  }
+);}
+
+
+
+
+export const getMergeClientIntoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeClientInto>>, TError,{id: number;data: BodyType<MergeClientIntoBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof mergeClientInto>>, TError,{id: number;data: BodyType<MergeClientIntoBody>}, TContext> => {
+
+const mutationKey = ['mergeClientInto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof mergeClientInto>>, {id: number;data: BodyType<MergeClientIntoBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  mergeClientInto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MergeClientIntoMutationResult = NonNullable<Awaited<ReturnType<typeof mergeClientInto>>>
+    export type MergeClientIntoMutationBody = BodyType<MergeClientIntoBody>
+    export type MergeClientIntoMutationError = ErrorType<void>
+
+    /**
+ * @summary Merge a duplicate client into this client (manager only)
+ */
+export const useMergeClientInto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeClientInto>>, TError,{id: number;data: BodyType<MergeClientIntoBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof mergeClientInto>>,
+        TError,
+        {id: number;data: BodyType<MergeClientIntoBody>},
+        TContext
+      > => {
+      return useMutation(getMergeClientIntoMutationOptions(options));
+    }
 
