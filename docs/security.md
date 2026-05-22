@@ -178,9 +178,105 @@ To test security scans without merging:
 3. Create a PR to main
 4. Verify security-scan and codeql jobs run and pass
 
+## PII Retention Policy
+
+### Retention Period
+
+**Standard Retention:** 7 years
+
+SpaFlow retains Personally Identifiable Information (PII) for a minimum of 7 years to comply with:
+- Business record retention requirements
+- Tax and financial audit obligations
+- Legal dispute resolution needs
+- Industry best practices for spa/fitness businesses
+
+**PII Data Types:**
+- Date of birth (DOB)
+- Physical address
+- Government document numbers (ID, license, etc.)
+- Contact information (phone, email)
+- Membership and rental history
+
+### Data Deletion Procedures
+
+**Automatic Deletion:**
+- PII is automatically deleted from the database after 7 years from the last client interaction
+- Encrypted PII fields are securely wiped (overwritten with random data before deletion)
+- Audit logs of PII access are retained separately for security monitoring
+
+**Manual Deletion Requests:**
+- Clients may request deletion of their PII at any time via written request
+- Manager approval required for manual deletion before 7-year retention period
+- Legal or compliance requirements may override deletion requests
+- Deletion requests are logged in audit logs with reason and approver
+
+**Deletion Process:**
+1. Verify client identity and authorization
+2. Check for legal holds or compliance requirements
+3. Obtain manager approval (if before retention period)
+4. Log deletion request in audit system
+5. Securely wipe encrypted PII fields
+6. Delete client record or mark as deleted
+7. Confirm deletion to requester
+
+### GDPR Compliance
+
+**Data Subject Rights:**
+- **Right to Access:** Clients can request a copy of all their PII data
+- **Right to Rectification:** Clients can request correction of inaccurate PII
+- **Right to Erasure:** Clients can request deletion of their PII (subject to legal holds)
+- **Right to Portability:** Clients can request their data in a machine-readable format
+- **Right to Restrict Processing:** Clients can request limitation of PII processing
+
+**Data Processing Basis:**
+- **Legitimate Interest:** Business operations, rental management, membership services
+- **Contractual Necessity:** Membership agreements, rental contracts
+- **Legal Obligation:** Tax reporting, regulatory compliance
+
+**Data Transfers:**
+- PII is stored in PostgreSQL databases within the EU/EEA region
+- No cross-border data transfers outside EU/EEA without explicit consent
+- Third-party service providers (Twilio, Square) process PII under data processing agreements
+
+**Security Measures:**
+- PII encrypted at rest using AES-256-GCM envelope encryption
+- PII encrypted in transit using TLS 1.3
+- Access restricted to manager role only
+- All PII access logged for audit trail
+- Anomaly detection for unusual PII access patterns
+
+**Data Breach Response:**
+- PII breaches are reported to relevant authorities within 72 hours
+- Affected clients are notified without undue delay
+- Breach response documented in security incident logs
+
+### PII Access Audit
+
+**Access Logging:**
+- All PII access is logged with:
+  - User ID and role
+  - IP address
+  - Timestamp
+  - Specific PII fields accessed
+  - Access reason/context
+  - Correlation ID for request tracing
+
+**Anomaly Detection:**
+- Bulk PII access (>10 clients in 60 minutes)
+- Off-hours PII access (outside 8am-8pm)
+- Rapid successive PII access (>5 in 60 seconds)
+- Anomalies trigger alerts to all managers
+
+**Audit Retention:**
+- PII access audit logs retained for 7 years
+- Anomaly alerts retained for 7 years
+- Audit logs are separate from client data for security
+
 ## References
 
 - [GitHub CodeQL Documentation](https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql)
 - [pnpm audit Documentation](https://pnpm.io/cli/audit/)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [CWE/SANS Top 25](https://cwe.mitre.org/top25/)
+- [GDPR Official Text](https://gdpr-info.eu/)
+- [NIST SP 800-53](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
