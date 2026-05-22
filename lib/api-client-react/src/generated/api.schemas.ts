@@ -354,6 +354,47 @@ export interface ClientPii {
   documentNumber?: string | null;
 }
 
+/**
+ * Search filter parameters (JSON object)
+ */
+export type SavedSearchFilters = { [key: string]: unknown };
+
+export interface SavedSearch {
+  id: number;
+  /** User ID who owns this saved search */
+  userId: string;
+  /** Name of the saved search */
+  name: string;
+  /** Search filter parameters (JSON object) */
+  filters: SavedSearchFilters;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Search filter parameters (JSON object)
+ */
+export type SavedSearchInputFilters = { [key: string]: unknown };
+
+export interface SavedSearchInput {
+  /** Name of the saved search */
+  name: string;
+  /** Search filter parameters (JSON object) */
+  filters: SavedSearchInputFilters;
+}
+
+/**
+ * Search filter parameters (JSON object)
+ */
+export type SavedSearchUpdateFilters = { [key: string]: unknown };
+
+export interface SavedSearchUpdate {
+  /** Name of the saved search */
+  name?: string;
+  /** Search filter parameters (JSON object) */
+  filters?: SavedSearchUpdateFilters;
+}
+
 export type ClientInputMembershipStatus = typeof ClientInputMembershipStatus[keyof typeof ClientInputMembershipStatus];
 
 
@@ -1244,6 +1285,42 @@ export type RevokeSession200 = {
 export type ListClientsParams = {
 search?: string;
 membershipStatus?: ListClientsMembershipStatus;
+/**
+ * Pre-defined filter presets (overrides individual filter parameters)
+ */
+preset?: ListClientsPreset;
+/**
+ * Filter clients created on or after this date
+ */
+startDate?: string;
+/**
+ * Filter clients created on or before this date
+ */
+endDate?: string;
+/**
+ * Filter clients with last visit on or after this date
+ */
+lastVisitAfter?: string;
+/**
+ * Filter clients with last visit on or before this date
+ */
+lastVisitBefore?: string;
+/**
+ * Filter clients with at least this many total visits
+ */
+minVisits?: number;
+/**
+ * Filter clients with at most this many total visits
+ */
+maxVisits?: number;
+/**
+ * Filter clients who have spent at least this amount
+ */
+minSpent?: number;
+/**
+ * Filter clients who have spent at most this amount
+ */
+maxSpent?: number;
 page?: number;
 limit?: number;
 };
@@ -1257,12 +1334,103 @@ export const ListClientsMembershipStatus = {
   six_month: 'six_month',
 } as const;
 
+export type ListClientsPreset = typeof ListClientsPreset[keyof typeof ListClientsPreset];
+
+
+export const ListClientsPreset = {
+  active_members: 'active_members',
+  expired_members: 'expired_members',
+  high_value: 'high_value',
+  recent_visitors: 'recent_visitors',
+  inactive: 'inactive',
+} as const;
+
 export type GetClientTransactionsParams = {
 /**
  * Filter transactions by rental session ID
  */
 sessionId?: number;
 };
+
+export type SuggestClientsParams = {
+/**
+ * Partial name to search for
+ */
+q: string;
+/**
+ * Maximum number of suggestions to return
+ */
+limit?: number;
+};
+
+export type SuggestClients200Item = {
+  id?: number;
+  name?: string;
+  email?: string | null;
+  phone?: string | null;
+  memberId?: string | null;
+};
+
+export type ExportClientsParams = {
+search?: string;
+membershipStatus?: ExportClientsMembershipStatus;
+/**
+ * Pre-defined filter presets (overrides individual filter parameters)
+ */
+preset?: ExportClientsPreset;
+/**
+ * Filter clients created on or after this date
+ */
+startDate?: string;
+/**
+ * Filter clients created on or before this date
+ */
+endDate?: string;
+/**
+ * Filter clients with last visit on or after this date
+ */
+lastVisitAfter?: string;
+/**
+ * Filter clients with last visit on or before this date
+ */
+lastVisitBefore?: string;
+/**
+ * Filter clients with at least this many total visits
+ */
+minVisits?: number;
+/**
+ * Filter clients with at most this many total visits
+ */
+maxVisits?: number;
+/**
+ * Filter clients who have spent at least this amount
+ */
+minSpent?: number;
+/**
+ * Filter clients who have spent at most this amount
+ */
+maxSpent?: number;
+};
+
+export type ExportClientsMembershipStatus = typeof ExportClientsMembershipStatus[keyof typeof ExportClientsMembershipStatus];
+
+
+export const ExportClientsMembershipStatus = {
+  none: 'none',
+  one_time: 'one_time',
+  six_month: 'six_month',
+} as const;
+
+export type ExportClientsPreset = typeof ExportClientsPreset[keyof typeof ExportClientsPreset];
+
+
+export const ExportClientsPreset = {
+  active_members: 'active_members',
+  expired_members: 'expired_members',
+  high_value: 'high_value',
+  recent_visitors: 'recent_visitors',
+  inactive: 'inactive',
+} as const;
 
 export type ListLockersParams = {
 status?: ListLockersStatus;
@@ -1300,6 +1468,22 @@ export type ListLowStockProducts200 = {
 export type ListTransactionsParams = {
 clientId?: number;
 /**
+ * Filter by transaction type
+ */
+type?: ListTransactionsType;
+/**
+ * Filter by transaction status
+ */
+status?: ListTransactionsStatus;
+/**
+ * Filter transactions with amount at least this value
+ */
+minAmount?: number;
+/**
+ * Filter transactions with amount at most this value
+ */
+maxAmount?: number;
+/**
  * Filter transactions created on or after this date (ISO 8601 format)
  */
 startDate?: string;
@@ -1307,9 +1491,37 @@ startDate?: string;
  * Filter transactions created on or before this date (ISO 8601 format)
  */
 endDate?: string;
+/**
+ * Filter product transactions by category (e.g., "towels", "snacks", "beverages")
+ */
+productCategory?: string;
 page?: number;
 limit?: number;
 };
+
+export type ListTransactionsType = typeof ListTransactionsType[keyof typeof ListTransactionsType];
+
+
+export const ListTransactionsType = {
+  locker_rental: 'locker_rental',
+  room_rental: 'room_rental',
+  membership: 'membership',
+  product: 'product',
+  renewal: 'renewal',
+  extension: 'extension',
+  refund: 'refund',
+} as const;
+
+export type ListTransactionsStatus = typeof ListTransactionsStatus[keyof typeof ListTransactionsStatus];
+
+
+export const ListTransactionsStatus = {
+  pending: 'pending',
+  completed: 'completed',
+  failed: 'failed',
+  cancelled: 'cancelled',
+  refunded: 'refunded',
+} as const;
 
 export type GetRevenueReportParams = {
 /**

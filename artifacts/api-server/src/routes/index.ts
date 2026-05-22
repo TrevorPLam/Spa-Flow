@@ -20,6 +20,7 @@ import monitoringRouter from "./monitoring";
 import dataQualityRouter from "./data-quality";
 import maintenanceRouter from "./maintenance";
 import analyticsRouter from "./analytics";
+import savedSearchesRouter from "./saved-searches";
 
 const router: IRouter = Router();
 
@@ -44,6 +45,7 @@ router.use(monitoringRouter);
 router.use(dataQualityRouter);
 router.use(maintenanceRouter);
 router.use(analyticsRouter);
+router.use(savedSearchesRouter);
 
 // Conditionally load test router only in test/development environment
 // This excludes test routes from production builds at the module level

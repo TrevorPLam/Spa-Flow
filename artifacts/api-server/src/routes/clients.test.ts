@@ -627,4 +627,146 @@ describe('Clients API', { tags: ['smoke', 'critical'] }, () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('Advanced Search Filters', () => {
+    it('should filter clients by membership status', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com', membershipStatus: 'six_month' });
+      await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com', membershipStatus: 'none' });
+
+      const response = await api.get('/api/clients?membershipStatus=six_month').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body.clients.length).toBe(1);
+      expect(response.body.clients[0].membershipStatus).toBe('six_month');
+    });
+
+    it('should filter clients by date range (created)', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentDate = new Date();
+      
+      await db.insert(clientsTable).values({
+        name: 'Old Client',
+        email: 'old@example.com',
+        createdAt: oldDate,
+      });
+      await db.insert(clientsTable).values({
+        name: 'Recent Client',
+        email: 'recent@example.com',
+        createdAt: recentDate,
+      });
+
+      const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const response = await api.get(`/api/clients?startDate=${startDate}`).set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body.clients.length).toBe(1);
+      expect(response.body.clients[0].name).toBe('Recent Client');
+    });
+
+    it('should apply preset filter for active members', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'Active Member', email: 'active@example.com', membershipStatus: 'six_month' });
+      await createTestClientInDb({ name: 'Non Member', email: 'non@example.com', membershipStatus: 'none' });
+
+      const response = await api.get('/api/clients?preset=active_members').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body.clients.length).toBe(1);
+      expect(response.body.clients[0].membershipStatus).toBe('six_month');
+    });
+
+    it('should filter clients by search term (name)', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
+
+      const response = await api.get('/api/clients?search=John').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body.clients.length).toBe(1);
+      expect(response.body.clients[0].name).toBe('John Doe');
+    });
+
+    it('should filter clients by search term (email)', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
+
+      const response = await api.get('/api/clients?search=jane@example.com').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body.clients.length).toBe(1);
+      expect(response.body.clients[0].email).toBe('jane@example.com');
+    });
+  });
+
+  describe('GET /api/clients/suggest', () => {
+    it('should return client suggestions for autocomplete', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
+
+      const response = await api.get('/api/clients/suggest?q=J').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toBeInstanceOf(Array);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body[0]).toHaveProperty('id');
+      expect(response.body[0]).toHaveProperty('name');
+    });
+
+    it('should limit suggestions by limit parameter', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com' });
+      await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com' });
+      await createTestClientInDb({ name: 'Jack Brown', email: 'jack@example.com' });
+
+      const response = await api.get('/api/clients/suggest?q=J&limit=2').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.body.length).toBeLessThanOrEqual(2);
+    });
+
+    it('should return 400 for missing query parameter', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+
+      const response = await api.get('/api/clients/suggest').set(authHeaders);
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/clients/export', () => {
+    it('should export clients as CSV', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com', membershipStatus: 'six_month' });
+
+      const response = await api.get('/api/clients/export').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toContain('text/csv');
+      expect(response.text).toContain('ID,Name,Email');
+      expect(response.text).toContain('John Doe');
+    });
+
+    it('should apply filters to export', async () => {
+      const authHeaders = await createAuthenticatedRequest('STAFF');
+      await createTestClientInDb({ name: 'John Doe', email: 'john@example.com', membershipStatus: 'six_month' });
+      await createTestClientInDb({ name: 'Jane Smith', email: 'jane@example.com', membershipStatus: 'none' });
+
+      const response = await api.get('/api/clients/export?membershipStatus=six_month').set(authHeaders);
+
+      expect(response.status).toBe(200);
+      expect(response.text).toContain('John Doe');
+      expect(response.text).not.toContain('Jane Smith');
+    });
+
+    it('should return 401 for unauthenticated request', async () => {
+      const response = await api.get('/api/clients/export');
+
+      expect(response.status).toBe(401);
+    });
+  });
 });

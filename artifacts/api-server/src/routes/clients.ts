@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, clientsTable, membershipsTable, rentalSessionsTable, transactionsTable } from "@workspace/db";
-import { eq, ilike, or, sql, and, desc } from "drizzle-orm";
+import { eq, ilike, or, sql, and, desc, gte, lte } from "drizzle-orm";
 import { requireAuth, type AuthRequest } from "../lib/auth";
 import { writeAuditLog } from "../lib/audit";
 import { encryptField, maybeDecrypt } from "../lib/encryption";
@@ -67,8 +67,60 @@ router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> 
     return;
   }
 
-  const { search, membershipStatus, page, limit } = parsed.data;
+  const { 
+    search, 
+    membershipStatus, 
+    preset,
+    startDate, 
+    endDate, 
+    lastVisitAfter, 
+    lastVisitBefore, 
+    minVisits, 
+    maxVisits, 
+    minSpent, 
+    maxSpent, 
+    page, 
+    limit 
+  } = parsed.data;
   const offset = ((page ?? 1) - 1) * (limit ?? DEFAULT_PAGE_SIZE);
+
+  // Apply preset filters if provided (presets override individual parameters)
+  let effectiveMembershipStatus = membershipStatus;
+  let effectiveLastVisitAfter = lastVisitAfter;
+  let effectiveLastVisitBefore = lastVisitBefore;
+  let effectiveMinVisits = minVisits;
+  let effectiveMaxVisits = maxVisits;
+  let effectiveMinSpent = minSpent;
+  let effectiveMaxSpent = maxSpent;
+
+  if (preset) {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date(now);
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const ninetyDaysAgo = new Date(now);
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    switch (preset) {
+      case "active_members":
+        effectiveMembershipStatus = "six_month" as const;
+        break;
+      case "expired_members":
+        effectiveMembershipStatus = "none" as const;
+        effectiveLastVisitBefore = ninetyDaysAgo;
+        break;
+      case "high_value":
+        effectiveMinSpent = 500;
+        break;
+      case "recent_visitors":
+        effectiveLastVisitAfter = thirtyDaysAgo;
+        break;
+      case "inactive":
+        effectiveLastVisitBefore = sixtyDaysAgo;
+        break;
+    }
+  }
 
   let conditions = [];
   if (search) {
@@ -81,8 +133,14 @@ router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> 
       )
     );
   }
-  if (membershipStatus) {
-    conditions.push(eq(clientsTable.membershipStatus, membershipStatus as "none" | "one_time" | "six_month"));
+  if (effectiveMembershipStatus) {
+    conditions.push(eq(clientsTable.membershipStatus, effectiveMembershipStatus as "none" | "one_time" | "six_month"));
+  }
+  if (startDate) {
+    conditions.push(gte(clientsTable.createdAt, startDate));
+  }
+  if (endDate) {
+    conditions.push(lte(clientsTable.createdAt, endDate));
   }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -93,25 +151,353 @@ router.get("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> 
     'clients',
     'search',
     search || 'none',
-    membershipStatus || 'none',
+    effectiveMembershipStatus || 'none',
+    preset || 'none',
+    startDate?.toISOString() || 'none',
+    endDate?.toISOString() || 'none',
+    effectiveLastVisitAfter?.toISOString() || 'none',
+    effectiveLastVisitBefore?.toISOString() || 'none',
+    (effectiveMinVisits ?? 'none').toString(),
+    (effectiveMaxVisits ?? 'none').toString(),
+    (effectiveMinSpent ?? 'none').toString(),
+    (effectiveMaxSpent ?? 'none').toString(),
     (page ?? 1).toString(),
     (limit ?? DEFAULT_PAGE_SIZE).toString()
   );
 
   // Cache search results with 1-minute TTL
   const result = await withCache(cacheKey, 60, async () => {
+    // Get base client list with basic filters
     const [clients, countResult] = await Promise.all([
       db.select().from(clientsTable).where(where).orderBy(desc(clientsTable.createdAt)).limit(limit ?? DEFAULT_PAGE_SIZE).offset(offset),
       db.select({ count: sql<number>`count(*)::int` }).from(clientsTable).where(where),
     ]);
 
     const total = countResult[0]?.count ?? 0;
-    const formatted = clients.map(c => formatClient(c, isManager));
+
+    // Apply advanced filters that require subqueries
+    let filteredClients = clients;
+    
+    // Filter by last visit date
+    if (effectiveLastVisitAfter || effectiveLastVisitBefore) {
+      const clientIds = clients.map(c => c.id);
+      const lastVisits = await db
+        .select({
+          clientId: rentalSessionsTable.clientId,
+          lastVisit: sql<string>`MAX(${rentalSessionsTable.startTime})`.as('lastVisit')
+        })
+        .from(rentalSessionsTable)
+        .where(sql`${rentalSessionsTable.clientId} = ANY(${clientIds})`)
+        .groupBy(rentalSessionsTable.clientId);
+      
+      const lastVisitMap = new Map(lastVisits.map(lv => [lv.clientId, new Date(lv.lastVisit)]));
+      
+      filteredClients = filteredClients.filter(c => {
+        const lastVisit = lastVisitMap.get(c.id);
+        if (!lastVisit) return false;
+        if (effectiveLastVisitAfter && lastVisit < effectiveLastVisitAfter) return false;
+        if (effectiveLastVisitBefore && lastVisit > effectiveLastVisitBefore) return false;
+        return true;
+      });
+    }
+
+    // Filter by total visits
+    if (effectiveMinVisits !== undefined || effectiveMaxVisits !== undefined) {
+      const clientIds = filteredClients.map(c => c.id);
+      const visitCounts = await db
+        .select({
+          clientId: rentalSessionsTable.clientId,
+          count: sql<number>`COUNT(*)`.as('count')
+        })
+        .from(rentalSessionsTable)
+        .where(sql`${rentalSessionsTable.clientId} = ANY(${clientIds})`)
+        .groupBy(rentalSessionsTable.clientId);
+      
+      const visitCountMap = new Map(visitCounts.map(vc => [vc.clientId, vc.count]));
+      
+      filteredClients = filteredClients.filter(c => {
+        const count = visitCountMap.get(c.id) ?? 0;
+        if (effectiveMinVisits !== undefined && count < effectiveMinVisits) return false;
+        if (effectiveMaxVisits !== undefined && count > effectiveMaxVisits) return false;
+        return true;
+      });
+    }
+
+    // Filter by total spent
+    if (effectiveMinSpent !== undefined || effectiveMaxSpent !== undefined) {
+      const clientIds = filteredClients.map(c => c.id);
+      const totalSpent = await db
+        .select({
+          clientId: transactionsTable.clientId,
+          total: sql<number>`SUM(${transactionsTable.total})`.as('total')
+        })
+        .from(transactionsTable)
+        .where(
+          and(
+            sql`${transactionsTable.clientId} = ANY(${clientIds})`,
+            eq(transactionsTable.status, "completed")
+          )
+        )
+        .groupBy(transactionsTable.clientId);
+      
+      const totalSpentMap = new Map<number, number>();
+      for (const ts of totalSpent) {
+        // @ts-expect-error - Drizzle typing mismatch: clientId is number at runtime
+        totalSpentMap.set(ts.clientId, parseFloat(ts.total));
+      }
+      
+      filteredClients = filteredClients.filter(c => {
+        const spent = totalSpentMap.get(c.id) ?? 0;
+        if (effectiveMinSpent !== undefined && spent < effectiveMinSpent) return false;
+        if (effectiveMaxSpent !== undefined && spent > effectiveMaxSpent) return false;
+        return true;
+      });
+    }
+
+    const formatted = filteredClients.map(c => formatClient(c, isManager));
 
     return { clients: formatted, total, page: page ?? 1, limit: limit ?? DEFAULT_PAGE_SIZE };
   });
 
   res.json(result);
+});
+
+/**
+ * GET /clients/suggest
+ * Get client name suggestions for autocomplete
+ * Returns suggestions based on partial input, prioritizing recent clients
+ */
+router.get("/clients/suggest", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const { q, limit } = req.query;
+  
+  if (!q || typeof q !== "string") {
+    sendValidationError(res, "Query parameter 'q' is required");
+    return;
+  }
+
+  const suggestionLimit = limit ? parseInt(limit as string) : 10;
+  const searchTerm = `%${q}%`;
+
+  // Get recent clients that match the search term
+  const suggestions = await db
+    .select({
+      id: clientsTable.id,
+      name: clientsTable.name,
+      email: clientsTable.email,
+      phone: clientsTable.phone,
+      memberId: clientsTable.memberId,
+    })
+    .from(clientsTable)
+    .where(
+      or(
+        ilike(clientsTable.name, searchTerm),
+        ilike(clientsTable.email, searchTerm),
+        ilike(clientsTable.phone, searchTerm),
+        ilike(clientsTable.memberId, searchTerm)
+      )
+    )
+    .orderBy(desc(clientsTable.createdAt))
+    .limit(suggestionLimit);
+
+  res.json(suggestions);
+});
+
+/**
+ * GET /clients/export
+ * Export client search results to CSV
+ * Exports client search results as a CSV file for spreadsheet import
+ */
+router.get("/clients/export", requireAuth, apiLimiter, async (req, res): Promise<void> => {
+  const parsed = ListClientsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    sendValidationError(res, parsed.error.message);
+    return;
+  }
+
+  const { 
+    search, 
+    membershipStatus, 
+    preset,
+    startDate, 
+    endDate, 
+    lastVisitAfter, 
+    lastVisitBefore, 
+    minVisits, 
+    maxVisits, 
+    minSpent, 
+    maxSpent 
+  } = parsed.data;
+
+  // Apply preset filters if provided (presets override individual parameters)
+  let effectiveMembershipStatus = membershipStatus;
+  let effectiveLastVisitAfter = lastVisitAfter;
+  let effectiveLastVisitBefore = lastVisitBefore;
+  let effectiveMinVisits = minVisits;
+  let effectiveMaxVisits = maxVisits;
+  let effectiveMinSpent = minSpent;
+  let effectiveMaxSpent = maxSpent;
+
+  if (preset) {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date(now);
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const ninetyDaysAgo = new Date(now);
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    switch (preset) {
+      case "active_members":
+        effectiveMembershipStatus = "six_month" as const;
+        break;
+      case "expired_members":
+        effectiveMembershipStatus = "none" as const;
+        effectiveLastVisitBefore = ninetyDaysAgo;
+        break;
+      case "high_value":
+        effectiveMinSpent = 500;
+        break;
+      case "recent_visitors":
+        effectiveLastVisitAfter = thirtyDaysAgo;
+        break;
+      case "inactive":
+        effectiveLastVisitBefore = sixtyDaysAgo;
+        break;
+    }
+  }
+
+  let conditions = [];
+  if (search) {
+    conditions.push(
+      or(
+        ilike(clientsTable.name, `%${search}%`),
+        ilike(clientsTable.email, `%${search}%`),
+        ilike(clientsTable.phone, `%${search}%`),
+        ilike(clientsTable.memberId, `%${search}%`)
+      )
+    );
+  }
+  if (effectiveMembershipStatus) {
+    conditions.push(eq(clientsTable.membershipStatus, effectiveMembershipStatus as "none" | "one_time" | "six_month"));
+  }
+  if (startDate) {
+    conditions.push(gte(clientsTable.createdAt, startDate));
+  }
+  if (endDate) {
+    conditions.push(lte(clientsTable.createdAt, endDate));
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  // Get all clients matching the base filters (no pagination for export)
+  const clients = await db
+    .select()
+    .from(clientsTable)
+    .where(where)
+    .orderBy(desc(clientsTable.createdAt));
+
+  // Apply advanced filters that require subqueries
+  let filteredClients = clients;
+  
+  // Filter by last visit date
+  if (effectiveLastVisitAfter || effectiveLastVisitBefore) {
+    const clientIds = clients.map(c => c.id);
+    const lastVisits = await db
+      .select({
+        clientId: rentalSessionsTable.clientId,
+        lastVisit: sql<string>`MAX(${rentalSessionsTable.startTime})`.as('lastVisit')
+      })
+      .from(rentalSessionsTable)
+      .where(sql`${rentalSessionsTable.clientId} = ANY(${clientIds})`)
+      .groupBy(rentalSessionsTable.clientId);
+    
+    const lastVisitMap = new Map(lastVisits.map(lv => [lv.clientId, new Date(lv.lastVisit)]));
+    
+    filteredClients = filteredClients.filter(c => {
+      const lastVisit = lastVisitMap.get(c.id);
+      if (!lastVisit) return false;
+      if (effectiveLastVisitAfter && lastVisit < effectiveLastVisitAfter) return false;
+      if (effectiveLastVisitBefore && lastVisit > effectiveLastVisitBefore) return false;
+      return true;
+    });
+  }
+
+  // Filter by total visits
+  if (effectiveMinVisits !== undefined || effectiveMaxVisits !== undefined) {
+    const clientIds = filteredClients.map(c => c.id);
+    const visitCounts = await db
+      .select({
+        clientId: rentalSessionsTable.clientId,
+        count: sql<number>`COUNT(*)`.as('count')
+      })
+      .from(rentalSessionsTable)
+      .where(sql`${rentalSessionsTable.clientId} = ANY(${clientIds})`)
+      .groupBy(rentalSessionsTable.clientId);
+    
+    const visitCountMap = new Map(visitCounts.map(vc => [vc.clientId, vc.count]));
+    
+    filteredClients = filteredClients.filter(c => {
+      const count = visitCountMap.get(c.id) ?? 0;
+      if (effectiveMinVisits !== undefined && count < effectiveMinVisits) return false;
+      if (effectiveMaxVisits !== undefined && count > effectiveMaxVisits) return false;
+      return true;
+    });
+  }
+
+  // Filter by total spent
+  if (effectiveMinSpent !== undefined || effectiveMaxSpent !== undefined) {
+    const clientIds = filteredClients.map(c => c.id);
+    const totalSpent = await db
+      .select({
+        clientId: transactionsTable.clientId,
+        total: sql<number>`SUM(${transactionsTable.total})`.as('total')
+      })
+      .from(transactionsTable)
+      .where(
+        and(
+          sql`${transactionsTable.clientId} = ANY(${clientIds})`,
+          eq(transactionsTable.status, "completed")
+        )
+      )
+      .groupBy(transactionsTable.clientId);
+    
+    const totalSpentMap = new Map<number, number>();
+    for (const ts of totalSpent) {
+      // @ts-expect-error - Drizzle typing mismatch: clientId is number at runtime
+      totalSpentMap.set(ts.clientId, parseFloat(ts.total));
+    }
+    
+    filteredClients = filteredClients.filter(c => {
+      const spent = totalSpentMap.get(c.id) ?? 0;
+      if (effectiveMinSpent !== undefined && spent < effectiveMinSpent) return false;
+      if (effectiveMaxSpent !== undefined && spent > effectiveMaxSpent) return false;
+      return true;
+    });
+  }
+
+  // Generate CSV
+  const headers = ["ID", "Name", "Email", "Phone", "Member ID", "Membership Status", "Membership Expires", "Created At"];
+  const csvRows = [headers.join(",")];
+
+  for (const client of filteredClients) {
+    const row = [
+      client.id,
+      `"${client.name.replace(/"/g, '""')}"`, // Escape quotes
+      client.email ? `"${client.email.replace(/"/g, '""')}"` : "",
+      client.phone ? `"${client.phone.replace(/"/g, '""')}"` : "",
+      client.memberId ? `"${client.memberId.replace(/"/g, '""')}"` : "",
+      client.membershipStatus,
+      client.membershipExpiresAt ? client.membershipExpiresAt.toISOString().split('T')[0] : "",
+      client.createdAt.toISOString().split('T')[0],
+    ];
+    csvRows.push(row.join(","));
+  }
+
+  const csv = csvRows.join("\n");
+  
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="clients-export-${new Date().toISOString().split('T')[0]}.csv"`);
+  res.send(csv);
 });
 
 router.post("/clients", requireAuth, apiLimiter, async (req, res): Promise<void> => {

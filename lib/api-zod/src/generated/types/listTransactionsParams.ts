@@ -5,9 +5,27 @@
  * SpaFlow - Spa Management System API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListTransactionsStatus } from './listTransactionsStatus';
+import type { ListTransactionsType } from './listTransactionsType';
 
 export type ListTransactionsParams = {
 clientId?: number;
+/**
+ * Filter by transaction type
+ */
+type?: ListTransactionsType;
+/**
+ * Filter by transaction status
+ */
+status?: ListTransactionsStatus;
+/**
+ * Filter transactions with amount at least this value
+ */
+minAmount?: number;
+/**
+ * Filter transactions with amount at most this value
+ */
+maxAmount?: number;
 /**
  * Filter transactions created on or after this date (ISO 8601 format)
  */
@@ -16,6 +34,10 @@ startDate?: Date;
  * Filter transactions created on or before this date (ISO 8601 format)
  */
 endDate?: Date;
+/**
+ * Filter product transactions by category (e.g., "towels", "snacks", "beverages")
+ */
+productCategory?: string;
 page?: number;
 limit?: number;
 };

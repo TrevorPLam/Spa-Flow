@@ -40,6 +40,7 @@ import type {
   ConversionRateReport,
   Dashboard,
   DiscountAnalyticsReport,
+  ExportClientsParams,
   GetAnomalies200,
   GetAvgTransactionValueParams,
   GetClientTransactionsParams,
@@ -104,7 +105,12 @@ import type {
   Room,
   RunReconciliation200,
   RunReconciliationBody,
+  SavedSearch,
+  SavedSearchInput,
+  SavedSearchUpdate,
   SessionsList,
+  SuggestClients200Item,
+  SuggestClientsParams,
   Transaction,
   TransactionList,
   User,
@@ -1778,6 +1784,543 @@ export function useGetClientPii<TData = Awaited<ReturnType<typeof getClientPii>>
 
 
 
+
+export const getSuggestClientsUrl = (params: SuggestClientsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/clients/suggest?${stringifiedParams}` : `/api/v1/clients/suggest`
+}
+
+/**
+ * Returns client name suggestions based on partial input, prioritizing recent clients
+ * @summary Get client name suggestions for autocomplete
+ */
+export const suggestClients = async (params: SuggestClientsParams, options?: RequestInit): Promise<SuggestClients200Item[]> => {
+
+  return customFetch<SuggestClients200Item[]>(getSuggestClientsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSuggestClientsQueryKey = (params?: SuggestClientsParams,) => {
+    return [
+    `/api/v1/clients/suggest`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSuggestClientsQueryOptions = <TData = Awaited<ReturnType<typeof suggestClients>>, TError = ErrorType<AuthError>>(params: SuggestClientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof suggestClients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSuggestClientsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof suggestClients>>> = ({ signal }) => suggestClients(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof suggestClients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SuggestClientsQueryResult = NonNullable<Awaited<ReturnType<typeof suggestClients>>>
+export type SuggestClientsQueryError = ErrorType<AuthError>
+
+
+/**
+ * @summary Get client name suggestions for autocomplete
+ */
+
+export function useSuggestClients<TData = Awaited<ReturnType<typeof suggestClients>>, TError = ErrorType<AuthError>>(
+ params: SuggestClientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof suggestClients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSuggestClientsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getExportClientsUrl = (params?: ExportClientsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/clients/export?${stringifiedParams}` : `/api/v1/clients/export`
+}
+
+/**
+ * Exports client search results as a CSV file for spreadsheet import. Accepts the same filter parameters as the list clients endpoint.
+ * @summary Export client search results to CSV
+ */
+export const exportClients = async (params?: ExportClientsParams, options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getExportClientsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportClientsQueryKey = (params?: ExportClientsParams,) => {
+    return [
+    `/api/v1/clients/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportClientsQueryOptions = <TData = Awaited<ReturnType<typeof exportClients>>, TError = ErrorType<AuthError>>(params?: ExportClientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportClientsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportClients>>> = ({ signal }) => exportClients(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportClientsQueryResult = NonNullable<Awaited<ReturnType<typeof exportClients>>>
+export type ExportClientsQueryError = ErrorType<AuthError>
+
+
+/**
+ * @summary Export client search results to CSV
+ */
+
+export function useExportClients<TData = Awaited<ReturnType<typeof exportClients>>, TError = ErrorType<AuthError>>(
+ params?: ExportClientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportClientsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListSavedSearchesUrl = () => {
+
+
+
+
+  return `/api/v1/saved-searches`
+}
+
+/**
+ * @summary List saved searches for current user
+ */
+export const listSavedSearches = async ( options?: RequestInit): Promise<SavedSearch[]> => {
+
+  return customFetch<SavedSearch[]>(getListSavedSearchesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSavedSearchesQueryKey = () => {
+    return [
+    `/api/v1/saved-searches`
+    ] as const;
+    }
+
+
+export const getListSavedSearchesQueryOptions = <TData = Awaited<ReturnType<typeof listSavedSearches>>, TError = ErrorType<AuthError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSavedSearches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSavedSearchesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSavedSearches>>> = ({ signal }) => listSavedSearches({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSavedSearches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSavedSearchesQueryResult = NonNullable<Awaited<ReturnType<typeof listSavedSearches>>>
+export type ListSavedSearchesQueryError = ErrorType<AuthError>
+
+
+/**
+ * @summary List saved searches for current user
+ */
+
+export function useListSavedSearches<TData = Awaited<ReturnType<typeof listSavedSearches>>, TError = ErrorType<AuthError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSavedSearches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSavedSearchesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSavedSearchUrl = () => {
+
+
+
+
+  return `/api/v1/saved-searches`
+}
+
+/**
+ * @summary Create a saved search
+ */
+export const createSavedSearch = async (savedSearchInput: SavedSearchInput, options?: RequestInit): Promise<SavedSearch> => {
+
+  return customFetch<SavedSearch>(getCreateSavedSearchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      savedSearchInput,)
+  }
+);}
+
+
+
+
+export const getCreateSavedSearchMutationOptions = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSavedSearch>>, TError,{data: BodyType<SavedSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSavedSearch>>, TError,{data: BodyType<SavedSearchInput>}, TContext> => {
+
+const mutationKey = ['createSavedSearch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSavedSearch>>, {data: BodyType<SavedSearchInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSavedSearch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSavedSearchMutationResult = NonNullable<Awaited<ReturnType<typeof createSavedSearch>>>
+    export type CreateSavedSearchMutationBody = BodyType<SavedSearchInput>
+    export type CreateSavedSearchMutationError = ErrorType<AuthError>
+
+    /**
+ * @summary Create a saved search
+ */
+export const useCreateSavedSearch = <TError = ErrorType<AuthError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSavedSearch>>, TError,{data: BodyType<SavedSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSavedSearch>>,
+        TError,
+        {data: BodyType<SavedSearchInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSavedSearchMutationOptions(options));
+    }
+
+export const getGetSavedSearchUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/saved-searches/${id}`
+}
+
+/**
+ * @summary Get a saved search
+ */
+export const getSavedSearch = async (id: number, options?: RequestInit): Promise<SavedSearch> => {
+
+  return customFetch<SavedSearch>(getGetSavedSearchUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSavedSearchQueryKey = (id: number,) => {
+    return [
+    `/api/v1/saved-searches/${id}`
+    ] as const;
+    }
+
+
+export const getGetSavedSearchQueryOptions = <TData = Awaited<ReturnType<typeof getSavedSearch>>, TError = ErrorType<AuthError | void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSavedSearch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSavedSearchQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedSearch>>> = ({ signal }) => getSavedSearch(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSavedSearch>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSavedSearchQueryResult = NonNullable<Awaited<ReturnType<typeof getSavedSearch>>>
+export type GetSavedSearchQueryError = ErrorType<AuthError | void>
+
+
+/**
+ * @summary Get a saved search
+ */
+
+export function useGetSavedSearch<TData = Awaited<ReturnType<typeof getSavedSearch>>, TError = ErrorType<AuthError | void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSavedSearch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSavedSearchQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSavedSearchUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/saved-searches/${id}`
+}
+
+/**
+ * @summary Update a saved search
+ */
+export const updateSavedSearch = async (id: number,
+    savedSearchUpdate: SavedSearchUpdate, options?: RequestInit): Promise<SavedSearch> => {
+
+  return customFetch<SavedSearch>(getUpdateSavedSearchUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      savedSearchUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateSavedSearchMutationOptions = <TError = ErrorType<AuthError | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSavedSearch>>, TError,{id: number;data: BodyType<SavedSearchUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSavedSearch>>, TError,{id: number;data: BodyType<SavedSearchUpdate>}, TContext> => {
+
+const mutationKey = ['updateSavedSearch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSavedSearch>>, {id: number;data: BodyType<SavedSearchUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSavedSearch(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSavedSearchMutationResult = NonNullable<Awaited<ReturnType<typeof updateSavedSearch>>>
+    export type UpdateSavedSearchMutationBody = BodyType<SavedSearchUpdate>
+    export type UpdateSavedSearchMutationError = ErrorType<AuthError | void>
+
+    /**
+ * @summary Update a saved search
+ */
+export const useUpdateSavedSearch = <TError = ErrorType<AuthError | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSavedSearch>>, TError,{id: number;data: BodyType<SavedSearchUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSavedSearch>>,
+        TError,
+        {id: number;data: BodyType<SavedSearchUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateSavedSearchMutationOptions(options));
+    }
+
+export const getDeleteSavedSearchUrl = (id: number,) => {
+
+
+
+
+  return `/api/v1/saved-searches/${id}`
+}
+
+/**
+ * @summary Delete a saved search
+ */
+export const deleteSavedSearch = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteSavedSearchUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteSavedSearchMutationOptions = <TError = ErrorType<AuthError | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSavedSearch>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSavedSearch>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSavedSearch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSavedSearch>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSavedSearch(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSavedSearchMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSavedSearch>>>
+
+    export type DeleteSavedSearchMutationError = ErrorType<AuthError | void>
+
+    /**
+ * @summary Delete a saved search
+ */
+export const useDeleteSavedSearch = <TError = ErrorType<AuthError | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSavedSearch>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSavedSearch>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSavedSearchMutationOptions(options));
+    }
 
 export const getListLockersUrl = (params?: ListLockersParams,) => {
   const normalizedParams = new URLSearchParams();

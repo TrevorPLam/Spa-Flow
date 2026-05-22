@@ -200,6 +200,15 @@ export const listClientsQueryLimitDefault = 20;
 export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "membershipStatus": zod.enum(['none', 'one_time', 'six_month']).optional(),
+  "preset": zod.enum(['active_members', 'expired_members', 'high_value', 'recent_visitors', 'inactive']).optional().describe('Pre-defined filter presets (overrides individual filter parameters)'),
+  "startDate": zod.date().optional().describe('Filter clients created on or after this date'),
+  "endDate": zod.date().optional().describe('Filter clients created on or before this date'),
+  "lastVisitAfter": zod.date().optional().describe('Filter clients with last visit on or after this date'),
+  "lastVisitBefore": zod.date().optional().describe('Filter clients with last visit on or before this date'),
+  "minVisits": zod.coerce.number().optional().describe('Filter clients with at least this many total visits'),
+  "maxVisits": zod.coerce.number().optional().describe('Filter clients with at most this many total visits'),
+  "minSpent": zod.coerce.number().optional().describe('Filter clients who have spent at least this amount'),
+  "maxSpent": zod.coerce.number().optional().describe('Filter clients who have spent at most this amount'),
   "page": zod.coerce.number().default(listClientsQueryPageDefault),
   "limit": zod.coerce.number().default(listClientsQueryLimitDefault)
 })
@@ -471,6 +480,116 @@ export const GetClientPiiResponse = zod.object({
   "dob": zod.string().nullish().describe('Decrypted date of birth'),
   "address": zod.string().nullish().describe('Decrypted address'),
   "documentNumber": zod.string().nullish().describe('Decrypted document number (ID, license, etc.)')
+})
+
+
+/**
+ * Returns client name suggestions based on partial input, prioritizing recent clients
+ * @summary Get client name suggestions for autocomplete
+ */
+export const suggestClientsQueryLimitDefault = 10;
+
+export const SuggestClientsQueryParams = zod.object({
+  "q": zod.coerce.string().describe('Partial name to search for'),
+  "limit": zod.coerce.number().default(suggestClientsQueryLimitDefault).describe('Maximum number of suggestions to return')
+})
+
+export const SuggestClientsResponseItem = zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().optional(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "memberId": zod.string().nullish()
+})
+export const SuggestClientsResponse = zod.array(SuggestClientsResponseItem)
+
+
+/**
+ * Exports client search results as a CSV file for spreadsheet import. Accepts the same filter parameters as the list clients endpoint.
+ * @summary Export client search results to CSV
+ */
+export const ExportClientsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "membershipStatus": zod.enum(['none', 'one_time', 'six_month']).optional(),
+  "preset": zod.enum(['active_members', 'expired_members', 'high_value', 'recent_visitors', 'inactive']).optional().describe('Pre-defined filter presets (overrides individual filter parameters)'),
+  "startDate": zod.date().optional().describe('Filter clients created on or after this date'),
+  "endDate": zod.date().optional().describe('Filter clients created on or before this date'),
+  "lastVisitAfter": zod.date().optional().describe('Filter clients with last visit on or after this date'),
+  "lastVisitBefore": zod.date().optional().describe('Filter clients with last visit on or before this date'),
+  "minVisits": zod.coerce.number().optional().describe('Filter clients with at least this many total visits'),
+  "maxVisits": zod.coerce.number().optional().describe('Filter clients with at most this many total visits'),
+  "minSpent": zod.coerce.number().optional().describe('Filter clients who have spent at least this amount'),
+  "maxSpent": zod.coerce.number().optional().describe('Filter clients who have spent at most this amount')
+})
+
+
+/**
+ * @summary List saved searches for current user
+ */
+export const ListSavedSearchesResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.string().describe('User ID who owns this saved search'),
+  "name": zod.string().describe('Name of the saved search'),
+  "filters": zod.record(zod.string(), zod.unknown()).describe('Search filter parameters (JSON object)'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListSavedSearchesResponse = zod.array(ListSavedSearchesResponseItem)
+
+
+/**
+ * @summary Create a saved search
+ */
+export const CreateSavedSearchBody = zod.object({
+  "name": zod.string().describe('Name of the saved search'),
+  "filters": zod.record(zod.string(), zod.unknown()).describe('Search filter parameters (JSON object)')
+})
+
+
+/**
+ * @summary Get a saved search
+ */
+export const GetSavedSearchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetSavedSearchResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.string().describe('User ID who owns this saved search'),
+  "name": zod.string().describe('Name of the saved search'),
+  "filters": zod.record(zod.string(), zod.unknown()).describe('Search filter parameters (JSON object)'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a saved search
+ */
+export const UpdateSavedSearchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSavedSearchBody = zod.object({
+  "name": zod.string().optional().describe('Name of the saved search'),
+  "filters": zod.record(zod.string(), zod.unknown()).optional().describe('Search filter parameters (JSON object)')
+})
+
+export const UpdateSavedSearchResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.string().describe('User ID who owns this saved search'),
+  "name": zod.string().describe('Name of the saved search'),
+  "filters": zod.record(zod.string(), zod.unknown()).describe('Search filter parameters (JSON object)'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a saved search
+ */
+export const DeleteSavedSearchParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -1024,8 +1143,13 @@ export const listTransactionsQueryLimitDefault = 20;
 
 export const ListTransactionsQueryParams = zod.object({
   "clientId": zod.coerce.number().optional(),
+  "type": zod.enum(['locker_rental', 'room_rental', 'membership', 'product', 'renewal', 'extension', 'refund']).optional().describe('Filter by transaction type'),
+  "status": zod.enum(['pending', 'completed', 'failed', 'cancelled', 'refunded']).optional().describe('Filter by transaction status'),
+  "minAmount": zod.coerce.number().optional().describe('Filter transactions with amount at least this value'),
+  "maxAmount": zod.coerce.number().optional().describe('Filter transactions with amount at most this value'),
   "startDate": zod.date().optional(),
   "endDate": zod.date().optional(),
+  "productCategory": zod.coerce.string().optional(),
   "page": zod.coerce.number().default(listTransactionsQueryPageDefault),
   "limit": zod.coerce.number().default(listTransactionsQueryLimitDefault)
 })

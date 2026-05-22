@@ -85,6 +85,13 @@
       "when": 1779435983351,
       "tag": "0011_lucky_titania",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779436891347,
+      "tag": "0012_loving_tempest",
+      "breakpoints": true
     }
   ]
 }

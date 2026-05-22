@@ -38,6 +38,8 @@ tags:
     description: Audit logging
   - name: data-quality
     description: Data quality management (manager only)
+  - name: saved-searches
+    description: Saved search filters
 
 paths:
   /healthz/live:
@@ -361,6 +363,56 @@ paths:
           schema:
             type: string
             enum: [none, one_time, six_month]
+        - name: preset
+          in: query
+          schema:
+            type: string
+            enum: [active_members, expired_members, high_value, recent_visitors, inactive]
+          description: Pre-defined filter presets (overrides individual filter parameters)
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients created on or after this date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients created on or before this date
+        - name: lastVisitAfter
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients with last visit on or after this date
+        - name: lastVisitBefore
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients with last visit on or before this date
+        - name: minVisits
+          in: query
+          schema:
+            type: integer
+          description: Filter clients with at least this many total visits
+        - name: maxVisits
+          in: query
+          schema:
+            type: integer
+          description: Filter clients with at most this many total visits
+        - name: minSpent
+          in: query
+          schema:
+            type: number
+          description: Filter clients who have spent at least this amount
+        - name: maxSpent
+          in: query
+          schema:
+            type: number
+          description: Filter clients who have spent at most this amount
         - name: page
           in: query
           schema:
@@ -614,6 +666,273 @@ paths:
                 $ref: "#/components/schemas/ClientPii"
         "403":
           description: Forbidden - manager only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: Not found
+
+  /clients/suggest:
+    get:
+      operationId: suggestClients
+      tags: [clients]
+      summary: Get client name suggestions for autocomplete
+      description: Returns client name suggestions based on partial input, prioritizing recent clients
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Partial name to search for
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of suggestions to return
+      responses:
+        "200":
+          description: List of client suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      nullable: true
+                    phone:
+                      type: string
+                      nullable: true
+                    memberId:
+                      type: string
+                      nullable: true
+        "400":
+          description: Bad request - missing query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /clients/export:
+    get:
+      operationId: exportClients
+      tags: [clients]
+      summary: Export client search results to CSV
+      description: Exports client search results as a CSV file for spreadsheet import. Accepts the same filter parameters as the list clients endpoint.
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: membershipStatus
+          in: query
+          schema:
+            type: string
+            enum: [none, one_time, six_month]
+        - name: preset
+          in: query
+          schema:
+            type: string
+            enum: [active_members, expired_members, high_value, recent_visitors, inactive]
+          description: Pre-defined filter presets (overrides individual filter parameters)
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients created on or after this date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients created on or before this date
+        - name: lastVisitAfter
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients with last visit on or after this date
+        - name: lastVisitBefore
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter clients with last visit on or before this date
+        - name: minVisits
+          in: query
+          schema:
+            type: integer
+          description: Filter clients with at least this many total visits
+        - name: maxVisits
+          in: query
+          schema:
+            type: integer
+          description: Filter clients with at most this many total visits
+        - name: minSpent
+          in: query
+          schema:
+            type: number
+          description: Filter clients who have spent at least this amount
+        - name: maxSpent
+          in: query
+          schema:
+            type: number
+          description: Filter clients who have spent at most this amount
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                ID,Name,Email,Phone,Member ID,Membership Status,Membership Expires,Created At
+                1,John Doe,john@example.com,555-1234,SPF-ABC123,six_month,2026-12-31,2026-01-15
+                2,Jane Smith,jane@example.com,555-5678,SPF-DEF456,one_time,2026-02-15,2026-01-20
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  # Saved Searches
+  /saved-searches:
+    get:
+      operationId: listSavedSearches
+      tags: [saved-searches]
+      summary: List saved searches for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of saved searches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedSearch"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+    post:
+      operationId: createSavedSearch
+      tags: [saved-searches]
+      summary: Create a saved search
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedSearchInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedSearch"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /saved-searches/{id}:
+    get:
+      operationId: getSavedSearch
+      tags: [saved-searches]
+      summary: Get a saved search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saved search
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedSearch"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateSavedSearch
+      tags: [saved-searches]
+      summary: Update a saved search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedSearchUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedSearch"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteSavedSearch
+      tags: [saved-searches]
+      summary: Delete a saved search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1126,6 +1445,28 @@ paths:
           in: query
           schema:
             type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [locker_rental, room_rental, membership, product, renewal, extension, refund]
+          description: Filter by transaction type
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, failed, cancelled, refunded]
+          description: Filter by transaction status
+        - name: minAmount
+          in: query
+          schema:
+            type: number
+          description: Filter transactions with amount at least this value
+        - name: maxAmount
+          in: query
+          schema:
+            type: number
+          description: Filter transactions with amount at most this value
         - name: startDate
           in: query
           schema:
@@ -1138,6 +1479,11 @@ paths:
             type: string
             format: date-time
             description: Filter transactions created on or before this date (ISO 8601 format)
+        - name: productCategory
+          in: query
+          schema:
+            type: string
+            description: Filter product transactions by category (e.g., "towels", "snacks", "beverages")
         - name: page
           in: query
           schema:
@@ -2303,6 +2649,52 @@ components:
         documentNumber:
           type: ["string", "null"]
           description: Decrypted document number (ID, license, etc.)
+
+    SavedSearch:
+      type: object
+      required: [id, userId, name, filters, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+          description: User ID who owns this saved search
+        name:
+          type: string
+          description: Name of the saved search
+        filters:
+          type: object
+          description: Search filter parameters (JSON object)
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SavedSearchInput:
+      type: object
+      required: [name, filters]
+      properties:
+        name:
+          type: string
+          description: Name of the saved search
+        filters:
+          type: object
+          description: Search filter parameters (JSON object)
+          additionalProperties: true
+
+    SavedSearchUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the saved search
+        filters:
+          type: object
+          description: Search filter parameters (JSON object)
+          additionalProperties: true
 
     ClientInput:
       type: object

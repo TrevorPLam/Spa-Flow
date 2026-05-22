@@ -6,10 +6,47 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ListClientsMembershipStatus } from './listClientsMembershipStatus';
+import type { ListClientsPreset } from './listClientsPreset';
 
 export type ListClientsParams = {
 search?: string;
 membershipStatus?: ListClientsMembershipStatus;
+/**
+ * Pre-defined filter presets (overrides individual filter parameters)
+ */
+preset?: ListClientsPreset;
+/**
+ * Filter clients created on or after this date
+ */
+startDate?: Date;
+/**
+ * Filter clients created on or before this date
+ */
+endDate?: Date;
+/**
+ * Filter clients with last visit on or after this date
+ */
+lastVisitAfter?: Date;
+/**
+ * Filter clients with last visit on or before this date
+ */
+lastVisitBefore?: Date;
+/**
+ * Filter clients with at least this many total visits
+ */
+minVisits?: number;
+/**
+ * Filter clients with at most this many total visits
+ */
+maxVisits?: number;
+/**
+ * Filter clients who have spent at least this amount
+ */
+minSpent?: number;
+/**
+ * Filter clients who have spent at most this amount
+ */
+maxSpent?: number;
 page?: number;
 limit?: number;
 };
