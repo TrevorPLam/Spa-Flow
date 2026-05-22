@@ -33,7 +33,8 @@ dotenv.config({ path: path.resolve(projectRoot, envFile) });
 The test environment uses a dedicated Neon PostgreSQL database:
 
 ```env
-DATABASE_URL=postgresql://neondb_owner:npg_rP9UF8bkoCiH@ep-fancy-butterfly-aqv3s5jv.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+# ROTATE THIS CREDENTIAL IMMEDIATELY - Replace with new Neon database password
+DATABASE_URL=postgresql://neondb_owner:ROTATE_ME@ep-fancy-butterfly-aqv3s5jv.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 ```
 
 ### Database Pool Settings (Test)
