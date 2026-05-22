@@ -1235,6 +1235,194 @@ export const GetPeakHoursResponse = zod.object({
 
 
 /**
+ * @summary Get revenue by membership type (manager only)
+ */
+export const GetRevenueByMembershipQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const GetRevenueByMembershipResponse = zod.object({
+  "data": zod.array(zod.object({
+  "membershipType": zod.enum(['one_time', 'six_month', 'non_membership']),
+  "revenue": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number(),
+  "count": zod.number()
+})),
+  "totalRevenue": zod.number(),
+  "totalTax": zod.number(),
+  "total": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get revenue by time of day (manager only)
+ */
+export const GetRevenueByTimeOfDayQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const getRevenueByTimeOfDayResponseDataItemHourMin = 0;
+export const getRevenueByTimeOfDayResponseDataItemHourMax = 23;
+
+export const getRevenueByTimeOfDayResponsePeakHourHourMin = 0;
+export const getRevenueByTimeOfDayResponsePeakHourHourMax = 23;
+
+
+
+export const GetRevenueByTimeOfDayResponse = zod.object({
+  "data": zod.array(zod.object({
+  "hour": zod.number().min(getRevenueByTimeOfDayResponseDataItemHourMin).max(getRevenueByTimeOfDayResponseDataItemHourMax),
+  "revenue": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number(),
+  "transactionCount": zod.number()
+})),
+  "peakHour": zod.object({
+  "hour": zod.number().min(getRevenueByTimeOfDayResponsePeakHourHourMin).max(getRevenueByTimeOfDayResponsePeakHourHourMax),
+  "total": zod.number()
+}).nullable(),
+  "totalRevenue": zod.number(),
+  "totalTax": zod.number(),
+  "total": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get revenue by day of week (manager only)
+ */
+export const GetRevenueByDayOfWeekQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const getRevenueByDayOfWeekResponseDataItemDayOfWeekMin = 0;
+export const getRevenueByDayOfWeekResponseDataItemDayOfWeekMax = 6;
+
+export const getRevenueByDayOfWeekResponseBestDayDayOfWeekMin = 0;
+export const getRevenueByDayOfWeekResponseBestDayDayOfWeekMax = 6;
+
+
+
+export const GetRevenueByDayOfWeekResponse = zod.object({
+  "data": zod.array(zod.object({
+  "dayOfWeek": zod.number().min(getRevenueByDayOfWeekResponseDataItemDayOfWeekMin).max(getRevenueByDayOfWeekResponseDataItemDayOfWeekMax),
+  "dayName": zod.string(),
+  "revenue": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number(),
+  "transactionCount": zod.number()
+})),
+  "bestDay": zod.object({
+  "dayOfWeek": zod.number().min(getRevenueByDayOfWeekResponseBestDayDayOfWeekMin).max(getRevenueByDayOfWeekResponseBestDayDayOfWeekMax),
+  "dayName": zod.string(),
+  "total": zod.number()
+}).nullable(),
+  "totalRevenue": zod.number(),
+  "totalTax": zod.number(),
+  "total": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get membership conversion rate (manager only)
+ */
+export const GetConversionRateQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const GetConversionRateResponse = zod.object({
+  "conversionCount": zod.number(),
+  "totalClients": zod.number(),
+  "conversionRate": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get average transaction value (manager only)
+ */
+export const GetAvgTransactionValueQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const GetAvgTransactionValueResponse = zod.object({
+  "data": zod.array(zod.object({
+  "type": zod.enum(['locker_rental', 'room_rental', 'membership', 'product', 'renewal', 'extension', 'refund']),
+  "avgAmount": zod.number(),
+  "avgTotal": zod.number(),
+  "count": zod.number(),
+  "totalRevenue": zod.number()
+})),
+  "overall": zod.object({
+  "avgAmount": zod.number(),
+  "avgTotal": zod.number(),
+  "count": zod.number(),
+  "totalRevenue": zod.number()
+}),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get product vs rental revenue breakdown (manager only)
+ */
+export const GetRevenueBreakdownQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const GetRevenueBreakdownResponse = zod.object({
+  "data": zod.array(zod.object({
+  "category": zod.enum(['product', 'rental', 'membership']),
+  "revenue": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number(),
+  "count": zod.number(),
+  "percentage": zod.string()
+})),
+  "totalRevenue": zod.number(),
+  "totalTax": zod.number(),
+  "total": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get discount/special usage analytics (manager only)
+ */
+export const GetDiscountAnalyticsQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for report (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for report (ISO 8601 format)')
+})
+
+export const GetDiscountAnalyticsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "discountType": zod.enum(['birthday', 'age_1824', 'weekend']),
+  "count": zod.number(),
+  "totalDiscount": zod.number(),
+  "percentage": zod.string()
+})),
+  "totalTransactions": zod.number(),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date()
+})
+
+
+/**
  * @summary Get daily reconciliation reports for a date range (manager only)
  */
 export const GetReconciliationHistoryQueryParams = zod.object({

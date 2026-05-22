@@ -25,6 +25,7 @@ import type {
   AuditLogList,
   AuthError,
   AuthUser,
+  AvgTransactionReport,
   BulkReleaseBody,
   BulkReleaseResult,
   CheckInInput,
@@ -34,12 +35,21 @@ import type {
   ClientList,
   ClientPii,
   ClientUpdate,
+  ConversionRateReport,
   Dashboard,
+  DiscountAnalyticsReport,
+  GetAvgTransactionValueParams,
   GetClientTransactionsParams,
+  GetConversionRateParams,
+  GetDiscountAnalyticsParams,
   GetLockerUtilizationParams,
   GetPeakHoursParams,
   GetReconciliationHistory200,
   GetReconciliationHistoryParams,
+  GetRevenueBreakdownParams,
+  GetRevenueByDayOfWeekParams,
+  GetRevenueByMembershipParams,
+  GetRevenueByTimeOfDayParams,
   GetRevenueByTypeParams,
   GetRevenueReportParams,
   GetRoomUtilizationParams,
@@ -72,6 +82,10 @@ import type {
   RenewInput,
   RenewMembershipBody,
   RentalSession,
+  RevenueBreakdownReport,
+  RevenueByDayOfWeekReport,
+  RevenueByMembershipReport,
+  RevenueByTimeOfDayReport,
   RevenueByTypeReport,
   RevenueReport,
   RevokeAllSessions200,
@@ -4156,6 +4170,594 @@ export function useGetPeakHours<TData = Awaited<ReturnType<typeof getPeakHours>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPeakHoursQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRevenueByMembershipUrl = (params?: GetRevenueByMembershipParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/revenue/membership?${stringifiedParams}` : `/api/v1/reports/revenue/membership`
+}
+
+/**
+ * @summary Get revenue by membership type (manager only)
+ */
+export const getRevenueByMembership = async (params?: GetRevenueByMembershipParams, options?: RequestInit): Promise<RevenueByMembershipReport> => {
+
+  return customFetch<RevenueByMembershipReport>(getGetRevenueByMembershipUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRevenueByMembershipQueryKey = (params?: GetRevenueByMembershipParams,) => {
+    return [
+    `/api/v1/reports/revenue/membership`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRevenueByMembershipQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueByMembership>>, TError = ErrorType<void>>(params?: GetRevenueByMembershipParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByMembership>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueByMembershipQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueByMembership>>> = ({ signal }) => getRevenueByMembership(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueByMembership>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRevenueByMembershipQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueByMembership>>>
+export type GetRevenueByMembershipQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get revenue by membership type (manager only)
+ */
+
+export function useGetRevenueByMembership<TData = Awaited<ReturnType<typeof getRevenueByMembership>>, TError = ErrorType<void>>(
+ params?: GetRevenueByMembershipParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByMembership>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRevenueByMembershipQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRevenueByTimeOfDayUrl = (params?: GetRevenueByTimeOfDayParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/revenue/time-of-day?${stringifiedParams}` : `/api/v1/reports/revenue/time-of-day`
+}
+
+/**
+ * @summary Get revenue by time of day (manager only)
+ */
+export const getRevenueByTimeOfDay = async (params?: GetRevenueByTimeOfDayParams, options?: RequestInit): Promise<RevenueByTimeOfDayReport> => {
+
+  return customFetch<RevenueByTimeOfDayReport>(getGetRevenueByTimeOfDayUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRevenueByTimeOfDayQueryKey = (params?: GetRevenueByTimeOfDayParams,) => {
+    return [
+    `/api/v1/reports/revenue/time-of-day`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRevenueByTimeOfDayQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueByTimeOfDay>>, TError = ErrorType<void>>(params?: GetRevenueByTimeOfDayParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByTimeOfDay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueByTimeOfDayQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueByTimeOfDay>>> = ({ signal }) => getRevenueByTimeOfDay(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueByTimeOfDay>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRevenueByTimeOfDayQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueByTimeOfDay>>>
+export type GetRevenueByTimeOfDayQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get revenue by time of day (manager only)
+ */
+
+export function useGetRevenueByTimeOfDay<TData = Awaited<ReturnType<typeof getRevenueByTimeOfDay>>, TError = ErrorType<void>>(
+ params?: GetRevenueByTimeOfDayParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByTimeOfDay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRevenueByTimeOfDayQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRevenueByDayOfWeekUrl = (params?: GetRevenueByDayOfWeekParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/revenue/day-of-week?${stringifiedParams}` : `/api/v1/reports/revenue/day-of-week`
+}
+
+/**
+ * @summary Get revenue by day of week (manager only)
+ */
+export const getRevenueByDayOfWeek = async (params?: GetRevenueByDayOfWeekParams, options?: RequestInit): Promise<RevenueByDayOfWeekReport> => {
+
+  return customFetch<RevenueByDayOfWeekReport>(getGetRevenueByDayOfWeekUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRevenueByDayOfWeekQueryKey = (params?: GetRevenueByDayOfWeekParams,) => {
+    return [
+    `/api/v1/reports/revenue/day-of-week`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRevenueByDayOfWeekQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueByDayOfWeek>>, TError = ErrorType<void>>(params?: GetRevenueByDayOfWeekParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByDayOfWeek>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueByDayOfWeekQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueByDayOfWeek>>> = ({ signal }) => getRevenueByDayOfWeek(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueByDayOfWeek>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRevenueByDayOfWeekQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueByDayOfWeek>>>
+export type GetRevenueByDayOfWeekQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get revenue by day of week (manager only)
+ */
+
+export function useGetRevenueByDayOfWeek<TData = Awaited<ReturnType<typeof getRevenueByDayOfWeek>>, TError = ErrorType<void>>(
+ params?: GetRevenueByDayOfWeekParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueByDayOfWeek>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRevenueByDayOfWeekQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetConversionRateUrl = (params?: GetConversionRateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/analytics/conversion-rate?${stringifiedParams}` : `/api/v1/reports/analytics/conversion-rate`
+}
+
+/**
+ * @summary Get membership conversion rate (manager only)
+ */
+export const getConversionRate = async (params?: GetConversionRateParams, options?: RequestInit): Promise<ConversionRateReport> => {
+
+  return customFetch<ConversionRateReport>(getGetConversionRateUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConversionRateQueryKey = (params?: GetConversionRateParams,) => {
+    return [
+    `/api/v1/reports/analytics/conversion-rate`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetConversionRateQueryOptions = <TData = Awaited<ReturnType<typeof getConversionRate>>, TError = ErrorType<void>>(params?: GetConversionRateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConversionRate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConversionRateQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConversionRate>>> = ({ signal }) => getConversionRate(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConversionRate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConversionRateQueryResult = NonNullable<Awaited<ReturnType<typeof getConversionRate>>>
+export type GetConversionRateQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get membership conversion rate (manager only)
+ */
+
+export function useGetConversionRate<TData = Awaited<ReturnType<typeof getConversionRate>>, TError = ErrorType<void>>(
+ params?: GetConversionRateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConversionRate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConversionRateQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAvgTransactionValueUrl = (params?: GetAvgTransactionValueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/analytics/avg-transaction?${stringifiedParams}` : `/api/v1/reports/analytics/avg-transaction`
+}
+
+/**
+ * @summary Get average transaction value (manager only)
+ */
+export const getAvgTransactionValue = async (params?: GetAvgTransactionValueParams, options?: RequestInit): Promise<AvgTransactionReport> => {
+
+  return customFetch<AvgTransactionReport>(getGetAvgTransactionValueUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvgTransactionValueQueryKey = (params?: GetAvgTransactionValueParams,) => {
+    return [
+    `/api/v1/reports/analytics/avg-transaction`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAvgTransactionValueQueryOptions = <TData = Awaited<ReturnType<typeof getAvgTransactionValue>>, TError = ErrorType<void>>(params?: GetAvgTransactionValueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvgTransactionValue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvgTransactionValueQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvgTransactionValue>>> = ({ signal }) => getAvgTransactionValue(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvgTransactionValue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvgTransactionValueQueryResult = NonNullable<Awaited<ReturnType<typeof getAvgTransactionValue>>>
+export type GetAvgTransactionValueQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get average transaction value (manager only)
+ */
+
+export function useGetAvgTransactionValue<TData = Awaited<ReturnType<typeof getAvgTransactionValue>>, TError = ErrorType<void>>(
+ params?: GetAvgTransactionValueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvgTransactionValue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvgTransactionValueQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRevenueBreakdownUrl = (params?: GetRevenueBreakdownParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/revenue/breakdown?${stringifiedParams}` : `/api/v1/reports/revenue/breakdown`
+}
+
+/**
+ * @summary Get product vs rental revenue breakdown (manager only)
+ */
+export const getRevenueBreakdown = async (params?: GetRevenueBreakdownParams, options?: RequestInit): Promise<RevenueBreakdownReport> => {
+
+  return customFetch<RevenueBreakdownReport>(getGetRevenueBreakdownUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRevenueBreakdownQueryKey = (params?: GetRevenueBreakdownParams,) => {
+    return [
+    `/api/v1/reports/revenue/breakdown`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRevenueBreakdownQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueBreakdown>>, TError = ErrorType<void>>(params?: GetRevenueBreakdownParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueBreakdown>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueBreakdownQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueBreakdown>>> = ({ signal }) => getRevenueBreakdown(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueBreakdown>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRevenueBreakdownQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueBreakdown>>>
+export type GetRevenueBreakdownQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get product vs rental revenue breakdown (manager only)
+ */
+
+export function useGetRevenueBreakdown<TData = Awaited<ReturnType<typeof getRevenueBreakdown>>, TError = ErrorType<void>>(
+ params?: GetRevenueBreakdownParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueBreakdown>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRevenueBreakdownQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDiscountAnalyticsUrl = (params?: GetDiscountAnalyticsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reports/analytics/discounts?${stringifiedParams}` : `/api/v1/reports/analytics/discounts`
+}
+
+/**
+ * @summary Get discount/special usage analytics (manager only)
+ */
+export const getDiscountAnalytics = async (params?: GetDiscountAnalyticsParams, options?: RequestInit): Promise<DiscountAnalyticsReport> => {
+
+  return customFetch<DiscountAnalyticsReport>(getGetDiscountAnalyticsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDiscountAnalyticsQueryKey = (params?: GetDiscountAnalyticsParams,) => {
+    return [
+    `/api/v1/reports/analytics/discounts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDiscountAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof getDiscountAnalytics>>, TError = ErrorType<void>>(params?: GetDiscountAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDiscountAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDiscountAnalyticsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDiscountAnalytics>>> = ({ signal }) => getDiscountAnalytics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDiscountAnalytics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDiscountAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getDiscountAnalytics>>>
+export type GetDiscountAnalyticsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get discount/special usage analytics (manager only)
+ */
+
+export function useGetDiscountAnalytics<TData = Awaited<ReturnType<typeof getDiscountAnalytics>>, TError = ErrorType<void>>(
+ params?: GetDiscountAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDiscountAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDiscountAnalyticsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

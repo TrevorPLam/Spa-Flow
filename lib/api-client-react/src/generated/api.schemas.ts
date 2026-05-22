@@ -901,6 +901,189 @@ export interface PeakHoursReport {
   endDate: string;
 }
 
+export type RevenueByMembershipReportDataItemMembershipType = typeof RevenueByMembershipReportDataItemMembershipType[keyof typeof RevenueByMembershipReportDataItemMembershipType];
+
+
+export const RevenueByMembershipReportDataItemMembershipType = {
+  one_time: 'one_time',
+  six_month: 'six_month',
+  non_membership: 'non_membership',
+} as const;
+
+export type RevenueByMembershipReportDataItem = {
+  membershipType: RevenueByMembershipReportDataItemMembershipType;
+  revenue: number;
+  tax: number;
+  total: number;
+  count: number;
+};
+
+export interface RevenueByMembershipReport {
+  data: RevenueByMembershipReportDataItem[];
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+export type RevenueByTimeOfDayReportDataItem = {
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  hour: number;
+  revenue: number;
+  tax: number;
+  total: number;
+  transactionCount: number;
+};
+
+export type RevenueByTimeOfDayReportPeakHour = {
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  hour: number;
+  total: number;
+} | null;
+
+export interface RevenueByTimeOfDayReport {
+  data: RevenueByTimeOfDayReportDataItem[];
+  peakHour: RevenueByTimeOfDayReportPeakHour;
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+export type RevenueByDayOfWeekReportDataItem = {
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  dayName: string;
+  revenue: number;
+  tax: number;
+  total: number;
+  transactionCount: number;
+};
+
+export type RevenueByDayOfWeekReportBestDay = {
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  dayName: string;
+  total: number;
+} | null;
+
+export interface RevenueByDayOfWeekReport {
+  data: RevenueByDayOfWeekReportDataItem[];
+  bestDay: RevenueByDayOfWeekReportBestDay;
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface ConversionRateReport {
+  conversionCount: number;
+  totalClients: number;
+  conversionRate: number;
+  startDate: string;
+  endDate: string;
+}
+
+export type AvgTransactionReportDataItemType = typeof AvgTransactionReportDataItemType[keyof typeof AvgTransactionReportDataItemType];
+
+
+export const AvgTransactionReportDataItemType = {
+  locker_rental: 'locker_rental',
+  room_rental: 'room_rental',
+  membership: 'membership',
+  product: 'product',
+  renewal: 'renewal',
+  extension: 'extension',
+  refund: 'refund',
+} as const;
+
+export type AvgTransactionReportDataItem = {
+  type: AvgTransactionReportDataItemType;
+  avgAmount: number;
+  avgTotal: number;
+  count: number;
+  totalRevenue: number;
+};
+
+export type AvgTransactionReportOverall = {
+  avgAmount: number;
+  avgTotal: number;
+  count: number;
+  totalRevenue: number;
+};
+
+export interface AvgTransactionReport {
+  data: AvgTransactionReportDataItem[];
+  overall: AvgTransactionReportOverall;
+  startDate: string;
+  endDate: string;
+}
+
+export type RevenueBreakdownReportDataItemCategory = typeof RevenueBreakdownReportDataItemCategory[keyof typeof RevenueBreakdownReportDataItemCategory];
+
+
+export const RevenueBreakdownReportDataItemCategory = {
+  product: 'product',
+  rental: 'rental',
+  membership: 'membership',
+} as const;
+
+export type RevenueBreakdownReportDataItem = {
+  category: RevenueBreakdownReportDataItemCategory;
+  revenue: number;
+  tax: number;
+  total: number;
+  count: number;
+  percentage: string;
+};
+
+export interface RevenueBreakdownReport {
+  data: RevenueBreakdownReportDataItem[];
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+export type DiscountAnalyticsReportDataItemDiscountType = typeof DiscountAnalyticsReportDataItemDiscountType[keyof typeof DiscountAnalyticsReportDataItemDiscountType];
+
+
+export const DiscountAnalyticsReportDataItemDiscountType = {
+  birthday: 'birthday',
+  age_1824: 'age_1824',
+  weekend: 'weekend',
+} as const;
+
+export type DiscountAnalyticsReportDataItem = {
+  discountType: DiscountAnalyticsReportDataItemDiscountType;
+  count: number;
+  totalDiscount: number;
+  percentage: string;
+};
+
+export interface DiscountAnalyticsReport {
+  data: DiscountAnalyticsReportDataItem[];
+  totalTransactions: number;
+  startDate: string;
+  endDate: string;
+}
+
 export type DiscrepanciesMissingInSquareItem = {
   paymentId: string;
   amount: number;
@@ -1137,6 +1320,83 @@ export const GetRoomUtilizationGranularity = {
 } as const;
 
 export type GetPeakHoursParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetRevenueByMembershipParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetRevenueByTimeOfDayParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetRevenueByDayOfWeekParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetConversionRateParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetAvgTransactionValueParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetRevenueBreakdownParams = {
+/**
+ * Start date for report (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for report (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetDiscountAnalyticsParams = {
 /**
  * Start date for report (ISO 8601 format)
  */

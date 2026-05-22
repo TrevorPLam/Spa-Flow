@@ -76,6 +76,120 @@ interface PeakHoursReport {
   endDate: string;
 }
 
+interface RevenueByMembershipDataPoint {
+  membershipType: string;
+  revenue: number;
+  tax: number;
+  total: number;
+  count: number;
+}
+
+interface RevenueByMembershipReport {
+  data: RevenueByMembershipDataPoint[];
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+interface RevenueByTimeOfDayDataPoint {
+  hour: number;
+  revenue: number;
+  tax: number;
+  total: number;
+  transactionCount: number;
+}
+
+interface RevenueByTimeOfDayReport {
+  data: RevenueByTimeOfDayDataPoint[];
+  peakHour: { hour: number; total: number } | null;
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+interface RevenueByDayOfWeekDataPoint {
+  dayOfWeek: number;
+  dayName: string;
+  revenue: number;
+  tax: number;
+  total: number;
+  transactionCount: number;
+}
+
+interface RevenueByDayOfWeekReport {
+  data: RevenueByDayOfWeekDataPoint[];
+  bestDay: { dayOfWeek: number; dayName: string; total: number } | null;
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+interface ConversionRateReport {
+  conversionCount: number;
+  totalClients: number;
+  conversionRate: number;
+  startDate: string;
+  endDate: string;
+}
+
+interface AvgTransactionDataPoint {
+  type: string;
+  avgAmount: number;
+  avgTotal: number;
+  count: number;
+  totalRevenue: number;
+}
+
+interface AvgTransactionReport {
+  data: AvgTransactionDataPoint[];
+  overall: {
+    avgAmount: number;
+    avgTotal: number;
+    count: number;
+    totalRevenue: number;
+  };
+  startDate: string;
+  endDate: string;
+}
+
+interface RevenueBreakdownDataPoint {
+  category: string;
+  revenue: number;
+  tax: number;
+  total: number;
+  count: number;
+  percentage: string;
+}
+
+interface RevenueBreakdownReport {
+  data: RevenueBreakdownDataPoint[];
+  totalRevenue: number;
+  totalTax: number;
+  total: number;
+  startDate: string;
+  endDate: string;
+}
+
+interface DiscountAnalyticsDataPoint {
+  discountType: string;
+  count: number;
+  totalDiscount: number;
+  percentage: string;
+}
+
+interface DiscountAnalyticsReport {
+  data: DiscountAnalyticsDataPoint[];
+  totalTransactions: number;
+  startDate: string;
+  endDate: string;
+}
+
 const TYPE_COLORS: Record<string, string> = {
   locker_rental: "#8884d8",
   room_rental: "#82ca9d",
@@ -103,6 +217,13 @@ export default function ReportsPage() {
   const [lockerUtilization, setLockerUtilization] = useState<UtilizationReport | null>(null);
   const [roomUtilization, setRoomUtilization] = useState<UtilizationReport | null>(null);
   const [peakHours, setPeakHours] = useState<PeakHoursReport | null>(null);
+  const [revenueByMembership, setRevenueByMembership] = useState<RevenueByMembershipReport | null>(null);
+  const [revenueByTimeOfDay, setRevenueByTimeOfDay] = useState<RevenueByTimeOfDayReport | null>(null);
+  const [revenueByDayOfWeek, setRevenueByDayOfWeek] = useState<RevenueByDayOfWeekReport | null>(null);
+  const [conversionRate, setConversionRate] = useState<ConversionRateReport | null>(null);
+  const [avgTransaction, setAvgTransaction] = useState<AvgTransactionReport | null>(null);
+  const [revenueBreakdown, setRevenueBreakdown] = useState<RevenueBreakdownReport | null>(null);
+  const [discountAnalytics, setDiscountAnalytics] = useState<DiscountAnalyticsReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Check if user is manager
@@ -184,6 +305,90 @@ export default function ReportsPage() {
       if (peakHoursResponse.ok) {
         const peakHoursData = await peakHoursResponse.json();
         setPeakHours(peakHoursData);
+      }
+
+      // Fetch revenue by membership
+      const membershipResponse = await fetch(
+        `/api/v1/reports/revenue/membership?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (membershipResponse.ok) {
+        const membershipData = await membershipResponse.json();
+        setRevenueByMembership(membershipData);
+      }
+
+      // Fetch revenue by time of day
+      const timeOfDayResponse = await fetch(
+        `/api/v1/reports/revenue/time-of-day?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (timeOfDayResponse.ok) {
+        const timeOfDayData = await timeOfDayResponse.json();
+        setRevenueByTimeOfDay(timeOfDayData);
+      }
+
+      // Fetch revenue by day of week
+      const dayOfWeekResponse = await fetch(
+        `/api/v1/reports/revenue/day-of-week?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (dayOfWeekResponse.ok) {
+        const dayOfWeekData = await dayOfWeekResponse.json();
+        setRevenueByDayOfWeek(dayOfWeekData);
+      }
+
+      // Fetch conversion rate
+      const conversionResponse = await fetch(
+        `/api/v1/reports/analytics/conversion-rate?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (conversionResponse.ok) {
+        const conversionData = await conversionResponse.json();
+        setConversionRate(conversionData);
+      }
+
+      // Fetch average transaction value
+      const avgTransactionResponse = await fetch(
+        `/api/v1/reports/analytics/avg-transaction?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (avgTransactionResponse.ok) {
+        const avgTransactionData = await avgTransactionResponse.json();
+        setAvgTransaction(avgTransactionData);
+      }
+
+      // Fetch revenue breakdown
+      const breakdownResponse = await fetch(
+        `/api/v1/reports/revenue/breakdown?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (breakdownResponse.ok) {
+        const breakdownData = await breakdownResponse.json();
+        setRevenueBreakdown(breakdownData);
+      }
+
+      // Fetch discount analytics
+      const discountResponse = await fetch(
+        `/api/v1/reports/analytics/discounts?startDate=${startDate}&endDate=${endDate}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (discountResponse.ok) {
+        const discountData = await discountResponse.json();
+        setDiscountAnalytics(discountData);
       }
     } catch (error) {
       console.error("Failed to fetch reports:", error);
@@ -582,6 +787,280 @@ export default function ReportsPage() {
                     {peakHours.peakHour ? `${peakHours.peakHour.hour}:00` : "N/A"}
                   </span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Revenue by Membership Type */}
+        {revenueByMembership && revenueByMembership.data.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Revenue by Membership Type</CardTitle>
+              <Button
+                onClick={() => exportToCSV(revenueByMembership.data, "revenue-by-membership")}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueByMembership.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="membershipType" tickFormatter={(value) => value.replace("_", " ")} />
+                  <YAxis tickFormatter={(value) => `$${value}`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Legend />
+                  <Bar dataKey="total" fill="#8884d8" name="Total Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                {revenueByMembership.data.map((item) => (
+                  <div key={item.membershipType} className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">{item.membershipType.replace("_", " ")}:</span>
+                    <span className="font-medium">{formatCurrency(item.total)}</span>
+                    <Badge variant="secondary">{item.count}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Revenue by Time of Day */}
+        {revenueByTimeOfDay && revenueByTimeOfDay.data.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Revenue by Time of Day</CardTitle>
+              <div className="flex items-center gap-4">
+                {revenueByTimeOfDay.peakHour && (
+                  <Badge variant="default" className="text-sm">
+                    Peak: {revenueByTimeOfDay.peakHour.hour}:00 ({formatCurrency(revenueByTimeOfDay.peakHour.total)})
+                  </Badge>
+                )}
+                <Button
+                  onClick={() => exportToCSV(revenueByTimeOfDay.data, "revenue-by-time-of-day")}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={revenueByTimeOfDay.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="hour" tickFormatter={(value) => `${value}:00`} />
+                  <YAxis tickFormatter={(value) => `$${value}`} />
+                  <Tooltip
+                    labelFormatter={(value) => `${value}:00 - ${value + 1}:00`}
+                    formatter={(value: number) => formatCurrency(value)}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="total" stroke="#8884d8" name="Total Revenue" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Revenue by Day of Week */}
+        {revenueByDayOfWeek && revenueByDayOfWeek.data.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Revenue by Day of Week</CardTitle>
+              <div className="flex items-center gap-4">
+                {revenueByDayOfWeek.bestDay && (
+                  <Badge variant="default" className="text-sm">
+                    Best: {revenueByDayOfWeek.bestDay.dayName} ({formatCurrency(revenueByDayOfWeek.bestDay.total)})
+                  </Badge>
+                )}
+                <Button
+                  onClick={() => exportToCSV(revenueByDayOfWeek.data, "revenue-by-day-of-week")}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueByDayOfWeek.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="dayName" />
+                  <YAxis tickFormatter={(value) => `$${value}`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Legend />
+                  <Bar dataKey="total" fill="#82ca9d" name="Total Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Conversion Rate */}
+        {conversionRate && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Membership Conversion Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-3xl font-bold text-primary">{conversionRate.conversionRate.toFixed(1)}%</div>
+                  <div className="text-sm text-muted-foreground mt-1">Conversion Rate</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-3xl font-bold">{conversionRate.conversionCount}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Conversions</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-3xl font-bold">{conversionRate.totalClients}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Total Clients</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Average Transaction Value */}
+        {avgTransaction && avgTransaction.data.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Average Transaction Value</CardTitle>
+              <Button
+                onClick={() => exportToCSV(avgTransaction.data, "avg-transaction")}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Overall Avg:</span>
+                    <div className="text-xl font-bold">{formatCurrency(avgTransaction.overall.avgTotal)}</div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Total Transactions:</span>
+                    <div className="text-xl font-bold">{avgTransaction.overall.count}</div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Total Revenue:</span>
+                    <div className="text-xl font-bold">{formatCurrency(avgTransaction.overall.totalRevenue)}</div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Avg Amount:</span>
+                    <div className="text-xl font-bold">{formatCurrency(avgTransaction.overall.avgAmount)}</div>
+                  </div>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={avgTransaction.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" tickFormatter={(value) => TYPE_LABELS[value] || value} />
+                  <YAxis tickFormatter={(value) => `$${value}`} />
+                  <Tooltip
+                    labelFormatter={(value) => TYPE_LABELS[value as string] || value}
+                    formatter={(value: number) => formatCurrency(value)}
+                  />
+                  <Legend />
+                  <Bar dataKey="avgTotal" fill="#8884d8" name="Avg Total" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Revenue Breakdown */}
+        {revenueBreakdown && revenueBreakdown.data.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Revenue Breakdown (Product vs Rental vs Membership)</CardTitle>
+              <Button
+                onClick={() => exportToCSV(revenueBreakdown.data, "revenue-breakdown")}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueBreakdown.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="category" tickFormatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)} />
+                  <YAxis tickFormatter={(value) => `$${value}`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Legend />
+                  <Bar dataKey="total" fill="#8884d8" name="Total Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {revenueBreakdown.data.map((item) => (
+                  <div key={item.category} className="p-4 border rounded-lg">
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                    </div>
+                    <div className="text-2xl font-bold">{formatCurrency(item.total)}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {item.percentage}% of total ({item.count} transactions)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Discount Analytics */}
+        {discountAnalytics && discountAnalytics.data.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Discount/Special Usage Analytics</CardTitle>
+              <Button
+                onClick={() => exportToCSV(discountAnalytics.data, "discount-analytics")}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={discountAnalytics.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="discountType" tickFormatter={(value) => value.replace("_", " ").toUpperCase()} />
+                  <YAxis />
+                  <Tooltip formatter={(value: number) => value} />
+                  <Legend />
+                  <Bar dataKey="count" fill="#8884d8" name="Usage Count" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {discountAnalytics.data.map((item) => (
+                  <div key={item.discountType} className="p-4 border rounded-lg">
+                    <div className="text-sm text-muted-foreground mb-1">
+                      {item.discountType.replace("_", " ").toUpperCase()}
+                    </div>
+                    <div className="text-2xl font-bold">{item.count}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {item.percentage}% of transactions ({formatCurrency(item.totalDiscount)} discount)
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

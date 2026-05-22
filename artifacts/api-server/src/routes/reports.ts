@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, transactionsTable, lockersTable, roomsTable, rentalSessionsTable } from "@workspace/db";
+import { db, transactionsTable, lockersTable, roomsTable, rentalSessionsTable, clientsTable, membershipsTable } from "@workspace/db";
 import { sql, gte, lte, and, eq } from "drizzle-orm";
 import { requireManager } from "../lib/auth";
 import { apiLimiter } from "../middleware/rateLimit";
@@ -404,6 +404,572 @@ router.get("/reports/utilization/peak-hours", requireManager, apiLimiter, async 
     peakHour: peakHour ? { hour: peakHour.hour, totalRentals: peakHour.totalRentals } : null,
     averageRentalsPerHour: parseFloat(avgRentalsPerHour),
     totalRentals,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get revenue by membership type
+ * Manager-only endpoint for understanding membership revenue contribution
+ */
+router.get("/reports/revenue/membership", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Join transactions with memberships to get membership type
+  const revenueByMembership = await db
+    .select({
+      membershipType: membershipsTable.type,
+      revenue: sql<number>`COALESCE(SUM(transactions.amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(transactions.tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(transactions.total::numeric), 0)::float`,
+      count: sql<number>`COUNT(transactions.id)::int`,
+    })
+    .from(transactionsTable)
+    .innerJoin(membershipsTable, eq(membershipsTable.transactionId, transactionsTable.id))
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)))
+    .groupBy(membershipsTable.type)
+    .orderBy(sql`SUM(transactions.total::numeric) DESC`);
+
+  // Also get non-membership revenue for comparison
+  const nonMembershipRevenue = await db
+    .select({
+      revenue: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        sql`type != 'membership'`
+      )
+    );
+
+  const totalRevenue = revenueByMembership.reduce((sum: number, row: any) => sum + (row.revenue || 0), 0) + (nonMembershipRevenue[0]?.revenue || 0);
+  const totalTax = revenueByMembership.reduce((sum: number, row: any) => sum + (row.tax || 0), 0) + (nonMembershipRevenue[0]?.tax || 0);
+  const total = revenueByMembership.reduce((sum: number, row: any) => sum + (row.total || 0), 0) + (nonMembershipRevenue[0]?.total || 0);
+
+  res.json({
+    data: [
+      ...revenueByMembership.map((row: any) => ({
+        membershipType: row.membershipType,
+        revenue: row.revenue || 0,
+        tax: row.tax || 0,
+        total: row.total || 0,
+        count: row.count || 0,
+      })),
+      {
+        membershipType: "non_membership",
+        revenue: nonMembershipRevenue[0]?.revenue || 0,
+        tax: nonMembershipRevenue[0]?.tax || 0,
+        total: nonMembershipRevenue[0]?.total || 0,
+        count: nonMembershipRevenue[0]?.count || 0,
+      },
+    ],
+    totalRevenue,
+    totalTax,
+    total,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get revenue by time of day
+ * Manager-only endpoint for understanding hourly revenue patterns
+ */
+router.get("/reports/revenue/time-of-day", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Query revenue grouped by hour of day (0-23)
+  const revenueByHour = await db
+    .select({
+      hour: sql<number>`EXTRACT(HOUR FROM created_at)::int`,
+      revenue: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+      transactionCount: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)))
+    .groupBy(sql`EXTRACT(HOUR FROM created_at)`)
+    .orderBy(sql`EXTRACT(HOUR FROM created_at)`);
+
+  // Find peak hour (hour with most revenue)
+  const peakHour =
+    revenueByHour.length > 0
+      ? revenueByHour.reduce((max: any, row: any) => (row.total > max.total ? row : max))
+      : null;
+
+  // Calculate totals
+  const totalRevenue = revenueByHour.reduce((sum: number, row: any) => sum + (row.revenue || 0), 0);
+  const totalTax = revenueByHour.reduce((sum: number, row: any) => sum + (row.tax || 0), 0);
+  const total = revenueByHour.reduce((sum: number, row: any) => sum + (row.total || 0), 0);
+
+  res.json({
+    data: revenueByHour.map((row: any) => ({
+      hour: row.hour,
+      revenue: row.revenue || 0,
+      tax: row.tax || 0,
+      total: row.total || 0,
+      transactionCount: row.transactionCount || 0,
+    })),
+    peakHour: peakHour ? { hour: peakHour.hour, total: peakHour.total } : null,
+    totalRevenue,
+    totalTax,
+    total,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get revenue by day of week
+ * Manager-only endpoint for understanding weekly revenue patterns
+ */
+router.get("/reports/revenue/day-of-week", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Query revenue grouped by day of week (0=Sunday, 6=Saturday)
+  const revenueByDay = await db
+    .select({
+      dayOfWeek: sql<number>`EXTRACT(DOW FROM created_at)::int`,
+      dayName: sql<string>`TO_CHAR(created_at, 'Day')`,
+      revenue: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+      transactionCount: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)))
+    .groupBy(sql`EXTRACT(DOW FROM created_at)`, sql`TO_CHAR(created_at, 'Day')`)
+    .orderBy(sql`EXTRACT(DOW FROM created_at)`);
+
+  // Find best day (day with most revenue)
+  const bestDay =
+    revenueByDay.length > 0
+      ? revenueByDay.reduce((max: any, row: any) => (row.total > max.total ? row : max))
+      : null;
+
+  // Calculate totals
+  const totalRevenue = revenueByDay.reduce((sum: number, row: any) => sum + (row.revenue || 0), 0);
+  const totalTax = revenueByDay.reduce((sum: number, row: any) => sum + (row.tax || 0), 0);
+  const total = revenueByDay.reduce((sum: number, row: any) => sum + (row.total || 0), 0);
+
+  res.json({
+    data: revenueByDay.map((row: any) => ({
+      dayOfWeek: row.dayOfWeek,
+      dayName: row.dayName?.trim(),
+      revenue: row.revenue || 0,
+      tax: row.tax || 0,
+      total: row.total || 0,
+      transactionCount: row.transactionCount || 0,
+    })),
+    bestDay: bestDay ? { dayOfWeek: bestDay.dayOfWeek, dayName: bestDay.dayName?.trim(), total: bestDay.total } : null,
+    totalRevenue,
+    totalTax,
+    total,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get membership conversion rate
+ * Manager-only endpoint for tracking non-member to member conversion
+ */
+router.get("/reports/analytics/conversion-rate", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Count unique clients who were non-members at start and became members during period
+  const conversions = await db
+    .select({
+      count: sql<number>`COUNT(DISTINCT clients.id)::int`,
+    })
+    .from(clientsTable)
+    .innerJoin(membershipsTable, eq(membershipsTable.clientId, clientsTable.id))
+    .where(
+      and(
+        gte(membershipsTable.purchasedAt, start),
+        lte(membershipsTable.purchasedAt, end)
+      )
+    );
+
+  // Count total unique clients who had transactions during period
+  const totalClients = await db
+    .select({
+      count: sql<number>`COUNT(DISTINCT client_id)::int`,
+    })
+    .from(transactionsTable)
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)));
+
+  const conversionCount = conversions[0]?.count || 0;
+  const totalClientCount = totalClients[0]?.count || 0;
+  const conversionRate = totalClientCount > 0 ? ((conversionCount / totalClientCount) * 100).toFixed(2) : "0.00";
+
+  res.json({
+    conversionCount,
+    totalClients: totalClientCount,
+    conversionRate: parseFloat(conversionRate),
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get average transaction value
+ * Manager-only endpoint for understanding transaction patterns
+ */
+router.get("/reports/analytics/avg-transaction", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Calculate average transaction value by type
+  const avgByType = await db
+    .select({
+      type: transactionsTable.type,
+      avgAmount: sql<number>`COALESCE(AVG(amount::numeric), 0)::float`,
+      avgTotal: sql<number>`COALESCE(AVG(total::numeric), 0)::float`,
+      count: sql<number>`COUNT(*)::int`,
+      totalRevenue: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+    })
+    .from(transactionsTable)
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)))
+    .groupBy(transactionsTable.type)
+    .orderBy(sql`SUM(total::numeric) DESC`);
+
+  // Calculate overall average
+  const overall = await db
+    .select({
+      avgAmount: sql<number>`COALESCE(AVG(amount::numeric), 0)::float`,
+      avgTotal: sql<number>`COALESCE(AVG(total::numeric), 0)::float`,
+      count: sql<number>`COUNT(*)::int`,
+      totalRevenue: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+    })
+    .from(transactionsTable)
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)));
+
+  res.json({
+    data: avgByType.map((row: any) => ({
+      type: row.type,
+      avgAmount: row.avgAmount || 0,
+      avgTotal: row.avgTotal || 0,
+      count: row.count || 0,
+      totalRevenue: row.totalRevenue || 0,
+    })),
+    overall: {
+      avgAmount: overall[0]?.avgAmount || 0,
+      avgTotal: overall[0]?.avgTotal || 0,
+      count: overall[0]?.count || 0,
+      totalRevenue: overall[0]?.totalRevenue || 0,
+    },
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get product vs rental revenue breakdown
+ * Manager-only endpoint for understanding revenue sources
+ */
+router.get("/reports/revenue/breakdown", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Product revenue
+  const productRevenue = await db
+    .select({
+      revenue: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        eq(transactionsTable.type, "product")
+      )
+    );
+
+  // Rental revenue (locker + room)
+  const rentalRevenue = await db
+    .select({
+      revenue: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        sql`type IN ('locker_rental', 'room_rental', 'renewal', 'extension')`
+      )
+    );
+
+  // Membership revenue
+  const membershipRevenue = await db
+    .select({
+      revenue: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+      tax: sql<number>`COALESCE(SUM(tax::numeric), 0)::float`,
+      total: sql<number>`COALESCE(SUM(total::numeric), 0)::float`,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        eq(transactionsTable.type, "membership")
+      )
+    );
+
+  const totalRevenue = (productRevenue[0]?.revenue || 0) + (rentalRevenue[0]?.revenue || 0) + (membershipRevenue[0]?.revenue || 0);
+  const totalTax = (productRevenue[0]?.tax || 0) + (rentalRevenue[0]?.tax || 0) + (membershipRevenue[0]?.tax || 0);
+  const total = (productRevenue[0]?.total || 0) + (rentalRevenue[0]?.total || 0) + (membershipRevenue[0]?.total || 0);
+
+  res.json({
+    data: [
+      {
+        category: "product",
+        revenue: productRevenue[0]?.revenue || 0,
+        tax: productRevenue[0]?.tax || 0,
+        total: productRevenue[0]?.total || 0,
+        count: productRevenue[0]?.count || 0,
+        percentage: total > 0 ? ((productRevenue[0]?.total || 0) / total * 100).toFixed(2) : "0.00",
+      },
+      {
+        category: "rental",
+        revenue: rentalRevenue[0]?.revenue || 0,
+        tax: rentalRevenue[0]?.tax || 0,
+        total: rentalRevenue[0]?.total || 0,
+        count: rentalRevenue[0]?.count || 0,
+        percentage: total > 0 ? ((rentalRevenue[0]?.total || 0) / total * 100).toFixed(2) : "0.00",
+      },
+      {
+        category: "membership",
+        revenue: membershipRevenue[0]?.revenue || 0,
+        tax: membershipRevenue[0]?.tax || 0,
+        total: membershipRevenue[0]?.total || 0,
+        count: membershipRevenue[0]?.count || 0,
+        percentage: total > 0 ? ((membershipRevenue[0]?.total || 0) / total * 100).toFixed(2) : "0.00",
+      },
+    ],
+    totalRevenue,
+    totalTax,
+    total,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
+});
+
+/**
+ * Get discount/special usage analytics
+ * Manager-only endpoint for tracking special pricing usage
+ */
+router.get("/reports/analytics/discounts", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const { startDate, endDate } = req.query;
+
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+  defaultStartDate.setHours(0, 0, 0, 0);
+
+  const start = startDate ? new Date(startDate as string) : defaultStartDate;
+  const end = endDate ? new Date(endDate as string) : new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    res.status(400).json({ error: "Invalid date format. Use ISO 8601 format" });
+    return;
+  }
+
+  if (start > end) {
+    res.status(400).json({ error: "Start date must be before end date" });
+    return;
+  }
+
+  // Count transactions with birthday discounts (description contains "birthday")
+  const birthdayDiscounts = await db
+    .select({
+      count: sql<number>`COUNT(*)::int`,
+      totalDiscount: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        sql`description ILIKE '%birthday%'`
+      )
+    );
+
+  // Count transactions with 18-24 discounts (description contains "1824" or "18-24")
+  const age1824Discounts = await db
+    .select({
+      count: sql<number>`COUNT(*)::int`,
+      totalDiscount: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        sql`(description ILIKE '%1824%' OR description ILIKE '%18-24%')`
+      )
+    );
+
+  // Count transactions with weekend discounts (description contains "weekend")
+  const weekendDiscounts = await db
+    .select({
+      count: sql<number>`COUNT(*)::int`,
+      totalDiscount: sql<number>`COALESCE(SUM(amount::numeric), 0)::float`,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        gte(transactionsTable.createdAt, start),
+        lte(transactionsTable.createdAt, end),
+        sql`description ILIKE '%weekend%'`
+      )
+    );
+
+  // Total transactions in period
+  const totalTransactions = await db
+    .select({
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(transactionsTable)
+    .where(and(gte(transactionsTable.createdAt, start), lte(transactionsTable.createdAt, end)));
+
+  const totalCount = totalTransactions[0]?.count || 0;
+
+  res.json({
+    data: [
+      {
+        discountType: "birthday",
+        count: birthdayDiscounts[0]?.count || 0,
+        totalDiscount: birthdayDiscounts[0]?.totalDiscount || 0,
+        percentage: totalCount > 0 ? ((birthdayDiscounts[0]?.count || 0) / totalCount * 100).toFixed(2) : "0.00",
+      },
+      {
+        discountType: "age_1824",
+        count: age1824Discounts[0]?.count || 0,
+        totalDiscount: age1824Discounts[0]?.totalDiscount || 0,
+        percentage: totalCount > 0 ? ((age1824Discounts[0]?.count || 0) / totalCount * 100).toFixed(2) : "0.00",
+      },
+      {
+        discountType: "weekend",
+        count: weekendDiscounts[0]?.count || 0,
+        totalDiscount: weekendDiscounts[0]?.totalDiscount || 0,
+        percentage: totalCount > 0 ? ((weekendDiscounts[0]?.count || 0) / totalCount * 100).toFixed(2) : "0.00",
+      },
+    ],
+    totalTransactions: totalCount,
     startDate: start.toISOString(),
     endDate: end.toISOString(),
   });

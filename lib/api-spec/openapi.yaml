@@ -1350,6 +1350,230 @@ paths:
         "403":
           description: Forbidden - manager only
 
+  /reports/revenue/membership:
+    get:
+      operationId: getRevenueByMembership
+      tags: [reports]
+      summary: Get revenue by membership type (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Revenue by membership type data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueByMembershipReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/revenue/time-of-day:
+    get:
+      operationId: getRevenueByTimeOfDay
+      tags: [reports]
+      summary: Get revenue by time of day (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Revenue by time of day data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueByTimeOfDayReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/revenue/day-of-week:
+    get:
+      operationId: getRevenueByDayOfWeek
+      tags: [reports]
+      summary: Get revenue by day of week (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Revenue by day of week data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueByDayOfWeekReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/analytics/conversion-rate:
+    get:
+      operationId: getConversionRate
+      tags: [reports]
+      summary: Get membership conversion rate (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Conversion rate data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionRateReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/analytics/avg-transaction:
+    get:
+      operationId: getAvgTransactionValue
+      tags: [reports]
+      summary: Get average transaction value (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Average transaction value data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvgTransactionReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/revenue/breakdown:
+    get:
+      operationId: getRevenueBreakdown
+      tags: [reports]
+      summary: Get product vs rental revenue breakdown (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Revenue breakdown data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueBreakdownReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
+  /reports/analytics/discounts:
+    get:
+      operationId: getDiscountAnalytics
+      tags: [reports]
+      summary: Get discount/special usage analytics (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for report (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for report (ISO 8601 format)
+      responses:
+        "200":
+          description: Discount analytics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscountAnalyticsReport"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+
   # Reconciliation
   /reconciliation:
     get:
@@ -2547,6 +2771,257 @@ components:
         averageRentalsPerHour:
           type: number
         totalRentals:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    RevenueByMembershipReport:
+      type: object
+      required: [data, totalRevenue, totalTax, total, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [membershipType, revenue, tax, total, count]
+            properties:
+              membershipType:
+                type: string
+                enum: [one_time, six_month, non_membership]
+              revenue:
+                type: number
+              tax:
+                type: number
+              total:
+                type: number
+              count:
+                type: integer
+        totalRevenue:
+          type: number
+        totalTax:
+          type: number
+        total:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    RevenueByTimeOfDayReport:
+      type: object
+      required: [data, peakHour, totalRevenue, totalTax, total, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [hour, revenue, tax, total, transactionCount]
+            properties:
+              hour:
+                type: integer
+                minimum: 0
+                maximum: 23
+              revenue:
+                type: number
+              tax:
+                type: number
+              total:
+                type: number
+              transactionCount:
+                type: integer
+        peakHour:
+          type: object
+          nullable: true
+          required: [hour, total]
+          properties:
+            hour:
+              type: integer
+              minimum: 0
+              maximum: 23
+            total:
+              type: number
+        totalRevenue:
+          type: number
+        totalTax:
+          type: number
+        total:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    RevenueByDayOfWeekReport:
+      type: object
+      required: [data, bestDay, totalRevenue, totalTax, total, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [dayOfWeek, dayName, revenue, tax, total, transactionCount]
+            properties:
+              dayOfWeek:
+                type: integer
+                minimum: 0
+                maximum: 6
+              dayName:
+                type: string
+              revenue:
+                type: number
+              tax:
+                type: number
+              total:
+                type: number
+              transactionCount:
+                type: integer
+        bestDay:
+          type: object
+          nullable: true
+          required: [dayOfWeek, dayName, total]
+          properties:
+            dayOfWeek:
+              type: integer
+              minimum: 0
+              maximum: 6
+            dayName:
+              type: string
+            total:
+              type: number
+        totalRevenue:
+          type: number
+        totalTax:
+          type: number
+        total:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    ConversionRateReport:
+      type: object
+      required: [conversionCount, totalClients, conversionRate, startDate, endDate]
+      properties:
+        conversionCount:
+          type: integer
+        totalClients:
+          type: integer
+        conversionRate:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    AvgTransactionReport:
+      type: object
+      required: [data, overall, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [type, avgAmount, avgTotal, count, totalRevenue]
+            properties:
+              type:
+                type: string
+                enum: [locker_rental, room_rental, membership, product, renewal, extension, refund]
+              avgAmount:
+                type: number
+              avgTotal:
+                type: number
+              count:
+                type: integer
+              totalRevenue:
+                type: number
+        overall:
+          type: object
+          required: [avgAmount, avgTotal, count, totalRevenue]
+          properties:
+            avgAmount:
+              type: number
+            avgTotal:
+              type: number
+            count:
+              type: integer
+            totalRevenue:
+              type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    RevenueBreakdownReport:
+      type: object
+      required: [data, totalRevenue, totalTax, total, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [category, revenue, tax, total, count, percentage]
+            properties:
+              category:
+                type: string
+                enum: [product, rental, membership]
+              revenue:
+                type: number
+              tax:
+                type: number
+              total:
+                type: number
+              count:
+                type: integer
+              percentage:
+                type: string
+        totalRevenue:
+          type: number
+        totalTax:
+          type: number
+        total:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    DiscountAnalyticsReport:
+      type: object
+      required: [data, totalTransactions, startDate, endDate]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [discountType, count, totalDiscount, percentage]
+            properties:
+              discountType:
+                type: string
+                enum: [birthday, age_1824, weekend]
+              count:
+                type: integer
+              totalDiscount:
+                type: number
+              percentage:
+                type: string
+        totalTransactions:
           type: integer
         startDate:
           type: string
