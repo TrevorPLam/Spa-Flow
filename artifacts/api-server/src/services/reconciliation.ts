@@ -1,7 +1,8 @@
 import { db, transactionsTable, reconciliationResultsTable } from "@workspace/db";
-import { and, gte, lte } from "drizzle-orm";
+import { and, gte, lte, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getEnv } from "../lib/env";
+import { writeAuditLog } from "../lib/audit";
 
 /**
  * Discrepancy details for reconciliation
@@ -317,6 +318,164 @@ export class ReconciliationService {
       discrepancies: r.discrepancies as Discrepancies,
       status: r.status,
     }));
+  }
+
+  /**
+   * Process a refund for a transaction
+   * Calls Square refund API and creates a refund transaction record
+   *
+   * @param transactionId - Internal transaction ID to refund
+   * @param amount - Amount to refund (in dollars)
+   * @param reason - Reason for refund
+   * @param userId - User ID processing the refund
+   * @returns Refund transaction record
+   */
+  async processRefund(
+    transactionId: number,
+    amount: number,
+    reason: string,
+    userId: string
+  ): Promise<{ refundTransactionId: number; squareRefundId?: string }> {
+    const env = getEnv();
+    const accessToken = env.SQUARE_ACCESS_TOKEN;
+    const environment = env.SQUARE_ENVIRONMENT;
+    const apiVersion = env.SQUARE_API_VERSION;
+
+    // Fetch the original transaction
+    const [originalTransaction] = await db
+      .select()
+      .from(transactionsTable)
+      .where(eq(transactionsTable.id, transactionId))
+      .limit(1);
+
+    if (!originalTransaction) {
+      throw new Error("Transaction not found");
+    }
+
+    if (!originalTransaction.squarePaymentId) {
+      throw new Error("Transaction has no Square payment ID, cannot refund");
+    }
+
+    // Validate refund amount
+    const originalTotal = parseFloat(originalTransaction.total);
+    if (amount > originalTotal) {
+      throw new Error(`Refund amount ${amount} exceeds original transaction total ${originalTotal}`);
+    }
+
+    // If no Square token configured, create mock refund record for dev
+    if (!accessToken) {
+      logger.info("Square refund mock (no credentials configured)");
+      
+      const [refundTransaction] = await db
+        .insert(transactionsTable)
+        .values({
+          clientId: originalTransaction.clientId,
+          amount: (-amount).toString(),
+          tax: "0",
+          total: (-amount).toString(),
+          type: "refund",
+          status: "completed",
+          description: `Refund: ${reason}`,
+          sessionId: originalTransaction.sessionId,
+          originalTransactionId: originalTransaction.id,
+        })
+        .returning();
+
+      // Update original transaction status
+      await db
+        .update(transactionsTable)
+        .set({ status: "refunded" })
+        .where(eq(transactionsTable.id, transactionId));
+
+      // Add audit log
+      await writeAuditLog({
+        userId: parseInt(userId, 10),
+        action: "refund_processed",
+        resourceType: "transaction",
+        resourceId: transactionId,
+        description: `Refund of $${amount}: ${reason}`,
+      });
+
+      return { refundTransactionId: refundTransaction.id };
+    }
+
+    // Call Square refund API
+    const baseUrl =
+      environment === "production"
+        ? "https://connect.squareup.com"
+        : "https://connect.squareupsandbox.com";
+
+    const refundAmountCents = Math.round(amount * 100);
+    const response = await fetch(`${baseUrl}/v2/refunds`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        "Square-Version": apiVersion,
+      },
+      body: JSON.stringify({
+        idempotency_key: `refund-${transactionId}-${Date.now()}`,
+        amount_money: {
+          amount: refundAmountCents,
+          currency: "USD",
+        },
+        payment_id: originalTransaction.squarePaymentId,
+        reason,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      logger.error({ squareError: err, transactionId, amount }, "Square refund failed");
+      throw new Error("Failed to process refund via Square");
+    }
+
+    const data = (await response.json()) as { refund: { id: string } };
+    const squareRefundId = data.refund.id;
+
+    // Create refund transaction record
+    const [refundTransaction] = await db
+      .insert(transactionsTable)
+      .values({
+        clientId: originalTransaction.clientId,
+        amount: (-amount).toString(),
+        tax: "0",
+        total: (-amount).toString(),
+        type: "refund",
+        status: "completed",
+        squarePaymentId: squareRefundId,
+        description: `Refund: ${reason}`,
+        sessionId: originalTransaction.sessionId,
+        originalTransactionId: originalTransaction.id,
+      })
+      .returning();
+
+    // Update original transaction status
+    await db
+      .update(transactionsTable)
+      .set({ status: "refunded" })
+      .where(eq(transactionsTable.id, transactionId));
+
+    // Add audit log
+    await writeAuditLog({
+      userId: parseInt(userId, 10),
+      action: "refund_processed",
+      resourceType: "transaction",
+      resourceId: transactionId,
+      description: `Refund of $${amount}: ${reason}`,
+    });
+
+    logger.info(
+      {
+        transactionId,
+        refundTransactionId: refundTransaction.id,
+        squareRefundId,
+        amount,
+      },
+      "Refund processed successfully"
+    );
+
+    return { refundTransactionId: refundTransaction.id, squareRefundId };
   }
 }
 

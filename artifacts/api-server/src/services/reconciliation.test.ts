@@ -6,16 +6,24 @@ const mockQueryBuilder = {
   from: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
+  limit: vi.fn(),
 };
 
 const mockInsertBuilder = {
   values: vi.fn(),
 };
 
+const mockUpdateBuilder = {
+  set: vi.fn(),
+  where: vi.fn(),
+  returning: vi.fn(),
+};
+
 vi.mock("@workspace/db", () => ({
   db: {
     select: vi.fn(() => mockQueryBuilder),
     insert: vi.fn(() => mockInsertBuilder),
+    update: vi.fn(() => mockUpdateBuilder),
   },
   transactionsTable: {},
   reconciliationResultsTable: {},
@@ -36,6 +44,11 @@ vi.mock("../lib/env", () => ({
     SQUARE_ENVIRONMENT: "sandbox",
     SQUARE_API_VERSION: "2024-01-01",
   })),
+}));
+
+// Mock audit log
+vi.mock("../lib/audit", () => ({
+  writeAuditLog: vi.fn(),
 }));
 
 describe("ReconciliationService", () => {

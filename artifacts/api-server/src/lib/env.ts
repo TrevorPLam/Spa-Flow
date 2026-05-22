@@ -46,6 +46,7 @@ const envSchema = z.object({
   SQUARE_LOCATION_ID: z.string().optional(),
   SQUARE_ENVIRONMENT: z.enum(['sandbox', 'production']).default('sandbox'),
   SQUARE_API_VERSION: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'SQUARE_API_VERSION must be in YYYY-MM-DD format').default('2025-08-20'),
+  SQUARE_WEBHOOK_SIGNATURE_KEY: z.string().optional(),
 
   // Sentry (optional for error tracking)
   SENTRY_DSN: z.string().optional(),
