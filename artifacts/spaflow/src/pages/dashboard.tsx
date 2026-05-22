@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, DoorOpen, DollarSign, Users, Clock, AlertTriangle, ShoppingBag, Plus, Search, Unlock } from "lucide-react";
+import { Lock, DoorOpen, DollarSign, Users, Clock, AlertTriangle, ShoppingBag, Plus, Search, Unlock, Wifi, WifiOff } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import {
@@ -27,12 +27,21 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data, isLoading } = useGetDashboard({ query: { queryKey: getGetDashboardQueryKey() } });
+
+  // WebSocket for real-time updates
+  const { status: wsStatus } = useWebSocket({
+    onMessage: (message) => {
+      // Query invalidation is handled automatically by the hook
+      console.log("[Dashboard] WebSocket message received:", message.type);
+    },
+  });
 
   // Quick action states
   const [clientSearch, setClientSearch] = useState("");
@@ -120,15 +129,17 @@ export default function DashboardPage() {
     }
   }
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds (fallback if WebSocket is disconnected)
   useEffect(() => {
     const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
-      queryClient.invalidateQueries({ queryKey: getGetLockersOccupancyQueryKey() });
-      queryClient.invalidateQueries({ queryKey: getGetRoomsOccupancyQueryKey() });
+      if (wsStatus !== "connected") {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetLockersOccupancyQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetRoomsOccupancyQueryKey() });
+      }
     }, 30000);
     return () => clearInterval(interval);
-  }, [queryClient]);
+  }, [queryClient, wsStatus]);
 
   if (isLoading || !data) {
     return (
@@ -156,6 +167,11 @@ export default function DashboardPage() {
             <p className="text-muted-foreground text-sm">{format(new Date(), "EEEE, MMMM d")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Connection status indicator */}
+            <Badge variant={wsStatus === "connected" ? "default" : "secondary"} className="gap-1.5">
+              {wsStatus === "connected" ? <Wifi size={12} /> : <WifiOff size={12} />}
+              {wsStatus}
+            </Badge>
             {/* Quick Check-in Button */}
             <Button size="sm" onClick={handleQuickCheckIn} className="gap-2">
               <Plus size={14} />

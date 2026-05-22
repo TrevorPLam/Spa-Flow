@@ -25,10 +25,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Lock } from "lucide-react";
+import { Lock, Wifi, WifiOff } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 const MOCK_TOKEN = () => `SQUARE_MOCK_TOKEN_${Date.now()}`;
 
@@ -40,6 +41,14 @@ export default function LockersPage() {
   const [selectedLockers, setSelectedLockers] = useState<Set<number>>(new Set());
   const [showBulkReleaseConfirm, setShowBulkReleaseConfirm] = useState(false);
   const [bulkReleaseMode, setBulkReleaseMode] = useState<"expired" | "selected">("expired");
+
+  // WebSocket for real-time updates
+  const { status: wsStatus } = useWebSocket({
+    onMessage: (message) => {
+      // Query invalidation is handled automatically by the hook
+      console.log("[Lockers] WebSocket message received:", message.type);
+    },
+  });
 
   const { data: lockers = [] } = useListLockers({}, { query: { queryKey: getListLockersQueryKey({}) } });
   const { data: occupancy } = useGetLockersOccupancy({ query: { queryKey: getGetLockersOccupancyQueryKey() } });
@@ -131,6 +140,11 @@ export default function LockersPage() {
             )}
           </div>
           <div className="flex gap-2">
+            {/* Connection status indicator */}
+            <Badge variant={wsStatus === "connected" ? "default" : "secondary"} className="gap-1.5">
+              {wsStatus === "connected" ? <Wifi size={12} /> : <WifiOff size={12} />}
+              {wsStatus}
+            </Badge>
             <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
               Release All Expired
             </Button>

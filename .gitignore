@@ -75,3 +75,6 @@ attached_assets/
 
 # Replit configuration
 .replit
+
+# Windows temp directory
+%TEMP%/
