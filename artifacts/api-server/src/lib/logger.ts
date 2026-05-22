@@ -12,6 +12,7 @@ const isProduction = env.NODE_ENV === "production";
  * - Redacts sensitive data (authorization headers, cookies)
  * - Uses pretty printing in development
  * - Uses JSON format in production
+ * - Includes correlation IDs for log aggregation
  */
 export const logger = pino({
   level: env.LOG_LEVEL,
@@ -29,6 +30,28 @@ export const logger = pino({
         },
       }),
 });
+
+/**
+ * Generate a unique correlation ID for request tracing
+ * Used to link all logs for a single request across distributed systems
+ */
+export function generateCorrelationId(): string {
+  return `cid_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Create a child logger with correlation ID and additional context
+ * This enables log aggregation and distributed tracing
+ */
+export function createCorrelationLogger(
+  correlationId: string,
+  context?: Record<string, unknown>
+): pino.Logger {
+  return logger.child({
+    correlationId,
+    ...context,
+  });
+}
 
 /**
  * Logs a transaction error with standardized format

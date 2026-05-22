@@ -953,6 +953,32 @@
 
 ---
 
+## [ ] TASK-054: Fix Test Infrastructure Environment Variables
+**Status:** Pending
+**Priority:** High
+
+### Related File Paths
+- `.env.test`
+- `.env.development`
+- `artifacts/api-server/src/test/setup.ts`
+
+### Definition of Done
+- Test environment properly configured with DATABASE_URL
+- All tests can run without environment errors
+- Test database setup documented
+
+### Rules to Follow
+- Use test database, not production database
+- Document test environment setup
+- Ensure tests are isolated
+
+### Implementation Notes
+- Pre-existing issue: Tests fail due to missing DATABASE_URL in test environment
+- Error: "Database environment validation failed: DATABASE_URL: Invalid input: expected string, received undefined"
+- All 39 test files fail at initialization, not related to code changes
+
+---
+
 ## [ ] TASK-053: Add Automated Expiration Notifications
 **Status:** Pending
 **Priority:** Medium

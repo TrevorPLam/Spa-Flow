@@ -235,6 +235,33 @@ async function checkEncryptionKey(): Promise<{ status: HealthCheckStatus; messag
   }
 }
 
+// Helper function to check disk space
+async function checkDiskSpace(): Promise<{ status: HealthCheckStatus; message?: string; latency_ms: number; usage_percent?: number }> {
+  const startTime = Date.now();
+  try {
+    const os = await import('os');
+    const tmpdir = os.tmpdir();
+    const fs = await import('fs');
+    
+    // Try to write a small test file to check disk availability
+    const testFile = `${tmpdir}/.health-check-${Date.now()}`;
+    await fs.promises.writeFile(testFile, 'test');
+    await fs.promises.unlink(testFile);
+    
+    return {
+      status: "healthy",
+      message: "Disk space check not available on this platform, write test passed",
+      latency_ms: Date.now() - startTime
+    };
+  } catch (error) {
+    return {
+      status: "unhealthy",
+      message: `Disk write test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      latency_ms: Date.now() - startTime
+    };
+  }
+}
+
 // Liveness probe - simple check if application is running
 // Should be fast (<100ms) and avoid I/O operations that could fail
 router.get("/healthz/live", healthLimiter, (_req, res) => {
@@ -250,19 +277,20 @@ router.get("/healthz/live", healthLimiter, (_req, res) => {
 // Readiness probe - checks if dependencies are available
 // Should check database, external services, auth configuration
 router.get("/healthz/ready", healthLimiter, async (_req, res) => {
-  const [database, square, twilio, redis, jwtSecret, encryptionKey] = await Promise.all([
+  const [database, square, twilio, redis, jwtSecret, encryptionKey, diskSpace] = await Promise.all([
     checkDatabase(),
     checkSquare(),
     checkTwilio(),
     checkRedis(),
     checkJwtSecret(),
     checkEncryptionKey(),
+    checkDiskSpace(),
   ]);
 
   // Determine overall readiness
-  // If database, JWT secret, or encryption key is unhealthy, we're not ready
+  // If database, JWT secret, encryption key, or disk space is unhealthy, we're not ready
   // If external services are degraded but core dependencies are healthy, we're still ready
-  const isReady = database.status === "healthy" && jwtSecret.status === "healthy" && encryptionKey.status === "healthy";
+  const isReady = database.status === "healthy" && jwtSecret.status === "healthy" && encryptionKey.status === "healthy" && diskSpace.status !== "unhealthy";
 
   const data: ReadinessResponse = {
     status: isReady ? "ready" : "not_ready",
@@ -273,6 +301,7 @@ router.get("/healthz/ready", healthLimiter, async (_req, res) => {
       redis,
       jwt_secret: jwtSecret,
       encryption_key: encryptionKey,
+      disk_space: diskSpace,
     },
   };
 

@@ -16,6 +16,7 @@ import auditRouter from "./audit";
 import configRouter from "./config";
 import reconciliationRouter from "./reconciliation";
 import webhooksRouter from "./webhooks";
+import monitoringRouter from "./monitoring";
 
 const router: IRouter = Router();
 
@@ -36,6 +37,7 @@ router.use(auditRouter);
 router.use(configRouter);
 router.use(reconciliationRouter);
 router.use(webhooksRouter);
+router.use(monitoringRouter);
 
 // Conditionally load test router only in test/development environment
 // This excludes test routes from production builds at the module level

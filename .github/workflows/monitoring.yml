@@ -1,0 +1,42 @@
+name: Uptime Monitoring
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  uptime-check:
+    name: Application Uptime Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check Liveness Endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.MONITORING_URL }}/healthz/live || echo "000")
+          if [ "$response" -ne 200 ]; then
+            echo "❌ Liveness check failed with status $response"
+            exit 1
+          fi
+          echo "✅ Liveness check passed"
+      
+      - name: Check Readiness Endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.MONITORING_URL }}/healthz/ready || echo "000")
+          if [ "$response" -ne 200 ]; then
+            echo "❌ Readiness check failed with status $response"
+            exit 1
+          fi
+          echo "✅ Readiness check passed"
+      
+      - name: Log Uptime Success
+        if: success()
+        run: |
+          echo "✅ All uptime checks passed at $(date)"
+      
+      - name: Alert on Failure
+        if: failure()
+        run: |
+          echo "🚨 Uptime monitoring failed at $(date)"
+          # Add additional alerting logic here (e.g., Slack webhook, email)

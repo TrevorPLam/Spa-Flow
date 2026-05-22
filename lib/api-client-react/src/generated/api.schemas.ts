@@ -75,6 +75,7 @@ export type ReadinessResponseChecks = {
   redis: HealthCheck;
   jwt_secret: HealthCheck;
   encryption_key: HealthCheck;
+  disk_space: HealthCheck;
 };
 
 export interface ReadinessResponse {

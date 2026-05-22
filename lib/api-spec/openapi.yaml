@@ -1603,7 +1603,7 @@ components:
           enum: [ready, not_ready]
         checks:
           type: object
-          required: [database, square, twilio, redis, jwt_secret, encryption_key]
+          required: [database, square, twilio, redis, jwt_secret, encryption_key, disk_space]
           properties:
             database:
               $ref: "#/components/schemas/HealthCheck"
@@ -1616,6 +1616,8 @@ components:
             jwt_secret:
               $ref: "#/components/schemas/HealthCheck"
             encryption_key:
+              $ref: "#/components/schemas/HealthCheck"
+            disk_space:
               $ref: "#/components/schemas/HealthCheck"
 
     HealthCheck:
