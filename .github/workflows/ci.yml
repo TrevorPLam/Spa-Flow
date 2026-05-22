@@ -340,7 +340,7 @@ jobs:
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
-    needs: [component-tests, contract-tests, library-tests]
+    needs: [component-tests, contract-tests]
     if: always() && (needs.component-tests.result == 'success' || needs.contract-tests.result == 'success')
     steps:
       - uses: actions/checkout@v4
@@ -431,6 +431,20 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: spaflow_e2e_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
         with:
@@ -476,6 +490,40 @@ jobs:
       - name: Install Playwright Browsers
         run: cd artifacts/spaflow && pnpm exec playwright install --with-deps
         if: steps.cache-playwright.outputs.cache-hit != 'true'
+      - name: Setup test database
+        run: |
+          cd lib/db
+          pnpm run generate
+          pnpm run migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
+      - name: Seed test database
+        run: cd scripts && pnpm run seed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
+          JWT_SECRET: test-secret-for-e2e-ci
+          ENCRYPTION_KEY: test-encryption-key-32-chars-long
+          CSRF_SECRET: test-csrf-secret-32-chars-long
+      - name: Start API Server
+        run: |
+          cd artifacts/api-server
+          pnpm run build
+          pnpm run start &
+          chmod +x ../../scripts/wait-for-server.sh
+          ../../scripts/wait-for-server.sh http://localhost:5000/health 12 5
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
+          JWT_SECRET: test-secret-for-e2e-ci
+          ENCRYPTION_KEY: test-encryption-key-32-chars-long
+          CSRF_SECRET: test-csrf-secret-32-chars-long
+          NODE_ENV: test
+      - name: Start Frontend Server
+        run: |
+          cd artifacts/spaflow
+          pnpm run build
+          pnpm run serve &
+          chmod +x ../../scripts/wait-for-server.sh
+          ../../scripts/wait-for-server.sh http://localhost:4173 12 5
       - name: Detect if spaflow Changed
         id: detect
         shell: bash
@@ -492,16 +540,12 @@ jobs:
           else
             echo "spaflow_changed=false" >> $GITHUB_OUTPUT
           fi
-      - name: Run Smoke E2E Tests (sharded)
+      - name: Run E2E Tests (sharded)
         if: steps.detect.outputs.spaflow_changed == 'true' || github.ref == 'refs/heads/main'
-        run: cd artifacts/spaflow && npx playwright test --grep "@smoke" --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-        env:
-          PLAYWRIGHT_TEST_BASE_URL: http://localhost:5173
-      - name: Run Full E2E Tests (sharded, on merge to main)
-        if: github.ref == 'refs/heads/main'
         run: cd artifacts/spaflow && npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
-          PLAYWRIGHT_TEST_BASE_URL: http://localhost:5173
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:4173
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
       - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
@@ -766,3 +810,46 @@ jobs:
           name: flakiness-dashboard
           path: artifacts/flakiness-dashboard.html
           retention-days: 30
+
+  ci-gate:
+    name: CI Gate - Merge Blocker
+    runs-on: ubuntu-latest
+    needs: [security-scan, codeql, typecheck, build, smoke-tests, contract-tests, component-tests, e2e-tests]
+    if: always()
+    steps:
+      - name: Check critical job results
+        run: |
+          if [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "❌ Security scan failed"
+            exit 1
+          fi
+          if [ "${{ needs.codeql.result }}" != "success" ]; then
+            echo "❌ CodeQL analysis failed"
+            exit 1
+          fi
+          if [ "${{ needs.typecheck.result }}" != "success" ]; then
+            echo "❌ Type check failed"
+            exit 1
+          fi
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "❌ Build failed"
+            exit 1
+          fi
+          if [ "${{ needs.smoke-tests.result }}" != "success" ]; then
+            echo "❌ Smoke tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.contract-tests.result }}" != "success" ]; then
+            echo "❌ Contract tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.component-tests.result }}" != "success" ]; then
+            echo "❌ Component tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.e2e-tests.result }}" != "success" ]; then
+            echo "❌ E2E tests failed - blocking merge"
+            exit 1
+          fi
+          echo "✅ All critical checks passed"
+
