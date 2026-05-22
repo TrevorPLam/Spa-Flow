@@ -49,6 +49,67 @@ router.get("/audit-logs", requireManager, apiLimiter, async (req, res): Promise<
       resourceType: l.resourceType,
       resourceId: l.resourceId,
       description: l.description,
+      ipAddress: l.ipAddress,
+      email: l.email,
+      correlationId: l.correlationId,
+      createdAt: l.createdAt,
+    })),
+    total,
+    page: page ?? 1,
+    limit: limit ?? 50,
+  });
+});
+
+/**
+ * GET /audit/pii-access
+ * Manager-only endpoint to retrieve PII access history
+ * Filters for VIEW_PII actions and includes enhanced metadata
+ */
+router.get("/pii-access", requireManager, apiLimiter, async (req, res): Promise<void> => {
+  const parsed = ListAuditLogsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    sendValidationError(res, parsed.error.message);
+    return;
+  }
+
+  const { startDate, endDate, page, limit, userId } = parsed.data;
+  const offset = ((page ?? 1) - 1) * (limit ?? 50);
+
+  const conditions = [
+    sql`${auditLogsTable.action} = ${'VIEW_PII'}`,
+  ];
+  if (userId) conditions.push(eq(auditLogsTable.userId, userId));
+  if (startDate) conditions.push(gte(auditLogsTable.createdAt, startDate));
+  if (endDate) conditions.push(lte(auditLogsTable.createdAt, endDate));
+
+  const where = and(...conditions);
+
+  const [logs, countResult] = await Promise.all([
+    db.select().from(auditLogsTable).where(where).orderBy(desc(auditLogsTable.createdAt)).limit(limit ?? 50).offset(offset),
+    db.select({ count: sql<number>`count(*)::int` }).from(auditLogsTable).where(where),
+  ]);
+
+  const userIds = [...new Set(logs.map(l => l.userId))];
+  const userMap = new Map<number, string>();
+  if (userIds.length > 0) {
+    const users = await db.select({ id: usersTable.id, name: usersTable.name }).from(usersTable)
+      .where(sql`${usersTable.id} = ANY(${userIds})`);
+    users.forEach(u => userMap.set(u.id, u.name));
+  }
+
+  const total = countResult[0]?.count ?? 0;
+  res.json({
+    logs: logs.map(l => ({
+      id: l.id,
+      userId: l.userId,
+      userName: l.userId != null ? userMap.get(l.userId) ?? null : null,
+      action: l.action,
+      resourceType: l.resourceType,
+      resourceId: l.resourceId,
+      description: l.description,
+      ipAddress: l.ipAddress,
+      email: l.email,
+      correlationId: l.correlationId,
       createdAt: l.createdAt,
     })),
     total,

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SettingsPage from './settings';
@@ -9,14 +9,20 @@ vi.mock('@/components/layout/Layout', () => ({
 }));
 
 // Mock AuthContext
+const mockUseAuth = vi.fn();
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: vi.fn(() => ({ isManager: true })),
+  useAuth: () => mockUseAuth(),
 }));
 
 // Mock useToast
+const mockToast = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({
-  useToast: vi.fn(() => ({ toast: vi.fn() })),
+  useToast: () => ({ toast: mockToast }),
 }));
+
+// Mock global fetch
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,8 +39,36 @@ const renderWithProvider = (component: React.ReactNode) => {
 };
 
 describe('SettingsPage', () => {
-  it('should render without crashing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isManager: true });
+  });
+
+  it('should render without crashing for manager', () => {
     renderWithProvider(<SettingsPage />);
-    expect(true).toBe(true);
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('should show access denied message for non-manager users', () => {
+    mockUseAuth.mockReturnValue({ isManager: false });
+    renderWithProvider(<SettingsPage />);
+    expect(screen.getByText('Manager access required')).toBeInTheDocument();
+  });
+
+  it('should display page title and description', () => {
+    renderWithProvider(<SettingsPage />);
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Manage system configuration and special events')).toBeInTheDocument();
+  });
+
+  it('should display special events section', () => {
+    renderWithProvider(<SettingsPage />);
+    expect(screen.getByText('Special Events')).toBeInTheDocument();
+    expect(screen.getByText('Manage holidays and special events that disable pricing specials')).toBeInTheDocument();
+  });
+
+  it('should have add event button', () => {
+    renderWithProvider(<SettingsPage />);
+    expect(screen.getByText('Add Event')).toBeInTheDocument();
   });
 });

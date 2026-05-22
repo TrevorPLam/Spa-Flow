@@ -19,6 +19,14 @@ export interface AuditParams {
   requestId?: string;
   /** Optional timestamp (defaults to current time if not provided) */
   timestamp?: Date;
+  /** Optional IP address of the request */
+  ipAddress?: string;
+  /** Optional email of the user performing the action */
+  email?: string;
+  /** Optional correlation ID for distributed tracing */
+  correlationId?: string;
+  /** Optional specific fields accessed (for PII access logging) */
+  fieldsAccessed?: string[];
 }
 
 /**
@@ -35,6 +43,9 @@ export async function writeAuditLog(params: AuditParams): Promise<void> {
       resourceType: params.resourceType,
       resourceId: params.resourceId ?? null,
       description: params.description ?? null,
+      ipAddress: params.ipAddress ?? null,
+      email: params.email ?? null,
+      correlationId: params.correlationId ?? null,
     });
   } catch (err) {
     logger.error({ 

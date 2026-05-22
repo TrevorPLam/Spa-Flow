@@ -583,12 +583,22 @@ router.get("/clients/:id", requireAuth, apiLimiter, async (req, res): Promise<vo
     }
 
     if (isManager && (client.dobEncrypted || client.addressEncrypted || client.documentNumberEncrypted)) {
+      // Track which PII fields were accessed
+      const fieldsAccessed: string[] = [];
+      if (client.dobEncrypted) fieldsAccessed.push("dob");
+      if (client.addressEncrypted) fieldsAccessed.push("address");
+      if (client.documentNumberEncrypted) fieldsAccessed.push("documentNumber");
+
       await writeAuditLog({
         userId: parseInt(actingUser.sub),
         action: "VIEW_PII",
         resourceType: "client",
         resourceId: client.id,
-        description: `Manager viewed PII for client ${client.name}`,
+        description: `Manager viewed PII for client ${client.name} (${fieldsAccessed.join(", ")})`,
+        ipAddress: req.ip || req.socket.remoteAddress || "unknown",
+        email: actingUser.email,
+        correlationId: req.headers["x-correlation-id"] as string | undefined,
+        fieldsAccessed,
       });
     }
 
@@ -1075,13 +1085,23 @@ router.get("/clients/:id/pii", requireAuth, piiLimiter, async (req, res): Promis
   const address = maybeDecrypt(client.addressEncrypted, client.addressDek);
   const documentNumber = maybeDecrypt(client.documentNumberEncrypted, client.documentNumberDek);
 
-  // Log PII access for audit trail
+  // Track which PII fields were accessed
+  const fieldsAccessed: string[] = [];
+  if (dob) fieldsAccessed.push("dob");
+  if (address) fieldsAccessed.push("address");
+  if (documentNumber) fieldsAccessed.push("documentNumber");
+
+  // Log PII access for audit trail with enhanced metadata
   await writeAuditLog({
     userId: parseInt(actingUser.sub),
     action: "VIEW_PII",
     resourceType: "client",
     resourceId: client.id,
-    description: `Manager viewed PII for client ${client.name} (DOB, address, document number)`,
+    description: `Manager viewed PII for client ${client.name} (${fieldsAccessed.join(", ")})`,
+    ipAddress: req.ip || req.socket.remoteAddress || "unknown",
+    email: actingUser.email,
+    correlationId: req.headers["x-correlation-id"] as string | undefined,
+    fieldsAccessed,
   });
 
   res.json({

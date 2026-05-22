@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DateRangePicker, DateRangePresets } from "@/components/ui/date-range-picker";
-import { ScrollText, Search } from "lucide-react";
+import { ScrollText, Search, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,16 +15,17 @@ export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState("");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>();
+  const [showPIIOnly, setShowPIIOnly] = useState(false);
 
   const { data, isLoading } = useListAuditLogs(
-    { 
-      page, 
-      limit: 50, 
-      action: actionFilter || undefined,
+    {
+      page,
+      limit: 50,
+      action: showPIIOnly ? "VIEW_PII" : (actionFilter || undefined),
       startDate: dateRange?.from?.toISOString(),
       endDate: dateRange?.to?.toISOString(),
     },
-    { query: { queryKey: getListAuditLogsQueryKey({ page, limit: 50, action: actionFilter || undefined, startDate: dateRange?.from?.toISOString(), endDate: dateRange?.to?.toISOString() }) } }
+    { query: { queryKey: getListAuditLogsQueryKey({ page, limit: 50, action: showPIIOnly ? "VIEW_PII" : (actionFilter || undefined), startDate: dateRange?.from?.toISOString(), endDate: dateRange?.to?.toISOString() }) } }
   );
 
   const logs = data?.logs ?? [];
@@ -43,15 +44,27 @@ export default function AuditLogsPage() {
             <h1 className="text-2xl font-bold flex items-center gap-2"><ScrollText size={20} />Audit Logs</h1>
             <p className="text-sm text-muted-foreground">{total} entries</p>
           </div>
-          <div className="relative w-56">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              data-testid="input-action-filter"
-              placeholder="Filter by action..."
-              value={actionFilter}
-              onChange={e => { setActionFilter(e.target.value); setPage(1); }}
-              className="pl-9"
-            />
+          <div className="flex gap-2">
+            <Button
+              variant={showPIIOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setShowPIIOnly(!showPIIOnly); setPage(1); }}
+              className="gap-2"
+            >
+              <ShieldAlert size={14} />
+              PII Access Only
+            </Button>
+            <div className="relative w-56">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                data-testid="input-action-filter"
+                placeholder="Filter by action..."
+                value={actionFilter}
+                onChange={e => { setActionFilter(e.target.value); setPage(1); }}
+                className="pl-9"
+                disabled={showPIIOnly}
+              />
+            </div>
           </div>
         </div>
 
@@ -90,21 +103,27 @@ export default function AuditLogsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {logs.map(log => (
-                    <tr key={log.id} data-testid={`row-audit-${log.id}`}>
-                      <td className="px-6 py-3">
-                        <Badge variant="outline" className="font-mono text-xs">{log.action}</Badge>
-                      </td>
-                      <td className="px-6 py-3 text-muted-foreground capitalize">
-                        {log.resourceType}{log.resourceId ? ` #${log.resourceId}` : ""}
-                      </td>
-                      <td className="px-6 py-3 text-muted-foreground text-xs max-w-64 truncate">{log.description}</td>
-                      <td className="px-6 py-3 font-medium">{log.userName}</td>
-                      <td className="px-6 py-3 text-right text-muted-foreground text-xs">
-                        {format(new Date(log.createdAt), "MMM d, h:mm a")}
-                      </td>
-                    </tr>
-                  ))}
+                  {logs.map(log => {
+                    const isAnomaly = log.action === "PII_ANOMALY_DETECTED" || log.action === "PII_ANOMALY_ALERT";
+                    const isPIIAccess = log.action === "VIEW_PII";
+                    return (
+                      <tr key={log.id} data-testid={`row-audit-${log.id}`} className={isAnomaly ? "bg-destructive/5" : ""}>
+                        <td className="px-6 py-3">
+                          <Badge variant={isAnomaly ? "destructive" : isPIIAccess ? "default" : "outline"} className="font-mono text-xs">
+                            {log.action}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-3 text-muted-foreground capitalize">
+                          {log.resourceType}{log.resourceId ? ` #${log.resourceId}` : ""}
+                        </td>
+                        <td className="px-6 py-3 text-muted-foreground text-xs max-w-64 truncate">{log.description}</td>
+                        <td className="px-6 py-3 font-medium">{log.userName}</td>
+                        <td className="px-6 py-3 text-right text-muted-foreground text-xs">
+                          {format(new Date(log.createdAt), "MMM d, h:mm a")}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
