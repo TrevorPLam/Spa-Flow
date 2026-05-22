@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">62.5% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/8</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">46.15% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>6/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/5</span>
+                <span class='fraction'>4/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">62.5% </span>
+                <span class="strong">75% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/8</span>
+                <span class='fraction'>6/8</span>
             </div>
         
             
@@ -236,9 +236,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -294,7 +294,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -332,14 +332,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">85x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -398,7 +398,7 @@ export function DateRangePicker({
           &gt;
             &lt;CalendarIcon className="mr-2 h-4 w-4" /&gt;
             {value?.from ? (
-<span class="branch-0 cbranch-no" title="branch not covered" >              value.to ? (</span>
+              value.to ? (
                 &lt;&gt;
                   {format(value.from, "LLL dd, y")} -{" "}
                   {format(value.to, "LLL dd, y")}
@@ -485,13 +485,13 @@ export function DateRangePresets({
           key={preset.label}
           variant="outline"
           size="sm"
-          onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >o</span>nChange?.(preset.range)}</span>
+          onClick={() =&gt; onChange?.(preset.range)}
           className={cn(
             value?.from &amp;&amp;
-<span class="branch-1 cbranch-no" title="branch not covered" >              value?.to &amp;&amp;</span>
-<span class="branch-2 cbranch-no" title="branch not covered" >              preset.range.from.toDateString() === value.from.toDateString() &amp;&amp;</span>
-<span class="branch-3 cbranch-no" title="branch not covered" >              preset.range.to.toDateString() === value.to.toDateString()</span>
-              ? <span class="branch-0 cbranch-no" title="branch not covered" >"bg-primary text-primary-foreground"</span>
+              value?.to &amp;&amp;
+              preset.range.from.toDateString() === value.from.toDateString() &amp;&amp;
+              preset.range.to.toDateString() === value.to.toDateString()
+              ? "bg-primary text-primary-foreground"
               : ""
           )}
         &gt;
@@ -508,7 +508,7 @@ export function DateRangePresets({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-22T10:33:43.916Z
+                at 2026-05-22T12:04:42.343Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
