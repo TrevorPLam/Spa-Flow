@@ -707,12 +707,19 @@ jobs:
           ../../scripts/wait-for-server.sh http://localhost:5000/health 12 5
       - name: Run Load Tests
         run: |
-          pnpm run test:load:health
-          pnpm run test:load:clients
-          pnpm run test:load:dashboard
-          pnpm run test:load:checkin
+          k6 run --summary-export=load-results.json load-tests/benchmark.js
         env:
           API_BASE_URL: http://localhost:5000/api
+      - name: Upload Load Results
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.2
+        with:
+          name: load-results
+          path: load-results.json
+          retention-days: 90
+      - name: Compare Performance
+        if: always()
+        run: node scripts/compare-performance.js load-results.json .performance-baseline.json
 
   mutation-tests:
     name: Mutation Tests
