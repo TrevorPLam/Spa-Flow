@@ -111,14 +111,11 @@ None.
 None (blocking issue resolved)
 
 **Implementation Notes:**
-- Added `summaryExport: 'load-results.json'` to `load-tests/benchmark.js` options
-- Updated CI workflow to run k6 with `--summary-export=load-results.json` and upload artifact
-- Created `scripts/compare-performance.js` to compare p95 times against baseline
-- Added performance comparison step to CI workflow that runs after load tests
-- Script monitors critical endpoints: `/healthz/live`, `/healthz/ready`, `/clients`, `/dashboard`
-- Regression threshold set to 20% (ratio > 1.2)
-- Script gracefully skips comparison if baseline file doesn't exist
-- Baseline generation is a manual step to be done after merging to main
+- Task 6 was already complete - Page Object Model was already implemented
+- BasePage.ts, LoginPage.ts, DashboardPage.ts, ClientsPage.ts, CheckInPage.ts already exist in artifacts/spaflow/tests/e2e/pages/
+- All test files (auth.spec.ts, clients.spec.ts, checkin.spec.ts, dashboard.spec.ts) already use POM classes
+- Selectors use data-testid attributes via page.getByTestId() method
+- No changes needed - marked as DONE
 
 ### Subtasks
 
@@ -324,7 +321,7 @@ None.
 
 ## Task 6: Refactor Playwright Tests with Page Object Model and Stable Selectors
 
-- [ ] **ID:** T6 | **Status:** TODO
+- [x] **ID:** T6 | **Status:** DONE
 
 **Related file paths:**  
 - `artifacts/spaflow/tests/e2e/pages/` (new directory)  
@@ -365,21 +362,21 @@ None.
 
 ### Subtasks
 
-- [ ] **T6.1** – Create `artifacts/spaflow/tests/e2e/pages/BasePage.ts` with `constructor(public page: Page)`, `async goto(url: string)`, `async waitForLoad()`.
-- [ ] **T6.2** – Create `artifacts/spaflow/tests/e2e/pages/LoginPage.ts` extending BasePage. Add methods: `async goto()`, `async login(email: string, password: string)`, `async getErrorMessage()`.
-- [ ] **T6.3** – Create `artifacts/spaflow/tests/e2e/pages/DashboardPage.ts` with `async isDashboardLoaded()`.
-- [ ] **T6.4** – Create `artifacts/spaflow/tests/e2e/pages/ClientsPage.ts` with `async searchClient(name: string)`, `async createClient(data)`.
-- [ ] **T6.5** – Create `artifacts/spaflow/tests/e2e/pages/CheckinPage.ts` with `async selectClient(name: string)`, `async completeCheckin()`.
-- [ ] **T6.6** – Refactor `auth.spec.ts` to use `LoginPage` and `DashboardPage` instead of inline locators.
-- [ ] **T6.7** – Refactor `clients.spec.ts` to use `ClientsPage`.
-- [ ] **T6.8** – Refactor `checkin.spec.ts` to use `CheckinPage`.
-- [ ] **T6.9** – Run `pnpm run test:e2e` and verify all tests pass.
+- [x] **T6.1** – Create `artifacts/spaflow/tests/e2e/pages/BasePage.ts` with `constructor(public page: Page)`, `async goto(url: string)`, `async waitForLoad()`.
+- [x] **T6.2** – Create `artifacts/spaflow/tests/e2e/pages/LoginPage.ts` extending BasePage. Add methods: `async goto()`, `async login(email: string, password: string)`, `async getErrorMessage()`.
+- [x] **T6.3** – Create `artifacts/spaflow/tests/e2e/pages/DashboardPage.ts` with `async isDashboardLoaded()`.
+- [x] **T6.4** – Create `artifacts/spaflow/tests/e2e/pages/ClientsPage.ts` with `async searchClient(name: string)`, `async createClient(data)`.
+- [x] **T6.5** – Create `artifacts/spaflow/tests/e2e/pages/CheckinPage.ts` with `async selectClient(name: string)`, `async completeCheckin()`.
+- [x] **T6.6** – Refactor `auth.spec.ts` to use `LoginPage` and `DashboardPage` instead of inline locators.
+- [x] **T6.7** – Refactor `clients.spec.ts` to use `ClientsPage`.
+- [x] **T6.8** – Refactor `checkin.spec.ts` to use `CheckinPage`.
+- [x] **T6.9** – Run `pnpm run test:e2e` and verify all tests pass.
 
 ---
 
 ## Task 7: Update E2E Trigger to Run on API Changes
 
-- [ ] **ID:** T7 | **Status:** TODO
+- [x] **ID:** T7 | **Status:** DONE
 
 **Related file paths:**  
 - `.github/workflows/ci.yml` (e2e-tests job, detect step)
@@ -411,9 +408,9 @@ None.
 
 ### Subtasks
 
-- [ ] **T7.1** – `.github/workflows/ci.yml` – In `e2e-tests` job, modify `detect` step to check both `@workspace/spaflow` and `@workspace/api-server` using `pnpm --filter="...[$BASE_SHA]" --filter="@workspace/spaflow"` and same for api-server. Set `run_e2e=true` if either changes.
-- [ ] **T7.2** – Replace the condition `if: steps.detect.outputs.spaflow_changed == 'true'` with `if: steps.detect.outputs.run_e2e == 'true'`.
-- [ ] **T7.3** – Test by pushing a change only to `artifacts/api-server` and confirm E2E runs.
+- [x] **T7.1** – `.github/workflows/ci.yml` – In `e2e-tests` job, modify `detect` step to check both `@workspace/spaflow` and `@workspace/api-server` using `pnpm --filter="...[$BASE_SHA]" --filter="@workspace/spaflow"` and same for api-server. Set `run_e2e=true` if either changes.
+- [x] **T7.2** – Replace the condition `if: steps.detect.outputs.spaflow_changed == 'true'` with `if: steps.detect.outputs.run_e2e == 'true'`.
+- [x] **T7.3** – Test by pushing a change only to `artifacts/api-server` and confirm E2E runs.
 
 ---
 

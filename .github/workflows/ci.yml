@@ -540,7 +540,7 @@ jobs:
           pnpm run serve &
           chmod +x ../../scripts/wait-for-server.sh
           ../../scripts/wait-for-server.sh http://localhost:4173 12 5
-      - name: Detect if spaflow Changed
+      - name: Detect if E2E should run
         id: detect
         shell: bash
         run: |
@@ -550,14 +550,26 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
           fi
           
-          # Check if spaflow changed using pnpm --filter
+          # Check if spaflow or api-server changed using pnpm --filter
+          spaflow_changed=false
+          api_changed=false
+          
           if pnpm --filter="...[$BASE_SHA]" --filter="@workspace/spaflow" exec echo "changed" 2>/dev/null | grep -q "changed"; then
-            echo "spaflow_changed=true" >> $GITHUB_OUTPUT
+            spaflow_changed=true
+          fi
+          
+          if pnpm --filter="...[$BASE_SHA]" --filter="@workspace/api-server" exec echo "changed" 2>/dev/null | grep -q "changed"; then
+            api_changed=true
+          fi
+          
+          # Run E2E if either changed
+          if [ "$spaflow_changed" = "true" ] || [ "$api_changed" = "true" ]; then
+            echo "run_e2e=true" >> $GITHUB_OUTPUT
           else
-            echo "spaflow_changed=false" >> $GITHUB_OUTPUT
+            echo "run_e2e=false" >> $GITHUB_OUTPUT
           fi
       - name: Run E2E Tests (sharded)
-        if: steps.detect.outputs.spaflow_changed == 'true' || github.ref == 'refs/heads/main'
+        if: steps.detect.outputs.run_e2e == 'true' || github.ref == 'refs/heads/main'
         run: cd artifacts/spaflow && npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:4173
