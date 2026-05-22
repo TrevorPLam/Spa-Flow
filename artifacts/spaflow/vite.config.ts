@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "../../..");
-dotenv.config({ path: path.resolve(projectRoot, ".env") });
+
+// Load environment-specific .env file based on NODE_ENV
+const nodeEnv = process.env.NODE_ENV || 'development';
+const envFile = nodeEnv === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: path.resolve(projectRoot, envFile) });
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";

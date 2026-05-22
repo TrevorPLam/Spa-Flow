@@ -210,14 +210,18 @@
 
 ---
 
-## [ ] TASK-054: Fix Test Infrastructure Environment Variables
-**Status:** Pending
+## [x] TASK-054: Fix Test Infrastructure Environment Variables
+**Status:** Completed
 **Priority:** High
 
 ### Related File Paths
 - `.env.test`
-- `.env.development`
+- `lib/db/src/env.ts`
+- `artifacts/api-server/src/index.ts`
+- `artifacts/spaflow/vite.config.ts`
+- `artifacts/mockup-sandbox/src/env.ts`
 - `artifacts/api-server/src/test/setup.ts`
+- `docs/test-environment-setup.md` (new)
 
 ### Definition of Done
 - Test environment properly configured with DATABASE_URL
@@ -230,9 +234,15 @@
 - Ensure tests are isolated
 
 ### Implementation Notes
-- Pre-existing issue: Tests fail due to missing DATABASE_URL in test environment
-- Error: "Database environment validation failed: DATABASE_URL: Invalid input: expected string, received undefined"
-- All 39 test files fail at initialization, not related to code changes
+- **Root Cause:** All environment loading files were hardcoded to load `.env` regardless of `NODE_ENV`
+- **Fix:** Updated 4 files to load `.env.test` when `NODE_ENV=test`:
+  - `lib/db/src/env.ts` - Database environment configuration
+  - `artifacts/api-server/src/index.ts` - API server entry point
+  - `artifacts/spaflow/vite.config.ts` - Frontend build configuration
+  - `artifacts/mockup-sandbox/src/env.ts` - Mockup sandbox configuration
+- **Verification:** Tests now run with "✅ Database environment validation passed"
+- **Note:** 251 pre-existing test failures remain (unrelated to environment configuration)
+- **Documentation:** Created comprehensive `docs/test-environment-setup.md`
 
 ---
 
