@@ -153,6 +153,429 @@ None.
 
 ---
 
+## Task 11: Fix WebSocket Hook Mock Implementation
+
+- [!] **ID:** T11 | **Status:** Blocked
+
+**Related file paths:**
+- `artifacts/spaflow/src/hooks/use-websocket.test.ts`
+- `artifacts/spaflow/src/hooks/use-websocket.ts`
+
+**Definition of done:**
+- All 15 WebSocket hook tests pass
+- Mock properly simulates WebSocket lifecycle (CONNECTING → OPEN → CLOSING → CLOSED)
+- Event handlers trigger asynchronously with fake timers
+- State transitions propagate through React act()
+- Coverage report generates successfully
+
+**Out of scope:**
+- Testing actual WebSocket connections
+- Integration tests with real WebSocket server
+
+**Rules to follow:**
+- Replace static mock object with WebSocket mock class
+- Simulate readyState property dynamically
+- Trigger onopen/onclose/onerror callbacks with fake timers
+- Integrate with React Testing Library act() for state updates
+- Maintain test isolation with proper cleanup
+
+**Advanced coding pattern:**
+WebSocket mock class with state machine pattern, event emitter for lifecycle events, fake timer integration for reconnection logic.
+
+**Anti-patterns:**
+- Static mock object that doesn't change state
+- Synchronous event handler triggering
+- Missing React act() wrappers
+- Not simulating asynchronous connection delays
+
+**Imports/exports:**
+- No production code changes
+- Test-only mock implementation
+
+**Depends on:**
+- None
+
+**Blocks:**
+- Frontend test suite execution
+- Frontend coverage measurement
+
+**Block reason:**
+React's useEffect runs asynchronously after renderHook returns, making it impossible to reliably test the WebSocket connection lifecycle. Multiple mocking approaches attempted (custom MockWebSocket class, vitest-websocket-mock library, various timer strategies) all failed due to this fundamental timing issue. The hook creates WebSocket inside useEffect, but tests attempt to access it immediately before the effect executes. Potential solutions include: E2E tests with real WebSocket server, modifying hook to accept external WebSocket instance for testing, or using a more sophisticated mocking library that handles React's async effects.
+
+### Subtasks
+
+- [ ] **T11.1** – `artifacts/spaflow/src/hooks/use-websocket.test.ts` – Create MockWebSocket class with readyState property (CONNECTING=0, OPEN=1, CLOSING=2, CLOSED=3), event handler properties (onopen, onclose, onerror, onmessage), and methods (send, close).
+- [ ] **T11.2** – `artifacts/spaflow/src/hooks/use-websocket.test.ts` – Implement connect() method that transitions readyState from CONNECTING to OPEN after delay using fake timers, triggers onopen callback.
+- [ ] **T11.3** – `artifacts/spaflow/src/hooks/use-websocket.test.ts` – Implement close() method that transitions to CLOSING then CLOSED, triggers onclose callback with code/reason.
+- [ ] **T11.4** – `artifacts/spaflow/src/hooks/use-websocket.test.ts` – Replace beforeEach mock with MockWebSocket instance, update global.WebSocket mock to return new MockWebSocket().
+- [ ] **T11.5** – `artifacts/spaflow/src/hooks/use-websocket.test.ts` – Update all failing tests to use act() wrappers for state changes, advance fake timers for reconnection delays.
+- [ ] **T11.6** – `artifacts/spaflow/src/hooks/use-websocket.test.ts` – Run tests to verify all 15 pass, verify coverage report generates.
+
+---
+
+## Task 12: Fix Session Test Data Isolation
+
+- [ ] **ID:** T12 | **Status:** Pending
+
+**Related file paths:**
+- `artifacts/api-server/src/services/session.test.ts`
+- `artifacts/api-server/src/test/test-helpers.ts`
+
+**Definition of done:**
+- All 6 session tests pass
+- No foreign key constraint violations
+- Tests use dynamically created user IDs
+- Database cleanup verified between tests
+- Test isolation confirmed
+
+**Out of scope:**
+- Changing session service implementation
+- Modifying database schema
+
+**Rules to follow:**
+- Use testUserId from createTestUserInDb() consistently
+- Verify cleanDatabase() truncates tables in correct order
+- Add assertions for user creation success
+- Use database transactions for test isolation if needed
+- Follow AGENTS.md database testing rules
+
+**Advanced coding pattern:**
+Test data factory pattern, database transaction rollback for isolation, fixture setup with verification.
+
+**Anti-patterns:**
+- Hardcoded user IDs in tests
+- Assuming cleanup succeeded without verification
+- Skipping user creation assertions
+- Broken test isolation
+
+**Imports/exports:**
+- No production code changes
+- Test helper updates only
+
+**Depends on:**
+- None
+
+**Blocks:**
+- API server test suite execution
+- API server coverage measurement
+
+### Subtasks
+
+- [ ] **T12.1** – `artifacts/api-server/src/services/session.test.ts` – Remove hardcoded user ID 714 from lines 245, 262, 276, use testUserId variable from createTestUserInDb().
+- [ ] **T12.2** – `artifacts/api-server/src/services/session.test.ts` – Add assertion after createTestUserInDb() to verify testUserId is defined and valid.
+- [ ] **T12.3** – `artifacts/api-server/src/test/test-helpers.ts` – Verify cleanDatabase() truncates tables in correct order (child tables before parent tables) to respect foreign keys.
+- [ ] **T12.4** – `artifacts/api-server/src/services/session.test.ts` – Add test to verify database is empty before each test (assert count of users and refresh_tokens is 0).
+- [ ] **T12.5** – `artifacts/api-server/src/services/session.test.ts` – Run tests to verify all pass, check for any remaining foreign key violations.
+
+---
+
+## Task 13: Regenerate Zod Schemas from OpenAPI
+
+- [ ] **ID:** T13 | **Status:** Pending
+
+**Related file paths:**
+- `lib/api-spec/openapi.yaml`
+- `lib/api-spec/orval.config.ts`
+- `lib/api-zod/src/generated/`
+- `lib/api-client-react/src/generated/`
+- `artifacts/api-server/src/test/zod-schema-validation.test.ts`
+
+**Definition of done:**
+- Zod schema validation test passes
+- ReadinessProbeResponse schema matches OpenAPI spec
+- All generated files up-to-date
+- Codegen runs without errors
+- CI contract test passes
+
+**Out of scope:**
+- Modifying OpenAPI spec structure
+- Changing Orval configuration
+
+**Rules to follow:**
+- Run codegen from lib/api-spec directory
+- Verify generated files match expected structure
+- Update test data if schema changed
+- Commit generated files after regeneration
+- Follow AGENTS.md codegen rules
+
+**Advanced coding pattern:**
+Schema-first development, contract testing, automated code generation.
+
+**Anti-patterns:**
+- Manually editing generated files
+- Skipping codegen after spec changes
+- Committing outdated generated files
+
+**Imports/exports:**
+- Regenerated Zod schemas
+- Regenerated API client
+
+**Depends on:**
+- None
+
+**Blocks:**
+- Contract validation in CI
+- Type safety between frontend and backend
+
+### Subtasks
+
+- [ ] **T13.1** – `lib/api-spec/openapi.yaml` – Verify ReadinessResponse schema has correct structure (status, checks object with nested health checks).
+- [ ] **T13.2** – `lib/api-spec/` – Run `pnpm run codegen` to regenerate Zod schemas and API client from OpenAPI spec.
+- [ ] **T13.3** – `artifacts/api-server/src/test/zod-schema-validation.test.ts` – Update test data (lines 34-44) to match actual OpenAPI ReadinessResponse structure if needed.
+- [ ] **T13.4** – `artifacts/api-server/src/test/zod-schema-validation.test.ts` – Remove @flaky tag from test (line 6) since failure is deterministic, not flaky.
+- [ ] **T13.5** – `artifacts/api-server/` – Run zod-schema-validation test to verify it passes.
+- [ ] **T13.6** – `lib/` – Commit regenerated files (lib/api-zod/src/generated/, lib/api-client-react/src/generated/).
+
+---
+
+## Task 14: Improve Frontend Page Test Coverage
+
+- [ ] **ID:** T14 | **Status:** Pending
+
+**Related file paths:**
+- `artifacts/spaflow/src/pages/data-quality.test.tsx`
+- `artifacts/spaflow/src/pages/lockers.test.tsx`
+- `artifacts/spaflow/src/pages/rooms.test.tsx`
+- `artifacts/spaflow/src/pages/reports.test.tsx`
+- `artifacts/spaflow/src/components/ui/calendar.tsx`
+
+**Definition of done:**
+- Pages coverage increases from 33.83% to 80%
+- Critical pages (data-quality, lockers, rooms) have comprehensive tests
+- Calendar component has test file
+- All page tests verify behavior, not just rendering
+- Coverage threshold met for spaflow package
+
+**Out of scope:**
+- Testing UI components from external libraries (Radix UI)
+- E2E testing (covered by Playwright)
+
+**Rules to follow:**
+- Test user interactions, not just rendering
+- Mock API calls with realistic data
+- Test error states and loading states
+- Test access control (role-based)
+- Follow AGENTS.md testing strategy
+
+**Advanced coding pattern:**
+Behavior-driven testing, user interaction testing, state verification, mock service layer.
+
+**Anti-patterns:**
+- Tests with only `expect(true).toBe(true)`
+- Testing implementation details
+- Missing error state tests
+- No user interaction tests
+
+**Imports/exports:**
+- Test file updates only
+- No production code changes
+
+**Depends on:**
+- T11 (Fix WebSocket mock)
+- T12 (Fix session tests)
+- T13 (Fix Zod schemas)
+
+**Blocks:**
+- Frontend coverage threshold compliance
+- CI coverage gates
+
+### Subtasks
+
+- [ ] **T14.1** – `artifacts/spaflow/src/pages/data-quality.test.tsx` – Replace `expect(true).toBe(true)` with actual assertions: verify data quality metrics display, error handling, manager-only access.
+- [ ] **T14.2** – `artifacts/spaflow/src/pages/lockers.test.tsx` – Replace `expect(true).toBe(true)` with tests for: locker grid rendering, locker status display, release/renew interactions, WebSocket integration.
+- [ ] **T14.3** – `artifacts/spaflow/src/pages/rooms.test.tsx` – Create test file with tests for: room grid rendering, room status display, booking interactions, WebSocket integration.
+- [ ] **T14.4** – `artifacts/spaflow/src/components/ui/calendar.tsx` – Create test file with tests for: date selection, month navigation, disabled dates, range selection.
+- [ ] **T14.5** – `artifacts/spaflow/src/pages/` – Add tests for remaining low-coverage pages (reconciliation, transactions, users, waitlist, settings) focusing on user interactions and error states.
+- [ ] **T14.6** – `artifacts/spaflow/` – Run test:coverage to verify 80% threshold met for statements, branches, functions, lines.
+
+---
+
+## Task 15: Add UI Component Test Coverage
+
+- [ ] **ID:** T15 | **Status:** Pending
+
+**Related file paths:**
+- `artifacts/spaflow/src/components/ui/calendar.tsx`
+- `artifacts/spaflow/src/components/ui/alert-dialog.tsx`
+- `artifacts/spaflow/src/components/ui/dialog.tsx`
+- `artifacts/spaflow/src/components/ui/switch.tsx`
+- `artifacts/spaflow/src/components/ui/date-range-picker.tsx`
+
+**Definition of done:**
+- Calendar component has test file (currently 0% coverage)
+- Alert-dialog conditional logic tested (currently 12.5% function coverage)
+- Dialog conditional logic tested (currently 16.66% function coverage)
+- Switch toggle logic tested (currently 0% function coverage)
+- Date-range-picker edge cases tested (currently 60% function coverage)
+- UI components directory coverage improves from 55.73% to 70% functions
+
+**Out of scope:**
+- Testing Radix UI library internals
+- Visual regression testing (covered by Playwright)
+
+**Rules to follow:**
+- Test component behavior, not implementation
+- Test conditional rendering paths
+- Test user interactions (click, toggle, select)
+- Test edge cases (disabled states, invalid inputs)
+- Mock child components when testing parent
+
+**Advanced coding pattern:**
+Component testing with user events, conditional rendering tests, accessibility testing, mock composition.
+
+**Anti-patterns:**
+- Testing only that component renders
+- Missing conditional path tests
+- Testing library internals
+- No user interaction tests
+
+**Imports/exports:**
+- Test file creation only
+- No production code changes
+
+**Depends on:**
+- T14 (Improve page coverage)
+
+**Blocks:**
+- UI component coverage threshold
+- Component reliability
+
+### Subtasks
+
+- [ ] **T15.1** – `artifacts/spaflow/src/components/ui/calendar.test.tsx` (new) – Create test file: date selection, month navigation, disabled dates, range selection, keyboard navigation.
+- [ ] **T15.2** – `artifacts/spaflow/src/components/ui/alert-dialog.test.tsx` – Add tests for: open/close states, confirmation action, cancellation action, disabled states.
+- [ ] **T15.3** – `artifacts/spaflow/src/components/ui/dialog.test.tsx` – Add tests for: open/close states, backdrop click behavior, escape key behavior, nested dialogs.
+- [ ] **T15.4** – `artifacts/spaflow/src/components/ui/switch.test.tsx` – Add tests for: toggle on/off, disabled state, keyboard interaction, controlled/uncontrolled modes.
+- [ ] **T15.5** – `artifacts/spaflow/src/components/ui/date-range-picker.test.tsx` – Add tests for: preset selection, custom range, invalid ranges, preset edge cases.
+- [ ] **T15.6** – `artifacts/spaflow/` – Run test:coverage to verify UI components function coverage improved to 70%.
+
+---
+
+## Task 16: Improve Test Quality and Assertions
+
+- [ ] **ID:** T16 | **Status:** Pending
+
+**Related file paths:**
+- `artifacts/spaflow/src/pages/*.test.tsx` (all page tests)
+- `artifacts/spaflow/src/components/*.test.tsx` (all component tests)
+
+**Definition of done:**
+- No tests with `expect(true).toBe(true)` assertions
+- All page tests verify user interactions
+- All page tests verify error states
+- All page tests verify loading states
+- All page tests verify access control where applicable
+- Test suite has meaningful assertions
+
+**Out of scope:**
+- Rewriting test infrastructure
+- Changing test framework
+
+**Rules to follow:**
+- Replace placeholder assertions with actual behavior tests
+- Test user flows, not just rendering
+- Test error paths and edge cases
+- Test loading states and skeletons
+- Test role-based access control
+- Verify state changes after interactions
+
+**Advanced coding pattern:**
+Behavior-driven testing, user journey testing, state verification, error simulation.
+
+**Anti-patterns:**
+- Placeholder assertions
+- Testing only happy path
+- Missing error state tests
+- No loading state tests
+- Testing implementation details
+
+**Imports/exports:**
+- Test file updates only
+- No production code changes
+
+**Depends on:**
+- T14 (Improve page coverage)
+- T15 (Add UI component coverage)
+
+**Blocks:**
+- Test suite reliability
+- Confidence in test coverage
+
+### Subtasks
+
+- [ ] **T16.1** – `artifacts/spaflow/src/pages/` – Audit all page test files for `expect(true).toBe(true)` patterns, list files requiring updates.
+- [ ] **T16.2** – `artifacts/spaflow/src/pages/reconciliation.test.tsx` – Add tests for: reconciliation actions, error handling, loading states, manager-only access.
+- [ ] **T16.3** – `artifacts/spaflow/src/pages/transactions.test.tsx` – Add tests for: transaction filtering, export functionality, error states, pagination.
+- [ ] **T16.4** – `artifacts/spaflow/src/pages/users.test.tsx` – Add tests for: user creation, role changes, password reset, error handling.
+- [ ] **T16.5** – `artifacts/spaflow/src/pages/waitlist.test.tsx` – Add tests for: waitlist assignment, automatic assignment, notifications, error states.
+- [ ] **T16.6** – `artifacts/spaflow/src/pages/settings.test.tsx` – Add tests for: settings updates, validation, error handling, persistence.
+- [ ] **T16.7** – `artifacts/spaflow/` – Run test suite to verify all tests have meaningful assertions, no placeholder tests remain.
+
+---
+
+## Task 17: Establish E2E Test Suite
+
+- [ ] **ID:** T17 | **Status:** Pending
+
+**Related file paths:**
+- `artifacts/spaflow/tests/e2e/`
+- `playwright.config.ts`
+
+**Definition of done:**
+- Critical user flows have E2E tests
+- Check-in flow tested end-to-end
+- Authentication flow tested end-to-end
+- Manager-only pages tested for access control
+- E2E tests run in CI
+- E2E tests pass on all browsers (Chromium, Firefox, WebKit)
+
+**Out of scope:**
+- Testing every single page
+- Visual regression testing (separate concern)
+- Performance testing (covered by k6)
+
+**Rules to follow:**
+- Test critical user journeys
+- Test across multiple browsers
+- Use page object pattern for maintainability
+- Test happy path and error paths
+- Keep E2E tests focused and fast
+- Follow AGENTS.md E2E testing rules
+
+**Advanced coding pattern:**
+Page object pattern, test data factories, browser-agnostic testing, parallel test execution.
+
+**Anti-patterns:**
+- Testing implementation details
+- Brittle selectors
+- No page objects
+- Tests that are too slow
+- Testing edge cases in E2E
+
+**Imports/exports:**
+- E2E test files only
+- Playwright configuration updates
+
+**Depends on:**
+- T11 (Fix WebSocket mock)
+- T12 (Fix session tests)
+- T13 (Fix Zod schemas)
+
+**Blocks:**
+- End-to-end quality assurance
+- Cross-browser compatibility verification
+
+### Subtasks
+
+- [ ] **T17.1** – `artifacts/spaflow/tests/e2e/auth.spec.ts` (new) – Create E2E test for: login flow, logout flow, session refresh, password reset flow.
+- [ ] **T17.2** – `artifacts/spaflow/tests/e2e/checkin.spec.ts` (new) – Create E2E test for: client search, locker selection, payment processing, session creation.
+- [ ] **T17.3** – `artifacts/spaflow/tests/e2e/manager.spec.ts` (new) – Create E2E test for: manager login, access control verification, reports page navigation, settings page.
+- [ ] **T17.4** – `artifacts/spaflow/tests/e2e/` – Create page objects for: login page, checkin page, dashboard, manager pages.
+- [ ] **T17.5** – `playwright.config.ts` – Verify E2E tests run in CI, check browser configuration, ensure proper timeouts.
+- [ ] **T17.6** – `artifacts/spaflow/` – Run `pnpm test:e2e` locally to verify tests pass on Chromium, Firefox, WebKit.
+
+---
+
 ## [x] TASK-054: Add Resource Maintenance Management
 **Status:** Complete
 **Priority:** Medium

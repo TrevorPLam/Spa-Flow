@@ -584,7 +584,16 @@ describe('custom-fetch', () => {
         headers: new Headers({ 'content-type': 'application/octet-stream' }),
         url: 'https://api.example.com/test',
         text: () => Promise.resolve('binary data'),
-        blob: undefined,
+        blob: () => { throw new Error('Blob not supported'); },
+        redirected: false,
+        type: 'basic' as ResponseType,
+        clone: () => { throw new Error('clone not implemented'); },
+        body: null,
+        bodyUsed: false,
+        json: () => Promise.resolve({}),
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+        formData: () => Promise.resolve(new FormData()),
+        bytes: () => Promise.resolve(new Uint8Array()),
       } as Response);
       global.fetch = mockFetch;
 

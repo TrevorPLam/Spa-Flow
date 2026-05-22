@@ -3,7 +3,7 @@ import SwaggerParser from '@apidevtools/swagger-parser';
 import { resolve } from 'path';
 import * as zodSchemas from '@workspace/api-zod';
 
-describe('Zod Schema Validation @contract @critical', { tags: ['flaky'] }, () => {
+describe('Zod Schema Validation @contract @critical', () => {
   let openApiSpec: any;
 
   beforeAll(async () => {
@@ -39,7 +39,8 @@ describe('Zod Schema Validation @contract @critical', { tags: ['flaky'] }, () =>
           twilio: { status: 'healthy' },
           redis: { status: 'healthy' },
           jwt_secret: { status: 'healthy' },
-          encryption_key: { status: 'healthy' }
+          encryption_key: { status: 'healthy' },
+          disk_space: { status: 'healthy' }
         }
       };
       
