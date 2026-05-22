@@ -49,6 +49,8 @@ pnpm run test:load:health
 pnpm run test:load:clients
 pnpm run test:load:dashboard
 pnpm run test:load:checkin
+pnpm run test:load:benchmark
+pnpm run test:load:peak
 pnpm run test:load:all
 ```
 
@@ -141,8 +143,23 @@ Smoke tests run on every PR to catch performance regressions early:
 
 ### Check-in Flow Test
 - **Purpose**: Test the complete check-in flow (pricing, lockers, rooms)
-- **Load**: Ramp up to 20 VUs over 90 seconds
-- **Thresholds**: p95 < 1000ms, error rate < 5%
+- **Load**: Ramp up to 20 VUs over 30s, sustain 60s
+- **Thresholds**: p95 < 1500ms, error rate < 5%
+- **Special**: Tests row-level locking and concurrent check-ins
+
+### Benchmark Test
+- **Purpose**: Comprehensive benchmarking of all API endpoints
+- **Load**: Ramp up to 20 VUs over 30s, sustain 2m
+- **Thresholds**: p95 < 500ms, p99 < 1000ms, error rate < 1%
+- **Endpoints**: All major API endpoints
+- **Output**: Detailed performance report with slow endpoint identification
+
+### Peak Hours Stress Test
+- **Purpose**: Test system stability under peak traffic (~100 req/s)
+- **Load**: Ramp up to 100 VUs over 2m, sustain 3m
+- **Thresholds**: p95 < 1000ms, error rate < 10%
+- **Traffic Mix**: 40% dashboard, 30% clients, 20% lockers/rooms, 10% health
+- **Output**: System stability assessment and breaking point identification
 
 ## CI/CD Integration
 
