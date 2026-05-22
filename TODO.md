@@ -1245,4 +1245,57 @@ None.
 
 ---
 
+## [ ] TASK-066: Add Missing Lint Script
+**Status:** Pending
+**Priority:** Low
+
+### Related File Paths
+- `package.json`
+
+### Definition of Done
+- Add `lint` script to root package.json
+- Script should run ESLint across all packages
+- Script should be consistent with AGENTS.md quality commands
+
+### Out of Scope
+- Adding new lint rules
+- Fixing existing lint errors
+
+### Rules to Follow
+- Use pnpm workspace filtering to run lint across packages
+- Follow existing script patterns in package.json
+- Ensure script works with `pnpm run lint`
+
+### Advanced Coding Pattern
+- Workspace-aware linting
+- Consistent with existing quality scripts
+
+### Anti-Patterns
+- Missing lint script when referenced in AGENTS.md
+- Inconsistent with other quality scripts
+
+### Imports/Exports
+- No code changes required
+- Package.json script only
+
+### Depends On
+- None
+
+### Blocks
+- None
+
+---
+
+### Subtasks
+
+#### TASK-066-A: Add Lint Script to Root Package.json
+**Target:** `package.json`
+**Action:** Add `"lint": "pnpm -r --if-present run lint"` to scripts section.
+
+#### TASK-066-B: Verify Lint Script Works
+**Target:** Manual verification
+**Action:** Run `pnpm run lint` and verify it executes correctly across all packages.
+
+---
+
 
