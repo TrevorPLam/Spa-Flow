@@ -156,8 +156,9 @@
 
 ---
 
-## [ ] TASK-048: Add Membership Purchase UI
-**Status:** Pending
+## [x] TASK-048: Add Membership Purchase UI
+
+**Status:** Complete
 **Priority:** High
 
 ### Related File Paths
@@ -166,13 +167,21 @@
 - `lib/api-spec/openapi.yaml`
 
 ### Definition of Done
-- Dedicated "Purchase Membership" button on client detail
-- Membership purchase dialog with type selection
-- Payment form integration with Square
-- Transaction record creation
-- Client membership status update
-- Membership history timeline
-- Tests updated and passing
+- ✅ Dedicated "Purchase Membership" button on client detail
+- ✅ Membership purchase dialog with type selection
+- ✅ Payment form integration with Square
+- ✅ Transaction record creation
+- ✅ Client membership status update
+- ✅ Membership history timeline
+- ✅ Tests updated and passing
+
+### Implementation Notes
+- **Core membership purchase/renewal flow already existed** via `POST /clients/:id/memberships/renew` endpoint
+- **Button label refinement**: Button now shows "Purchase Membership" for non-members, "Renew Membership" for expired members
+- **Membership history timeline**: Added dedicated card showing membership transaction history with type, date, and amount
+- **Expiration warning badge**: Added red warning badge with clock icon showing days remaining when membership expires within 7 days
+- **Tests**: Created comprehensive test suite for membership purchase UI features
+- **Note**: TASK-037 dependency was already implemented - the renewal endpoint handles both initial purchase and renewal
 
 ### Out of Scope
 - Membership renewal (covered by TASK-037)
@@ -217,30 +226,37 @@
 #### TASK-048-A: Add Membership Purchase Button
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Add "Purchase Membership" button visible for non-members and expired members, open purchase dialog on click.
+**Status:** ✅ Complete
 
 #### TASK-048-B: Create Membership Purchase Dialog
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Create dialog with membership type selection (one-time, six-month), pricing display, Square payment form, confirm button.
+**Status:** ✅ Complete (already existed via renewal dialog)
 
 #### TASK-048-C: Add Membership Purchase API Call
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Integrate with existing membership purchase API (TASK-037), handle payment token, process payment, show success/error.
+**Status:** ✅ Complete (already existed)
 
 #### TASK-048-D: Update Client Status on Purchase
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Invalidate client query on success, update membership badge, show new expiration date, add to transaction history.
+**Status:** ✅ Complete (already existed)
 
 #### TASK-048-E: Add Membership History Timeline
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Create timeline component showing membership purchases, renewals, status changes with dates and amounts.
+**Status:** ✅ Complete
 
 #### TASK-048-F: Add Membership Expiration Warning
 **Target:** `artifacts/spaflow/src/pages/client-detail.tsx`
 **Action:** Show warning badge when membership expires within 7 days, display days remaining, highlight expiration date.
+**Status:** ✅ Complete
 
 #### TASK-048-G: Add Tests for Membership Purchase UI
 **Target:** `artifacts/spaflow/src/pages/client-detail.test.tsx`
 **Action:** Write tests for purchase dialog, payment flow, status update, history timeline, expiration warning.
+**Status:** ✅ Complete
 
 ---
 

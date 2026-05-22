@@ -26,7 +26,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil, AlertTriangle, RefreshCw, ChevronDown, ChevronRight, Clock } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Countdown } from "@/components/Countdown";
 import { useToast } from "@/hooks/use-toast";
@@ -211,6 +211,13 @@ export default function ClientDetailPage() {
   // Check if membership is expired or can be renewed
   const isMembershipExpired = client?.membershipStatus !== "none" && client?.membershipExpiresAt && new Date(client.membershipExpiresAt) < new Date();
   const canRenew = isMembershipExpired || client?.membershipStatus === "none";
+  const shouldShowPurchaseButton = client?.membershipStatus === "none";
+
+  // Check if membership expires within 7 days
+  const daysUntilExpiration = client?.membershipExpiresAt 
+    ? Math.ceil((new Date(client.membershipExpiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isExpiringSoon = daysUntilExpiration !== null && daysUntilExpiration <= 7 && daysUntilExpiration > 0;
 
   if (isLoading) return <Layout><div className="p-8 text-muted-foreground text-sm">Loading...</div></Layout>;
   if (!client) return <Layout><div className="p-8 text-muted-foreground text-sm">Client not found</div></Layout>;
@@ -233,6 +240,12 @@ export default function ClientDetailPage() {
               <Badge variant={MEMBERSHIP_VARIANTS[client.membershipStatus]}>
                 {MEMBERSHIP_LABELS[client.membershipStatus as keyof typeof MEMBERSHIP_LABELS]}
               </Badge>
+              {isExpiringSoon && (
+                <Badge variant="destructive" className="gap-1">
+                  <Clock size={10} />
+                  {daysUntilExpiration}d left
+                </Badge>
+              )}
               {client.membershipStatus === "six_month" && client.membershipExpiresAt && (
                 <span className="text-xs text-muted-foreground">
                   expires {format(new Date(client.membershipExpiresAt), "MMM d, yyyy")}
@@ -244,7 +257,7 @@ export default function ClientDetailPage() {
             {canRenew && (
               <Button data-testid="button-renew-membership" variant="default" size="sm" onClick={openRenewalModal} className="gap-2">
                 <RefreshCw size={14} />
-                Renew Membership
+                {shouldShowPurchaseButton ? "Purchase Membership" : "Renew Membership"}
               </Button>
             )}
             <Button data-testid="button-edit-client" variant="outline" size="sm" onClick={openEdit} className="gap-2">
@@ -371,6 +384,36 @@ export default function ClientDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {transactions.filter(t => t.type === "membership").length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Membership History</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ul className="divide-y divide-border">
+                {transactions
+                  .filter(t => t.type === "membership")
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map(t => (
+                    <li key={t.id} data-testid={`row-membership-${t.id}`} className="px-6 py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium capitalize">
+                            {t.description?.includes("one_time") ? "One-time Membership" : "6-month Membership"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(t.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold">${(t.total ?? 0).toFixed(2)}</p>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
