@@ -160,7 +160,7 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
@@ -173,7 +173,7 @@ export default function DashboardPage() {
               {wsStatus}
             </Badge>
             {/* Quick Check-in Button */}
-            <Button size="sm" onClick={handleQuickCheckIn} className="gap-2">
+            <Button size="sm" onClick={handleQuickCheckIn} className="gap-2 min-h-[44px] px-4">
               <Plus size={14} />
               New Check-in
             </Button>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
             {/* Quick Waitlist Button */}
             <Dialog open={waitlistDialogOpen} onOpenChange={setWaitlistDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-2">
+                <Button size="sm" variant="outline" className="gap-2 min-h-[44px] px-4">
                   <Plus size={14} />
                   Add to Waitlist
                 </Button>
@@ -274,7 +274,7 @@ export default function DashboardPage() {
             {/* Quick Release Button */}
             <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-2">
+                <Button size="sm" variant="outline" className="gap-2 min-h-[44px] px-4">
                   <Unlock size={14} />
                   Release Resource
                 </Button>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Lockers</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{lockerPct}%</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1">{lockerPct}%</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {data.lockerOccupancy?.occupied ?? 0} / {data.lockerOccupancy?.total ?? 0} occupied
                   </p>
@@ -366,7 +366,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rooms</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{roomPct}%</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1">{roomPct}%</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {data.roomOccupancy?.occupied ?? 0} / {data.roomOccupancy?.total ?? 0} occupied
                   </p>
@@ -389,7 +389,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Today</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1">
                     ${(data.todayRevenue ?? 0).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">revenue</p>
@@ -406,7 +406,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Active</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{data.activeClients}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1">{data.activeClients}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     clients · {data.waitlistCount} waiting
                   </p>
@@ -472,11 +472,11 @@ export default function DashboardPage() {
               {(data.activeRentals?.length ?? 0) === 0 ? (
                 <p className="px-6 pb-6 text-sm text-muted-foreground">No active rentals</p>
               ) : (
-                <ul className="divide-y divide-border">
+                <ul className="divide-y divide-border max-h-64 overflow-y-auto">
                   {data.activeRentals?.map(r => (
                     <li key={r.id} data-testid={`row-rental-${r.id}`} className="px-6 py-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{r.clientName}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{r.clientName}</p>
                         <p className="text-xs text-muted-foreground capitalize">
                           {r.resourceType} {r.resourceName}
                         </p>
@@ -503,14 +503,14 @@ export default function DashboardPage() {
               {(data.recentTransactions?.length ?? 0) === 0 ? (
                 <p className="px-6 pb-6 text-sm text-muted-foreground">No transactions yet today</p>
               ) : (
-                <ul className="divide-y divide-border">
+                <ul className="divide-y divide-border max-h-64 overflow-y-auto">
                   {data.recentTransactions?.map(t => (
                     <li key={t.id} data-testid={`row-transaction-${t.id}`} className="px-6 py-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{t.clientName}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{t.clientName}</p>
                         <p className="text-xs text-muted-foreground capitalize">{t.type.replace(/_/g, " ")}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right ml-2">
                         <p className="text-sm font-semibold text-foreground">${(t.total ?? 0).toFixed(2)}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(t.createdAt), { addSuffix: true })}

@@ -172,3 +172,47 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Landscape mode optimization for mobile devices */
+@media (max-width: 768px) and (orientation: landscape) {
+  body {
+    @apply text-sm;
+  }
+  
+  /* Reduce padding in landscape mode */
+  .p-6 {
+    @apply p-3;
+  }
+  
+  .p-4 {
+    @apply p-2;
+  }
+  
+  /* Reduce spacing in landscape mode */
+  .space-y-6 > * + * {
+    @apply mt-3;
+  }
+  
+  .space-y-4 > * + * {
+    @apply mt-2;
+  }
+  
+  /* Adjust grid layouts for landscape */
+  .grid-cols-2 {
+    @apply grid-cols-3;
+  }
+  
+  /* Reduce card padding in landscape */
+  .pt-6 {
+    @apply pt-3;
+  }
+  
+  /* Optimize text sizes */
+  .text-2xl {
+    @apply text-xl;
+  }
+  
+  .text-3xl {
+    @apply text-2xl;
+  }
+}

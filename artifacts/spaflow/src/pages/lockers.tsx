@@ -129,8 +129,8 @@ export default function LockersPage() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Lockers</h1>
             {occupancy && (
@@ -139,17 +139,17 @@ export default function LockersPage() {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {/* Connection status indicator */}
             <Badge variant={wsStatus === "connected" ? "default" : "secondary"} className="gap-1.5">
               {wsStatus === "connected" ? <Wifi size={12} /> : <WifiOff size={12} />}
               {wsStatus}
             </Badge>
-            <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+            <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending} className="min-h-[44px] px-4">
               Release All Expired
             </Button>
             {selectedLockers.size > 0 && (
-              <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("selected"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+              <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("selected"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending} className="min-h-[44px] px-4">
                 Release Selected ({selectedLockers.size})
               </Button>
             )}
@@ -161,7 +161,7 @@ export default function LockersPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
           {lockersArray.map(locker => {
             const isOccupied = locker.status === "occupied";
             const isReserved = locker.status === "reserved";
@@ -178,7 +178,7 @@ export default function LockersPage() {
                   }
                 }}
                 className={cn(
-                  "aspect-square rounded-lg border text-xs font-semibold flex flex-col items-center justify-center transition-all relative",
+                  "aspect-square min-h-[44px] min-w-[44px] rounded-lg border text-xs font-semibold flex flex-col items-center justify-center transition-all relative",
                   isOccupied
                     ? "bg-amber-50 border-amber-300 text-amber-800 cursor-pointer hover:bg-amber-100"
                     : isReserved
@@ -233,6 +233,7 @@ export default function LockersPage() {
                       size="sm"
                       onClick={handleReleaseClick}
                       disabled={release.isPending}
+                      className="min-h-[44px] px-4"
                     >
                       Release
                     </Button>
@@ -245,8 +246,8 @@ export default function LockersPage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleRelease(selected.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <AlertDialogCancel className="min-h-[44px] px-4">Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleRelease(selected.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px] px-4">
                         Release
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -258,6 +259,7 @@ export default function LockersPage() {
                   size="sm"
                   onClick={() => handleRenew(selected.id)}
                   disabled={renew.isPending}
+                  className="min-h-[44px] px-4"
                 >
                   Renew (6h)
                 </Button>
@@ -267,6 +269,7 @@ export default function LockersPage() {
                   size="sm"
                   onClick={() => handleExtend(selected.id)}
                   disabled={extend.isPending}
+                  className="min-h-[44px] px-4"
                 >
                   Extend (2h)
                 </Button>
@@ -289,10 +292,10 @@ export default function LockersPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="min-h-[44px] px-4">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => bulkReleaseMode === "expired" ? handleBulkReleaseExpired() : handleBulkReleaseSelected()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px] px-4"
             >
               Release
             </AlertDialogAction>

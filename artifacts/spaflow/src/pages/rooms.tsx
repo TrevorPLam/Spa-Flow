@@ -129,8 +129,8 @@ export default function RoomsPage() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Private Rooms</h1>
             {occupancy && (
@@ -139,17 +139,17 @@ export default function RoomsPage() {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {/* Connection status indicator */}
             <Badge variant={wsStatus === "connected" ? "default" : "secondary"} className="gap-1.5">
               {wsStatus === "connected" ? <Wifi size={12} /> : <WifiOff size={12} />}
               {wsStatus}
             </Badge>
-            <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+            <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("expired"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending} className="min-h-[44px] px-4">
               Release All Expired
             </Button>
             {selectedRooms.size > 0 && (
-              <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("selected"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending}>
+              <Button variant="destructive" size="sm" onClick={() => { setBulkReleaseMode("selected"); setShowBulkReleaseConfirm(true); }} disabled={bulkRelease.isPending} className="min-h-[44px] px-4">
                 Release Selected ({selectedRooms.size})
               </Button>
             )}
@@ -161,7 +161,7 @@ export default function RoomsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {roomsArray.map(room => {
             const isOccupied = room.status === "occupied";
             const isReserved = room.status === "reserved";
@@ -178,7 +178,7 @@ export default function RoomsPage() {
                   }
                 }}
                 className={cn(
-                  "rounded-lg border p-4 text-left transition-all relative",
+                  "rounded-lg border p-4 text-left transition-all relative min-h-[88px]",
                   isOccupied
                     ? "bg-amber-50 border-amber-300 text-amber-900 cursor-pointer hover:bg-amber-100"
                     : isReserved
@@ -246,6 +246,7 @@ export default function RoomsPage() {
                       size="sm"
                       onClick={handleReleaseClick}
                       disabled={release.isPending}
+                      className="min-h-[44px] px-4"
                     >
                       Release
                     </Button>
@@ -258,8 +259,8 @@ export default function RoomsPage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleRelease(selected.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <AlertDialogCancel className="min-h-[44px] px-4">Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleRelease(selected.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px] px-4">
                         Release
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -271,6 +272,7 @@ export default function RoomsPage() {
                   size="sm"
                   onClick={() => handleRenew(selected.id)}
                   disabled={renew.isPending}
+                  className="min-h-[44px] px-4"
                 >
                   Renew (6h)
                 </Button>
@@ -280,6 +282,7 @@ export default function RoomsPage() {
                   size="sm"
                   onClick={() => handleExtend(selected.id)}
                   disabled={extend.isPending}
+                  className="min-h-[44px] px-4"
                 >
                   Extend (2h)
                 </Button>
@@ -302,10 +305,10 @@ export default function RoomsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="min-h-[44px] px-4">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => bulkReleaseMode === "expired" ? handleBulkReleaseExpired() : handleBulkReleaseSelected()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px] px-4"
             >
               Release
             </AlertDialogAction>

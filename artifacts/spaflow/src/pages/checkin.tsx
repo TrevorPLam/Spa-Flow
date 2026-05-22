@@ -273,7 +273,7 @@ export default function CheckInPage() {
 
   return (
     <Layout>
-      <div className="p-6 max-w-2xl space-y-6">
+      <div className="p-4 sm:p-6 max-w-2xl lg:max-w-4xl space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Check In</h1>
           <p className="text-muted-foreground text-sm">Assign a locker or private room to a client</p>
@@ -364,6 +364,7 @@ export default function CheckInPage() {
                   variant={resourceType === "locker" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setResourceType("locker")}
+                  className="min-h-[44px] px-4"
                 >
                   Locker
                 </Button>
@@ -372,6 +373,7 @@ export default function CheckInPage() {
                   variant={resourceType === "room" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setResourceType("room")}
+                  className="min-h-[44px] px-4"
                 >
                   Private Room
                 </Button>
@@ -398,7 +400,7 @@ export default function CheckInPage() {
                 {resources.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No available {resourceType === "locker" ? "lockers" : "rooms"}</p>
                 ) : (
-                  <div className="grid grid-cols-6 gap-1.5 max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1.5 max-h-48 lg:max-h-64 overflow-y-auto">
                     {resources.slice(0, 48).map(r => {
                       const qualityTier = resourceType === "room" && "qualityTier" in r ? (r.qualityTier as string) : undefined;
                       return (
@@ -406,7 +408,7 @@ export default function CheckInPage() {
                           key={r.id}
                           data-testid={`button-resource-${r.id}`}
                           onClick={() => handleSelectResource({ id: r.id, name: r.name, qualityTier })}
-                          className="h-10 text-xs font-medium bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-800 relative"
+                          className="h-10 sm:h-12 text-xs font-medium bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-800 relative min-h-[44px]"
                         >
                           {r.name}
                           {resourceType === "room" && qualityTier && (
@@ -487,12 +489,14 @@ export default function CheckInPage() {
                     <span className="text-sm text-blue-900">${priceRange.min}</span>
                     <input
                       type="range"
+                      id="room-price-slider"
                       min={priceRange.min}
                       max={priceRange.max}
                       step={0.5}
                       value={selectedPrice || priceRange.default}
                       onChange={(e) => setSelectedPrice(parseFloat(e.target.value))}
                       className="flex-1 h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
+                      aria-label="Room price selection"
                     />
                     <span className="text-sm text-blue-900">${priceRange.max}</span>
                   </div>
@@ -512,8 +516,8 @@ export default function CheckInPage() {
               )}
 
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep("resource")}>Back</Button>
-                <Button className="flex-1" onClick={handleProceedToPayment}>
+                <Button variant="outline" onClick={() => setStep("resource")} className="min-h-[44px] px-4">Back</Button>
+                <Button className="flex-1 min-h-[44px] px-4" onClick={handleProceedToPayment}>
                   Continue to Payment
                 </Button>
               </div>
@@ -572,10 +576,10 @@ export default function CheckInPage() {
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep("products")}>Back</Button>
+                <Button variant="outline" onClick={() => setStep("products")} className="min-h-[44px] px-4">Back</Button>
                 <Button
                   data-testid="button-complete-checkin"
-                  className="flex-1"
+                  className="flex-1 min-h-[44px] px-4"
                   onClick={handlePayment}
                   disabled={checkIn.isPending || (isSquareConfigured && !paymentToken)}
                 >
