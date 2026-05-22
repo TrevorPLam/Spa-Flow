@@ -113,25 +113,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, [onStatusChange]);
 
   /**
-   * Get JWT token from cookies
-   */
-  const getAccessToken = useCallback((): string | null => {
-    // The access token is stored in an HttpOnly cookie named spaflow_session
-    // We can't access it directly from JavaScript, but the WebSocket server
-    // will validate it. For WebSocket authentication, we need to pass the
-    // token via query parameter. Since we can't access HttpOnly cookies,
-    // we'll need to use the refresh token approach or modify the server.
-    // 
-    // For now, we'll use a workaround: the server should accept the session
-    // cookie during the WebSocket upgrade. If that's not possible, we may need
-    // to store the access token in localStorage (less secure) or modify the
-    // auth flow to provide the access token to the client.
-    //
-    // Assuming the server can read the HttpOnly cookie during upgrade:
-    return null; // Server will read from cookie
-  }, []);
-
-  /**
    * Calculate reconnection delay with exponential backoff
    */
   const getReconnectDelay = useCallback(() => {
