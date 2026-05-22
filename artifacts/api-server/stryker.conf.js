@@ -9,24 +9,11 @@ export default {
   testRunner: 'vitest',
   vitest: {
     configFile: 'vitest.config.ts',
-    related: false, // Disable related test file detection
-    args: ['--run', '--no-coverage'], // Run tests in batch mode without coverage
   },
   
-  // Files to mutate - focus on critical business logic
+  // Files to mutate - limited to single file for debugging
   mutate: [
     'src/lib/auth.ts',
-    'src/services/**/*.ts',
-    'src/routes/**/*.ts',
-    'src/middleware/**/*.ts',
-    // Exclude test files
-    '!**/*.test.ts',
-    '!**/*.spec.ts',
-    // Exclude files without tests
-    '!src/middleware/rateLimit.ts',
-    // Exclude config and setup files
-    '!src/routes/config.ts',
-    '!src/routes/index.ts',
   ],
   
   // Mutation score thresholds

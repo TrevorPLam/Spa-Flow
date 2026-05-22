@@ -42,9 +42,9 @@ The configuration focuses on critical business logic modules:
 }
 ```
 
-## Current Challenges
+## Current Status (May 2026)
 
-### Vitest Integration Issues
+### Disabled Due to Vitest Runner Incompatibility
 The Stryker Vitest runner is experiencing issues with test discovery during the dry run phase. The error "No tests were executed" occurs even though tests exist and pass when run directly with Vitest.
 
 #### Attempted Solutions
@@ -54,12 +54,13 @@ The Stryker Vitest runner is experiencing issues with test discovery during the 
 4. **File scope**: Tried mutating single file vs multiple files
 5. **Configuration**: Attempted with and without vitest.config.ts
 6. **Directory specification**: Added dir configuration options
+7. **Configuration cleanup**: Removed unsupported vitest config properties (related, args)
 
 #### Root Cause Analysis
 The issue appears to be related to how Stryker's Vitest runner discovers test files in the sandbox environment. The tests import source files directly (which is correct), but the runner still cannot locate them during the dry run.
 
-#### Workaround
-Due to these integration challenges, the mutation testing is currently configured but not fully operational. The configuration is in place and can be activated once the Vitest runner integration is resolved.
+#### Resolution
+Due to these integration challenges, mutation testing has been **disabled in CI** (Task 10 - May 2026). The CI job `mutation-tests` has been removed from `.github/workflows/ci.yml` and replaced with a comment block documenting the reason. The configuration in `artifacts/api-server/stryker.conf.js` is preserved for future re-evaluation when Stryker Vitest runner compatibility improves.
 
 ## Future Improvements
 

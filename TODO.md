@@ -109,7 +109,7 @@ None.
 
 ## Task 10: Fix or Remove Stryker Mutation Testing
 
-- [ ] **ID:** T10 | **Status:** TODO
+- [x] **ID:** T10 | **Status:** Complete
 
 **Related file paths:**  
 - `.github/workflows/ci.yml` (mutation-tests job)  
