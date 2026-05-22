@@ -168,7 +168,83 @@
 
 ---
 
-## [ ] TASK-046: Add Monitoring and Alerting
+## [x] TASK-046: Add Monitoring and Alerting
+**Status:** Complete
+**Priority:** High
+
+### Related File Paths
+- `artifacts/api-server/src/lib/monitoring.ts` (new)
+- `artifacts/api-server/src/routes/monitoring.ts` (new)
+- `artifacts/api-server/src/routes/health.ts` (modified)
+- `artifacts/api-server/src/lib/logger.ts` (modified)
+- `artifacts/spaflow/src/pages/monitoring.tsx` (new)
+- `.github/workflows/monitoring.yml` (new)
+- `docs/monitoring.md` (new)
+- `lib/api-spec/openapi.yaml` (modified)
+
+### Definition of Done
+- ✅ Performance monitoring service created
+- ✅ Health check enhancements with disk space monitoring
+- ✅ Critical alerts configured
+- ✅ Log aggregation with correlation IDs
+- ✅ Monitoring dashboard UI created
+- ✅ Uptime monitoring workflow added
+- ✅ Documentation completed
+- ✅ Typecheck passes
+- ✅ Changes committed and pushed
+
+### Rules to Follow
+- Use existing Sentry integration
+- Follow AGENTS.md conventions
+- Use requireManager for manager-only endpoints
+- Document all monitoring features
+
+### Implementation Notes
+- Created performance monitoring service with metric recording, alert checking, and health metrics
+- Added disk space check to health checks (Windows-compatible fallback)
+- Enhanced logger with correlation ID generation for distributed tracing
+- Created manager-only monitoring dashboard at /monitoring
+- Added GitHub Actions workflow for uptime monitoring (every 5 minutes)
+- Documented entire monitoring setup in docs/monitoring.md
+- Updated OpenAPI spec to include disk_space in readiness response
+- Regenerated API types via Orval
+- Pre-existing test infrastructure issue documented in TASK-054
+
+### Subtasks
+
+#### ✅ TASK-046-A: Integrate Sentry Error Tracking (enhance existing)
+**Target:** `artifacts/api-server/src/lib/sentry.ts`
+**Action:** Sentry was already integrated; enhanced monitoring service to use isSentryInitialized() for conditional Sentry calls.
+
+#### ✅ TASK-046-B: Add Performance Monitoring
+**Target:** `artifacts/api-server/src/lib/monitoring.ts` (new)
+**Action:** Created performance monitoring service with metric recording, alert rules, and health metrics functions.
+
+#### ✅ TASK-046-C: Add Health Check Enhancements
+**Target:** `artifacts/api-server/src/routes/health.ts`
+**Action:** Added disk space check to readiness probe with Windows-compatible fallback.
+
+#### ✅ TASK-046-D: Configure Critical Alerts
+**Target:** `artifacts/api-server/src/lib/monitoring.ts`
+**Action:** Alert rules configured for error rate (>5%), response time (>5s), database latency (>1s), memory usage (>90%).
+
+#### ✅ TASK-046-E: Add Log Aggregation
+**Target:** `artifacts/api-server/src/lib/logger.ts`
+**Action:** Added generateCorrelationId() and createCorrelationLogger() functions for distributed tracing.
+
+#### ✅ TASK-046-F: Create Monitoring Dashboard
+**Target:** `artifacts/spaflow/src/pages/monitoring.tsx` (new)
+**Action:** Created manager-only monitoring dashboard with real-time metrics display and auto-refresh.
+
+#### ✅ TASK-046-G: Add Uptime Monitoring
+**Target:** `.github/workflows/monitoring.yml` (new)
+**Action:** Created GitHub Actions workflow that checks liveness and readiness endpoints every 5 minutes.
+
+#### ✅ TASK-046-H: Document Monitoring Setup
+**Target:** `docs/monitoring.md` (new)
+**Action:** Created comprehensive documentation covering all monitoring features, configuration, and troubleshooting.
+
+---
 **Status:** Pending
 **Priority:** Critical
 
@@ -259,20 +335,21 @@
 
 ---
 
-## [ ] TASK-047: Create E2E Test Infrastructure
-**Status:** Pending
+## [x] TASK-047: Create E2E Test Infrastructure
+**Status:** Complete
 **Priority:** Critical
 
 ### Related File Paths
-- `tests/e2e/` (new)
+- `artifacts/spaflow/tests/e2e/`
 - `playwright.config.ts`
+- `.env.example`
 
 ### Definition of Done
-- E2E test directory structure created
-- Page objects for key pages added
-- Test data fixtures set up
-- Test database configured
-- Playwright configured
+- ✅ E2E test directory structure created
+- ✅ Page objects for key pages added
+- ✅ Test data fixtures set up
+- ✅ Test database configured
+- ✅ Playwright configured
 
 ### Out of Scope
 - Writing actual E2E tests (covered by TASK-077, TASK-078)
@@ -304,17 +381,27 @@
 ### Blocks
 - None
 
+### Implementation Notes
+- E2E test infrastructure was already largely in place at `artifacts/spaflow/tests/e2e/`
+- Page objects already implemented: BasePage, CheckInPage, ClientsPage, DashboardPage, LoginPage, LockersPage, RoomsPage
+- Test data fixtures already implemented in `helpers/test-data.ts`: createTestUser, createTestClient, cleanupTestData, cleanupTestClients, resetUserLockout, getManagerAuthHeaders
+- Playwright already configured with browsers (chromium, firefox, webkit), timeouts, visual testing thresholds, and webServer for local development
+- Added E2E test database configuration comment to `playwright.config.ts` documenting DATABASE_URL usage
+- Added E2E_DATABASE_URL to `.env.example` for optional separate E2E test database
+- Test files already exist: auth.spec.ts, checkin.spec.ts, clients.spec.ts, dashboard.spec.ts, errors.spec.ts, performance.spec.ts, resources.spec.ts, security.spec.ts
+- Accessibility helpers already implemented in `helpers/accessibility.ts`
+
 ---
 
 ### Subtasks
 
-#### TASK-047-A: Create E2E Test Structure
-**Target:** `tests/e2e/` (new)
-**Action:** Create E2E test directory structure, add page objects for key pages, set up test data fixtures, configure test database.
+#### ✅ TASK-047-A: Create E2E Test Structure
+**Target:** `artifacts/spaflow/tests/e2e/`
+**Action:** E2E test directory structure already exists with page objects, test data fixtures, and test files.
 
-#### TASK-047-B: Configure Playwright
+#### ✅ TASK-047-B: Configure Playwright
 **Target:** `playwright.config.ts`
-**Action:** Configure Playwright settings, browsers, test database connection, base URL, timeouts.
+**Action:** Playwright already configured. Added E2E test database configuration documentation and E2E_DATABASE_URL to .env.example.
 
 ---
 

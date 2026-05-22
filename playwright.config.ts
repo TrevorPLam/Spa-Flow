@@ -19,6 +19,10 @@ export default defineConfig({
     video: 'retain-on-failure',
     actionTimeout: 10000,
     navigationTimeout: 15000,
+    // E2E test database configuration
+    // API server should use separate test database for E2E tests
+    // Set DATABASE_URL environment variable to point to test database
+    // Example: DATABASE_URL=postgresql://postgres:postgres@localhost:5432/spaflow_e2e_test
   },
   // Visual testing configuration
   expect: {
