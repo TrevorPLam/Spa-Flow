@@ -8,7 +8,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     unstubEnvs: true,
     pool: 'threads',
-    fileParallelism: true,
+    fileParallelism: false,
     testTimeout: 10000,
     hookTimeout: 10000,
     include: ['src/**/*.test.ts'],

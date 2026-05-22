@@ -34,7 +34,7 @@ vi.mock("../lib/env", () => ({
   })),
 }));
 
-describe("Webhooks Routes", () => {
+describe("Webhooks Routes", { tags: ['flaky'] }, () => {
   let app: express.Application;
 
   beforeEach(() => {
