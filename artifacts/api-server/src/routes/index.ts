@@ -19,6 +19,7 @@ import webhooksRouter from "./webhooks";
 import monitoringRouter from "./monitoring";
 import dataQualityRouter from "./data-quality";
 import maintenanceRouter from "./maintenance";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -42,6 +43,7 @@ router.use(webhooksRouter);
 router.use(monitoringRouter);
 router.use(dataQualityRouter);
 router.use(maintenanceRouter);
+router.use(analyticsRouter);
 
 // Conditionally load test router only in test/development environment
 // This excludes test routes from production builds at the module level
