@@ -4,6 +4,7 @@ import { eq, lt, and, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { assignNextWaitlistEntry } from "../routes/rooms";
 import { logCacheStats } from "../lib/cache";
+import { reconciliationService } from "../services/reconciliation";
 
 // Every 5 minutes: expire rental sessions and resources whose time has lapsed
 cron.schedule("*/5 * * * *", async () => {
@@ -93,6 +94,48 @@ cron.schedule("0 * * * *", async () => {
     logCacheStats();
   } catch (err) {
     logger.error({ err }, "Error logging cache statistics");
+  }
+});
+
+// Daily at 2 AM: run payment reconciliation
+cron.schedule("0 2 * * *", async () => {
+  try {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    logger.info({ date: yesterday }, "Starting scheduled payment reconciliation");
+    const result = await reconciliationService.runReconciliation(yesterday);
+
+    // Alert on discrepancies
+    if (result.status === "discrepancy") {
+      const totalDiscrepancies =
+        result.discrepancies.missingInSquare.length +
+        result.discrepancies.missingInInternal.length +
+        result.discrepancies.amountMismatches.length;
+
+      logger.warn(
+        {
+          date: yesterday,
+          totalInternal: result.totalInternal,
+          totalSquare: result.totalSquare,
+          totalDiscrepancies,
+          discrepancies: result.discrepancies,
+        },
+        "Payment reconciliation found discrepancies"
+      );
+    } else {
+      logger.info(
+        {
+          date: yesterday,
+          totalInternal: result.totalInternal,
+          totalSquare: result.totalSquare,
+        },
+        "Payment reconciliation completed successfully - matched"
+      );
+    }
+  } catch (err) {
+    logger.error({ err }, "Error in scheduled payment reconciliation");
   }
 });
 

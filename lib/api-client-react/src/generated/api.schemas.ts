@@ -900,6 +900,46 @@ export interface PeakHoursReport {
   endDate: string;
 }
 
+export type DiscrepanciesMissingInSquareItem = {
+  paymentId: string;
+  amount: number;
+};
+
+export type DiscrepanciesMissingInInternalItem = {
+  squarePaymentId: string;
+  amount: number;
+};
+
+export type DiscrepanciesAmountMismatchesItem = {
+  paymentId: string;
+  squarePaymentId: string;
+  internalAmount: number;
+  squareAmount: number;
+};
+
+export interface Discrepancies {
+  missingInSquare: DiscrepanciesMissingInSquareItem[];
+  missingInInternal: DiscrepanciesMissingInInternalItem[];
+  amountMismatches: DiscrepanciesAmountMismatchesItem[];
+}
+
+export type ReconciliationResultStatus = typeof ReconciliationResultStatus[keyof typeof ReconciliationResultStatus];
+
+
+export const ReconciliationResultStatus = {
+  matched: 'matched',
+  discrepancy: 'discrepancy',
+  pending: 'pending',
+} as const;
+
+export interface ReconciliationResult {
+  date: string;
+  totalInternal: number;
+  totalSquare: number;
+  discrepancies: Discrepancies;
+  status: ReconciliationResultStatus;
+}
+
 export interface AuditLog {
   id: number;
   userId: number;
@@ -1104,6 +1144,33 @@ startDate?: string;
  * End date for report (ISO 8601 format)
  */
 endDate?: string;
+};
+
+export type GetReconciliationHistoryParams = {
+/**
+ * Start date for reconciliation history (ISO 8601 format)
+ */
+startDate?: string;
+/**
+ * End date for reconciliation history (ISO 8601 format)
+ */
+endDate?: string;
+};
+
+export type GetReconciliationHistory200 = {
+  data?: ReconciliationResult[];
+  startDate?: string;
+  endDate?: string;
+};
+
+export type RunReconciliationBody = {
+  /** Date to reconcile (ISO 8601 format, defaults to today) */
+  date?: string;
+};
+
+export type RunReconciliation200 = {
+  data?: ReconciliationResult;
+  message?: string;
 };
 
 export type ListAuditLogsParams = {

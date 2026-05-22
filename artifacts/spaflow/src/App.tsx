@@ -18,6 +18,7 @@ import WaitlistPage from "@/pages/waitlist";
 import ProductsPage from "@/pages/products";
 import TransactionsPage from "@/pages/transactions";
 import ReportsPage from "@/pages/reports";
+import ReconciliationPage from "@/pages/reconciliation";
 import UsersPage from "@/pages/users";
 import AuditLogsPage from "@/pages/audit-logs";
 import SessionsPage from "@/pages/sessions";
@@ -92,6 +93,7 @@ function Router() {
       <Route path="/products" component={() => <ProtectedRoute component={ProductsPage} />} />
       <Route path="/transactions" component={() => <ProtectedRoute component={TransactionsPage} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} />} />
+      <Route path="/reconciliation" component={() => <ProtectedRoute component={ReconciliationPage} />} />
       <Route path="/users" component={() => <ProtectedRoute component={UsersPage} />} />
       <Route path="/audit-logs" component={() => <ProtectedRoute component={AuditLogsPage} />} />
       <Route path="/sessions" component={() => <ProtectedRoute component={SessionsPage} />} />

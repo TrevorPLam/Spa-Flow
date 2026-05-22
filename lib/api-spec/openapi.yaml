@@ -30,6 +30,8 @@ tags:
     description: Dashboard and reporting
   - name: reports
     description: Revenue and utilization reports (manager only)
+  - name: reconciliation
+    description: Payment reconciliation (manager only)
   - name: users
     description: Staff user management
   - name: audit
@@ -1348,6 +1350,91 @@ paths:
         "403":
           description: Forbidden - manager only
 
+  # Reconciliation
+  /reconciliation:
+    get:
+      operationId: getReconciliationHistory
+      tags: [reconciliation]
+      summary: Get daily reconciliation reports for a date range (manager only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start date for reconciliation history (ISO 8601 format)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End date for reconciliation history (ISO 8601 format)
+      responses:
+        "200":
+          description: Reconciliation history data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReconciliationResult"
+                  startDate:
+                    type: string
+                    format: date-time
+                  endDate:
+                    type: string
+                    format: date-time
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+        "400":
+          description: Invalid date format or start date after end date
+
+  /reconciliation/run:
+    post:
+      operationId: runReconciliation
+      tags: [reconciliation]
+      summary: Trigger reconciliation for a specific date (manager only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date-time
+                  description: Date to reconcile (ISO 8601 format, defaults to today)
+      responses:
+        "200":
+          description: Reconciliation completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ReconciliationResult"
+                  message:
+                    type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - manager only
+        "400":
+          description: Invalid date format
+        "500":
+          description: Reconciliation failed
+
   # Users
   /users:
     get:
@@ -2465,6 +2552,63 @@ components:
         endDate:
           type: string
           format: date-time
+
+    # Reconciliation
+    Discrepancies:
+      type: object
+      required: [missingInSquare, missingInInternal, amountMismatches]
+      properties:
+        missingInSquare:
+          type: array
+          items:
+            type: object
+            required: [paymentId, amount]
+            properties:
+              paymentId:
+                type: string
+              amount:
+                type: number
+        missingInInternal:
+          type: array
+          items:
+            type: object
+            required: [squarePaymentId, amount]
+            properties:
+              squarePaymentId:
+                type: string
+              amount:
+                type: number
+        amountMismatches:
+          type: array
+          items:
+            type: object
+            required: [paymentId, squarePaymentId, internalAmount, squareAmount]
+            properties:
+              paymentId:
+                type: string
+              squarePaymentId:
+                type: string
+              internalAmount:
+                type: number
+              squareAmount:
+                type: number
+
+    ReconciliationResult:
+      type: object
+      required: [date, totalInternal, totalSquare, discrepancies, status]
+      properties:
+        date:
+          type: string
+          format: date-time
+        totalInternal:
+          type: number
+        totalSquare:
+          type: number
+        discrepancies:
+          $ref: "#/components/schemas/Discrepancies"
+        status:
+          type: string
+          enum: [matched, discrepancy, pending]
 
     # Audit Logs
     AuditLog:

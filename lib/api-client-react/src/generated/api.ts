@@ -38,6 +38,8 @@ import type {
   GetClientTransactionsParams,
   GetLockerUtilizationParams,
   GetPeakHoursParams,
+  GetReconciliationHistory200,
+  GetReconciliationHistoryParams,
   GetRevenueByTypeParams,
   GetRevenueReportParams,
   GetRoomUtilizationParams,
@@ -77,6 +79,8 @@ import type {
   RevokeSession200,
   RevokeSessionBody,
   Room,
+  RunReconciliation200,
+  RunReconciliationBody,
   SessionsList,
   Transaction,
   TransactionList,
@@ -4163,6 +4167,161 @@ export function useGetPeakHours<TData = Awaited<ReturnType<typeof getPeakHours>>
 
 
 
+
+export const getGetReconciliationHistoryUrl = (params?: GetReconciliationHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/reconciliation?${stringifiedParams}` : `/api/v1/reconciliation`
+}
+
+/**
+ * @summary Get daily reconciliation reports for a date range (manager only)
+ */
+export const getReconciliationHistory = async (params?: GetReconciliationHistoryParams, options?: RequestInit): Promise<GetReconciliationHistory200> => {
+
+  return customFetch<GetReconciliationHistory200>(getGetReconciliationHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReconciliationHistoryQueryKey = (params?: GetReconciliationHistoryParams,) => {
+    return [
+    `/api/v1/reconciliation`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetReconciliationHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getReconciliationHistory>>, TError = ErrorType<void>>(params?: GetReconciliationHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReconciliationHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReconciliationHistoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReconciliationHistory>>> = ({ signal }) => getReconciliationHistory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReconciliationHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReconciliationHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getReconciliationHistory>>>
+export type GetReconciliationHistoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get daily reconciliation reports for a date range (manager only)
+ */
+
+export function useGetReconciliationHistory<TData = Awaited<ReturnType<typeof getReconciliationHistory>>, TError = ErrorType<void>>(
+ params?: GetReconciliationHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReconciliationHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReconciliationHistoryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunReconciliationUrl = () => {
+
+
+
+
+  return `/api/v1/reconciliation/run`
+}
+
+/**
+ * @summary Trigger reconciliation for a specific date (manager only)
+ */
+export const runReconciliation = async (runReconciliationBody?: RunReconciliationBody, options?: RequestInit): Promise<RunReconciliation200> => {
+
+  return customFetch<RunReconciliation200>(getRunReconciliationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      runReconciliationBody,)
+  }
+);}
+
+
+
+
+export const getRunReconciliationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runReconciliation>>, TError,{data?: BodyType<RunReconciliationBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runReconciliation>>, TError,{data?: BodyType<RunReconciliationBody>}, TContext> => {
+
+const mutationKey = ['runReconciliation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runReconciliation>>, {data?: BodyType<RunReconciliationBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runReconciliation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunReconciliationMutationResult = NonNullable<Awaited<ReturnType<typeof runReconciliation>>>
+    export type RunReconciliationMutationBody = BodyType<RunReconciliationBody> | undefined
+    export type RunReconciliationMutationError = ErrorType<void>
+
+    /**
+ * @summary Trigger reconciliation for a specific date (manager only)
+ */
+export const useRunReconciliation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runReconciliation>>, TError,{data?: BodyType<RunReconciliationBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runReconciliation>>,
+        TError,
+        {data?: BodyType<RunReconciliationBody>},
+        TContext
+      > => {
+      return useMutation(getRunReconciliationMutationOptions(options));
+    }
 
 export const getListUsersUrl = () => {
 

@@ -1230,6 +1230,76 @@ export const GetPeakHoursResponse = zod.object({
 
 
 /**
+ * @summary Get daily reconciliation reports for a date range (manager only)
+ */
+export const GetReconciliationHistoryQueryParams = zod.object({
+  "startDate": zod.date().optional().describe('Start date for reconciliation history (ISO 8601 format)'),
+  "endDate": zod.date().optional().describe('End date for reconciliation history (ISO 8601 format)')
+})
+
+export const GetReconciliationHistoryResponse = zod.object({
+  "data": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "totalInternal": zod.number(),
+  "totalSquare": zod.number(),
+  "discrepancies": zod.object({
+  "missingInSquare": zod.array(zod.object({
+  "paymentId": zod.string(),
+  "amount": zod.number()
+})),
+  "missingInInternal": zod.array(zod.object({
+  "squarePaymentId": zod.string(),
+  "amount": zod.number()
+})),
+  "amountMismatches": zod.array(zod.object({
+  "paymentId": zod.string(),
+  "squarePaymentId": zod.string(),
+  "internalAmount": zod.number(),
+  "squareAmount": zod.number()
+}))
+}),
+  "status": zod.enum(['matched', 'discrepancy', 'pending'])
+})).optional(),
+  "startDate": zod.coerce.date().optional(),
+  "endDate": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Trigger reconciliation for a specific date (manager only)
+ */
+export const RunReconciliationBody = zod.object({
+  "date": zod.coerce.date().optional().describe('Date to reconcile (ISO 8601 format, defaults to today)')
+})
+
+export const RunReconciliationResponse = zod.object({
+  "data": zod.object({
+  "date": zod.coerce.date(),
+  "totalInternal": zod.number(),
+  "totalSquare": zod.number(),
+  "discrepancies": zod.object({
+  "missingInSquare": zod.array(zod.object({
+  "paymentId": zod.string(),
+  "amount": zod.number()
+})),
+  "missingInInternal": zod.array(zod.object({
+  "squarePaymentId": zod.string(),
+  "amount": zod.number()
+})),
+  "amountMismatches": zod.array(zod.object({
+  "paymentId": zod.string(),
+  "squarePaymentId": zod.string(),
+  "internalAmount": zod.number(),
+  "squareAmount": zod.number()
+}))
+}),
+  "status": zod.enum(['matched', 'discrepancy', 'pending'])
+}).optional(),
+  "message": zod.string().optional()
+})
+
+
+/**
  * @summary List staff users (manager only)
  */
 export const ListUsersResponseItem = zod.object({
