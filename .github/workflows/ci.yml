@@ -203,6 +203,9 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install
+      - name: Regenerate and check diff
+        run: |
+          cd lib/api-spec && pnpm run codegen && git --no-pager diff --exit-code lib/api-client-react/src/generated lib/api-zod/src/generated || (echo "Generated files out of date. Run 'cd lib/api-spec && pnpm run codegen' and commit changes." && exit 1)
       - name: Run Contract Tests for Changed Packages
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
